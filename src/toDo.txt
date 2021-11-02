@@ -1,0 +1,3 @@
+colocar tapas secundarias
+menu para controlar el angulo de los paneles solares
+menu para la cantidad de paneles

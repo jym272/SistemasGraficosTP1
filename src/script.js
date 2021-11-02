@@ -10,7 +10,10 @@ import {Axis} from "./js/Axis";
 import {Camera} from "./js/Camera";
 import {Controls} from "./js/Controls";
 import {Transforms} from "./js/Transforms";
-import {Tubo} from "./js/Tubo";
+import {Tubo, Tapa, Plano} from "./js/PanelesSolares";
+//imoprt three js
+import * as THREE from "three";
+
 
 let
     gl, scene, program, camera, transforms,
@@ -66,28 +69,48 @@ function configure() {
     scene = new Scene(gl, program);
 
     // Configure `camera` and `controls`
-    camera = new Camera(Camera.ORBITING_TYPE);
-    camera.goHome([0, 2, 50]);
+    camera = new Camera(Camera.ORBITING_TYPE, 70,0);
+    camera.goHome([0, 2, 15]);
     camera.setFocus([0, 0, 0]);
     new Controls(camera, canvas);
 
     // Configure `transforms`
     transforms = new Transforms(gl, program, camera, canvas);
 
-    gl.uniform3fv(program.uLightPosition, [12, 1, 12]);
+    gl.uniform3fv(program.uLightPosition, [15, 15, 0]);
     gl.uniform4fv(program.uLightAmbient, [0.2, 0.2, 0.2, 1]);
     gl.uniform4fv(program.uLightDiffuse, [1, 1, 1, 1]);
     gl.uniform4fv(program.uLightSpecular, [1, 1, 1, 1]);
     gl.uniform1f(program.uShininess, 230);
+}
+const distanciaEntreTubosSecundarios = 2
+const filasTubosSecundarios = 4;
+const fc = 2.15 //factor de correccion
+const dimensionesTuboPrincipal = {
+    radio: 0.15,
+    altura: filasTubosSecundarios * distanciaEntreTubosSecundarios + fc,
+}
+const dimensionesTuboSecundario = {
+    radio: 0.05,
+    altura: 2.0,
+}
+const dimensionesPanelSolar = {
+    ancho: 1.3,
+    largo: 6,
 }
 
 // Load objects into our scene
 function load() {
     scene.add(new Floor(80, 2));
     scene.add(new Axis(82));
-    scene.add(new Tubo())
-    scene.load('/common/models/geometries/sphere2.json', 'sphere');
-    scene.load('/common/models/geometries/cone3.json', 'cone');
+    scene.add(new Tubo('tuboPrincipal', dimensionesTuboPrincipal))
+    scene.add(new Tapa('tapa', dimensionesTuboPrincipal.radio))
+    for (let i = 0; i < filasTubosSecundarios; i++) {
+        scene.add(new Tubo('tuboSecundario', dimensionesTuboSecundario))
+        scene.add( new Plano('panelSolar1', dimensionesPanelSolar))
+        scene.add( new Plano('panelSolar2', dimensionesPanelSolar))
+    }
+
 }
 
 function draw() {
@@ -99,6 +122,9 @@ function draw() {
     try {
         gl.uniform1i(program.uUpdateLight, fixedLight);
 
+        let tuboTransform
+        let tuboSecundarioTransform
+        let distanciaRelativaConElTuboPrincipal = 3.5 //distancia con el nucleo
         // Iterate over every object in the scene
         scene.traverse(object => {
             // Calculate local transformations
@@ -106,48 +132,73 @@ function draw() {
             transforms.push();
 
             // Depending on which object, apply transformation
-            if (object.alias === 'sphere') {
-                const sphereTransform = transforms.modelViewMatrix;
-                mat4.translate(sphereTransform, sphereTransform, [10, 10, 0]);
-            }
-            else if (object.alias === 'cone') {
+
+            if (object.alias === 'tuboPrincipal') {
+
+                tuboTransform = transforms.modelViewMatrix;
+                mat4.translate(tuboTransform, tuboTransform, [0, 0, 0]);
+                mat4.rotateX(tuboTransform, tuboTransform, Math.PI/2);
+
+            }else if (object.alias === 'tapa') {
+
+
                 const coneTransform = transforms.modelViewMatrix;
-                mat4.translate(coneTransform, coneTransform, [conePosition, 0, 10]);
-            }else if (object.alias === 'tubo') {
-                const tuboTransform = transforms.modelViewMatrix;
-                mat4.translate(tuboTransform, tuboTransform, [0, 0, spherePosition]);
-            }
+                mat4.translate(coneTransform, tuboTransform, [0, dimensionesTuboPrincipal.altura, 0]);
+
+
+            }else if(object.alias === 'tuboSecundario'){
+
+                tuboSecundarioTransform = transforms.modelViewMatrix;
+                mat4.translate(tuboSecundarioTransform, tuboTransform, [dimensionesTuboSecundario.altura/2,distanciaRelativaConElTuboPrincipal, 0]);
+                mat4.rotateZ(tuboSecundarioTransform, tuboSecundarioTransform, Math.PI/2);
+                distanciaRelativaConElTuboPrincipal+=distanciaEntreTubosSecundarios
+
+            }else if (object.alias === 'panelSolar1'){
+                const planoTransform = transforms.modelViewMatrix;
+                mat4.translate(planoTransform, tuboSecundarioTransform, [0, -dimensionesPanelSolar.largo/2, 0]);
+                mat4.rotateX(planoTransform, planoTransform, -Math.PI/2);
+            } else if (object.alias === 'panelSolar2'){
+                const planoTransform = transforms.modelViewMatrix;
+                mat4.translate(planoTransform, tuboSecundarioTransform, [0,dimensionesTuboSecundario.altura + dimensionesPanelSolar.largo/2, 0]);
+                mat4.rotateX(planoTransform, planoTransform, -Math.PI/2);
+        }
 
             transforms.setMatrixUniforms();
             transforms.pop();
 
-            gl.uniform4fv(program.uMaterialDiffuse, object.diffuse);
-            gl.uniform4fv(program.uMaterialSpecular, object.specular);
-            gl.uniform4fv(program.uMaterialAmbient, object.ambient);
-            gl.uniform1i(program.uWireframe, object.wireframe);
+            dibujarMallaDeObjeto(object)
 
-            // Bind
-            gl.bindVertexArray(object.vao);
-            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, object.ibo);
-
-
-            // Draw
-            if (object.wireframe) {
-                gl.drawElements(gl.LINES, object.indices.length, gl.UNSIGNED_SHORT, 0);
-            }
-            else {
-                gl.drawElements(gl.TRIANGLE_STRIP, object.indices.length, gl.UNSIGNED_SHORT, 0);
-            }
-
-            // Clean
-            gl.bindVertexArray(null);
-            gl.bindBuffer(gl.ARRAY_BUFFER, null);
-            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
         });
     }
     catch (error) {
         console.error(error);
     }
+}
+
+
+function dibujarMallaDeObjeto(object){
+    gl.uniform4fv(program.uMaterialDiffuse, object.diffuse);
+    gl.uniform4fv(program.uMaterialSpecular, object.specular);
+    gl.uniform4fv(program.uMaterialAmbient, object.ambient);
+    gl.uniform1i(program.uWireframe, object.wireframe);
+
+    // Bind
+    gl.bindVertexArray(object.vao);
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, object.ibo);
+
+
+    // Draw
+    if (object.wireframe) {
+        gl.drawElements(gl.LINE_STRIP, object.indices.length, gl.UNSIGNED_SHORT, 0);
+    }
+    else {
+        gl.drawElements(gl.TRIANGLE_STRIP, object.indices.length, gl.UNSIGNED_SHORT, 0);
+    }
+    // Clean
+    gl.bindVertexArray(null);
+    gl.bindBuffer(gl.ARRAY_BUFFER, null);
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+
 }
 
 // Update object positions

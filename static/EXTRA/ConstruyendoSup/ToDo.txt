@@ -1,0 +1,4 @@
+-->ToDo
+
+- El calculo de las normales usar aproximaciones
+

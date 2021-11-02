@@ -1,3 +1,5 @@
-colocar tapas secundarias
-menu para controlar el angulo de los paneles solares
-menu para la cantidad de paneles
+->colocar tapas secundarias #LISTO
+->menu para controlar el angulo de los paneles solares #LISTO
+->menu para la cantidad de paneles #LISTO
+
+

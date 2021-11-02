@@ -83,12 +83,13 @@ function configure() {
     gl.uniform4fv(program.uLightSpecular, [1, 1, 1, 1]);
     gl.uniform1f(program.uShininess, 230);
 }
+let filasDeTubosSecundarios = 2;
+let anguloRotacionPanelSolar = 0;
 const distanciaEntreTubosSecundarios = 2
-const filasTubosSecundarios = 4;
 const fc = 2.15 //factor de correccion
 const dimensionesTuboPrincipal = {
     radio: 0.15,
-    altura: filasTubosSecundarios * distanciaEntreTubosSecundarios + fc,
+    altura: filasDeTubosSecundarios * distanciaEntreTubosSecundarios + fc,
 }
 const dimensionesTuboSecundario = {
     radio: 0.05,
@@ -103,16 +104,34 @@ const dimensionesPanelSolar = {
 function load() {
     scene.add(new Floor(80, 2));
     scene.add(new Axis(82));
+
+    cargarPanelesSolares()
+}
+function removerPanelesSolares(){
+    scene.remove('tuboPrincipal');
+    scene.remove('tapaPrincipal');
+    for (let i = 0; i < filasDeTubosSecundarios; i++) {
+        scene.remove('tuboSecundario');
+        scene.remove('tapaSecundaria1');
+        scene.remove('tapaSecundaria2');
+        scene.remove('panelSolar1')
+        scene.remove('panelSolar2')
+    }
+}
+
+function cargarPanelesSolares(){
     scene.add(new Tubo('tuboPrincipal', dimensionesTuboPrincipal))
-    scene.add(new Tapa('tapa', dimensionesTuboPrincipal.radio))
-    for (let i = 0; i < filasTubosSecundarios; i++) {
+    scene.add(new Tapa('tapaPrincipal', dimensionesTuboPrincipal.radio))
+
+    for (let i = 0; i < filasDeTubosSecundarios; i++) {
         scene.add(new Tubo('tuboSecundario', dimensionesTuboSecundario))
+        scene.add(new Tapa('tapaSecundaria1', dimensionesTuboSecundario.radio))
+        scene.add(new Tapa('tapaSecundaria2', dimensionesTuboSecundario.radio))
+
         scene.add( new Plano('panelSolar1', dimensionesPanelSolar))
         scene.add( new Plano('panelSolar2', dimensionesPanelSolar))
     }
-
 }
-
 function draw() {
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -139,12 +158,10 @@ function draw() {
                 mat4.translate(tuboTransform, tuboTransform, [0, 0, 0]);
                 mat4.rotateX(tuboTransform, tuboTransform, Math.PI/2);
 
-            }else if (object.alias === 'tapa') {
+            }else if (object.alias === 'tapaPrincipal') {
 
-
-                const coneTransform = transforms.modelViewMatrix;
-                mat4.translate(coneTransform, tuboTransform, [0, dimensionesTuboPrincipal.altura, 0]);
-
+                const tapaPrincipalTransform = transforms.modelViewMatrix;
+                mat4.translate(tapaPrincipalTransform, tuboTransform, [0, dimensionesTuboPrincipal.altura, 0]);
 
             }else if(object.alias === 'tuboSecundario'){
 
@@ -153,15 +170,26 @@ function draw() {
                 mat4.rotateZ(tuboSecundarioTransform, tuboSecundarioTransform, Math.PI/2);
                 distanciaRelativaConElTuboPrincipal+=distanciaEntreTubosSecundarios
 
+            }else if (object.alias === 'tapaSecundaria1'){
+                const tapaSecundariaTransform = transforms.modelViewMatrix;
+                mat4.translate(tapaSecundariaTransform, tuboSecundarioTransform, [0, dimensionesTuboSecundario.altura, 0]);
+            }else if (object.alias === 'tapaSecundaria2'){
+                const tapaSecundariaTransform = transforms.modelViewMatrix;
+                mat4.translate(tapaSecundariaTransform, tuboSecundarioTransform, [0, 0, 0]);
+                mat4.rotateX(tapaSecundariaTransform, tapaSecundariaTransform, Math.PI);
             }else if (object.alias === 'panelSolar1'){
                 const planoTransform = transforms.modelViewMatrix;
                 mat4.translate(planoTransform, tuboSecundarioTransform, [0, -dimensionesPanelSolar.largo/2, 0]);
                 mat4.rotateX(planoTransform, planoTransform, -Math.PI/2);
+                mat4.rotateZ(planoTransform, planoTransform, 2*Math.PI*anguloRotacionPanelSolar/360);
+
             } else if (object.alias === 'panelSolar2'){
                 const planoTransform = transforms.modelViewMatrix;
                 mat4.translate(planoTransform, tuboSecundarioTransform, [0,dimensionesTuboSecundario.altura + dimensionesPanelSolar.largo/2, 0]);
                 mat4.rotateX(planoTransform, planoTransform, -Math.PI/2);
-        }
+                mat4.rotateZ(planoTransform, planoTransform, 2*Math.PI*anguloRotacionPanelSolar/360);
+
+            }
 
             transforms.setMatrixUniforms();
             transforms.pop();
@@ -174,7 +202,6 @@ function draw() {
         console.error(error);
     }
 }
-
 
 function dibujarMallaDeObjeto(object){
     gl.uniform4fv(program.uMaterialDiffuse, object.diffuse);
@@ -255,10 +282,86 @@ function initControls() {
                 camera.setType(v);
             }
         },
+        'Paneles Solares Filas': {
+            value: filasDeTubosSecundarios,
+            min: 1, max: 10, step: 1,
+            onChange: v => {
+                removerPanelesSolares();
+                filasDeTubosSecundarios = v;
+                dimensionesTuboPrincipal.altura = filasDeTubosSecundarios * distanciaEntreTubosSecundarios + fc;
+                cargarPanelesSolares();
+            }
+        },
+        'Paneles Solares Angulo': {
+            value: anguloRotacionPanelSolar,
+            min: 0, max: 360, step: 1,
+            onChange: v => anguloRotacionPanelSolar = v,
+        },
         'Static Light Position': {
             value: fixedLight,
             onChange: v => fixedLight = v
         },
         'Go Home': () => camera.goHome()
+    });
+}
+
+function initControls1() {
+    utils.configureControls({
+        'Light Color': {
+            value: utils.denormalizeColor(lightColor),
+            onChange: v => gl.uniform4fv(program.uLightDiffuse, utils.normalizeColor(v))
+        },
+        'Light Ambient Term': {
+            value: lightAmbient[0],
+            min: 0, max: 1, step: 0.01,
+            onChange: v => gl.uniform4fv(program.uLightAmbient, [v, v, v, 1])
+        },
+        'Light Specular Term': {
+            value: lightSpecular[0],
+            min: 0, max: 1, step: 0.01,
+            onChange: v => gl.uniform4fv(program.uLightSpecular, [v, v, v, 1])
+        },
+        // Spread all values from the reduce onto the controls
+        ...['Translate X', 'Translate Y', 'Translate Z'].reduce((result, name, i) => {
+            result[name] = {
+                value: lightDirection[i],
+                min: -10, max: 10, step: -0.1,
+                onChange(v, state) {
+                    gl.uniform3fv(program.uLightDirection, [
+                        -state['Translate X'],
+                        -state['Translate Y'],
+                        state['Translate Z']
+                    ]);
+                }
+            };
+            return result;
+        }, {}),
+        'Sphere Color': {
+            value: utils.denormalizeColor(materialDiffuse),
+            onChange: v => gl.uniform4fv(program.uMaterialDiffuse, utils.normalizeColor(v))
+        },
+        'Material Ambient Term': {
+            value: materialAmbient[0],
+            min: 0, max: 1, step: 0.01,
+            onChange: v => gl.uniform4fv(program.uMaterialAmbient, [v, v, v, 1])
+        },
+        'Material Specular Term': {
+            value: materialSpecular[0],
+            min: 0, max: 1, step: 0.01,
+            onChange: v => gl.uniform4fv(program.uMaterialSpecular, [v, v, v, 1])
+        },
+        Shininess: {
+            value: shininess,
+            min: 0, max: 50, step: 0.1,
+            onChange: v => gl.uniform1f(program.uShininess, v)
+        },
+        Background: {
+            value: utils.denormalizeColor(clearColor),
+            onChange: v => gl.clearColor(...utils.normalizeColor(v), 1)
+        },
+        Wireframe: {
+            value: wireframe,
+            onChange: v => wireframe = v
+        }
     });
 }

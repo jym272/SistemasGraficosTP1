@@ -3,3 +3,7 @@
 ->menu para la cantidad de paneles #LISTO
 
 ->crear el toro #
+
+
+
+//piso y axis con con gl.LINES ---> tendriq que construir un piso y axis con gl.LINES_STRIP

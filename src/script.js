@@ -10,7 +10,7 @@ import {Axis} from "./js/Axis";
 import {Camera} from "./js/Camera";
 import {Controls} from "./js/Controls";
 import {Transforms} from "./js/Transforms";
-import {Tubo, Tapa, Plano, Torus} from "./js/PanelesSolares";
+import {Tubo, Tapa, Plano, Torus, Torus1} from "./js/PanelesSolares";
 
 
 
@@ -100,6 +100,8 @@ const dimensionesPanelSolar = {
     ancho: 1.3,
     largo: 6,
 }
+
+//Todas las dimensiones son enteras
 const dimensionesTriangulosTubo = {
     filas: 1,
     columnas: 20,
@@ -110,11 +112,18 @@ const dimensionesTriangulosPlano = {
 }
 const dimensionesTriangulosTapa = dimensionesTriangulosTubo
 
+const dimensionesTriangulosTorus = {
+    filas: 10, //segmentosTubulares
+    columnas: 10, //segmentosRadiales
+}
+
 // Load objects into our scene
 function load() {
     scene.add(new Floor(80, 2));
     scene.add(new Axis(82));
-    scene.add(new Torus("torus",5, 1.5, 10, 10))
+    // scene.add(new Torus("torus",5, 1.5, 10, 10))
+    scene.add(new Torus1("torus",5, 1.5,dimensionesTriangulosTorus))
+
     cargarPanelesSolares()
 }
 function removerPanelesSolares(){
@@ -168,6 +177,12 @@ function draw() {
             transforms.push();
 
             // Depending on which object, apply transformation
+
+            if(object.alias === 'torus'){
+                const torusTransform = transforms.modelViewMatrix;
+                mat4.rotate(torusTransform, torusTransform, Math.PI/2 * spherePosition/30, [0,0, 1]);
+
+            }
 
             transformacionesPanelesSolares(object.alias, PanelesSolares);
 
@@ -312,8 +327,8 @@ function onFrame() {
 
     let steps = Math.floor(elapsedTime / frequency);
     while (steps > 0) {
-        //animate();
-        draw()
+        animate();
+        //draw()
         steps -= 1;
     }
 

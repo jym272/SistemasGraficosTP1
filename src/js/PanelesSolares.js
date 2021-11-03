@@ -11,6 +11,7 @@ export class Tubo{
         this.indices = [];
         this.diffuse = [0.71875,0.0,0.1796,1.0]
         this.normales = [];
+        this.textureCoords = [];
         this.wireframe = false;
         this.visible = true;
         this.dimensionesTubo = dimensionesTubo;
@@ -44,6 +45,8 @@ export class Tubo{
         this.vertices = mallaTubo.positionBuffer;
         this.indices = mallaTubo.indexBuffer;
         this.normales = mallaTubo.normalBuffer;
+        this.textureCoords = mallaTubo.uvBuffer;
+
     }
 }
 
@@ -56,6 +59,7 @@ export class Tapa{
         this.indices = [];
         this.diffuse = [0.71875,0.0,0.1796,1.0]
         this.normales = [];
+        this.textureCoords = [];
         this.wireframe = false;
         this.visible = true;
         this.dimensionesTriangulos = dimensionesTriangulos;
@@ -87,6 +91,8 @@ export class Tapa{
         this.vertices = mallaTapa.positionBuffer;
         this.indices = mallaTapa.indexBuffer;
         this.normales = mallaTapa.normalBuffer;
+        this.textureCoords = mallaTapa.uvBuffer;
+
     }
 }
 
@@ -98,6 +104,7 @@ export class Plano{
         this.indices = [];
         this.diffuse = [0.71875,0.0,0.1796,1.0]
         this.normales = [];
+        this.textureCoords = [];
         this.wireframe = false;
         this.visible = true;
         this.dimensiones = dimensiones;
@@ -129,36 +136,86 @@ export class Plano{
         this.vertices = mallaPlano.positionBuffer;
         this.indices = mallaPlano.indexBuffer;
         this.normales = mallaPlano.normalBuffer;
+        this.textureCoords = mallaPlano.uvBuffer;
+
     }
 }
 
 
- class Torus1{
+ export class Torus1{
     constructor( alias,radius = 1, tube = 0.4,
-                 radialSegments = 8, tubularSegments = 6,
-                 arc = Math.PI * 2 ){
+                 dimensionesTriangulos,
+                 arc = Math.PI * 2){
 
         this.alias = alias;
         this.diffuse = [0.71875,0.0,0.1796,1.0]
-
+        this.dimensionesTriangulos = dimensionesTriangulos;
         this.normales = [];
         this.vertices = [];
         this.indices = [];
+        this.textureCoords = [];
         this.wireframe = false;
         this.visible = true;
+        this.arc = arc
+        this.radius = radius
+        this.tube = tube
         this.construir();
     }
+     superficie(){
+
+        const arc = this.arc
+        const radius = this.radius
+        const tube = this.tube
+         return {
+             //u es tubularSegments(dim tr columnas) y v es radialSegments (dim tr filas)
+             getPosicion: function (u, v) {
+
+                 v =  Math.PI * 2 *v
+                 u = u * arc
+
+                 const x = ( radius + tube * Math.cos( v ) ) * Math.cos( u );
+                 const y = ( radius + tube * Math.cos( v ) ) * Math.sin( u );
+                 const z = tube * Math.sin( v );
+
+                 return [x, y, z];
+             },
+             getNormal: function (u, v) {
+
+                 const vertex = this.getPosicion(u,v);
+
+                 u = u * arc
+                 const center = vec3.create();
+                 const normal = vec3.create();
+
+                 center.x = radius * Math.cos( u );
+                 center.y = radius * Math.sin( u );
+                 center.z = 0
+
+                 normal.x = vertex[0] - center.x
+                 normal.y = vertex[1] - center.y
+                 normal.z = vertex[2] - center.z
+
+
+                 const len = Math.sqrt( normal.x * normal.x + normal.y * normal.y + normal.z * normal.z );
+                 normal.x /= len;
+                 normal.y /= len;
+                 normal.z /= len;
+                 return [normal.x, normal.y, normal.z ];
+             },
+             getCoordenadasTextura: function (u, v) {
+                 return [u, v];
+             },
+         }
+
+     }
     construir(){
-        const constructor = new ConstruirBuffers()
+        const constructor = new ConstruirBuffers(this.dimensionesTriangulos)
 
-        const mallaPlano = constructor.construir(
-            new TorusCalculos(this.dimensiones),
-            dimensionesTriangulosPlano,
-        )
-
+        const mallaPlano = constructor.construir(this.superficie())
         this.vertices = mallaPlano.positionBuffer;
         this.indices = mallaPlano.indexBuffer;
         this.normales = mallaPlano.normalBuffer;
+        this.textureCoords = mallaPlano.uvBuffer
     }
 }
 

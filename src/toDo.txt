@@ -2,4 +2,4 @@
 ->menu para controlar el angulo de los paneles solares #LISTO
 ->menu para la cantidad de paneles #LISTO
 
-
+->crear el toro #

@@ -10,20 +10,21 @@ import {Axis} from "./js/Axis";
 import {Camera} from "./js/Camera";
 import {Controls} from "./js/Controls";
 import {Transforms} from "./js/Transforms";
-import {Tubo, Tapa, Plano} from "./js/PanelesSolares";
-//imoprt three js
-import * as THREE from "three";
+import {Tubo, Tapa, Plano, Torus} from "./js/PanelesSolares";
+
 
 
 let
     gl, scene, program, camera, transforms,
     elapsedTime, initialTime,
     fixedLight = false,
+    triangleStrip = true,
+    wireframe = false,
     dxSphere = 0.1,
     dxCone = 0.15,
     spherePosition = 0,
     conePosition = 0,
-    frequency = 5;
+    frequency = 5; //ms
 
 function configure() {
     // Configure `canvas`
@@ -86,7 +87,7 @@ function configure() {
 let filasDeTubosSecundarios = 2;
 let anguloRotacionPanelSolar = 45;
 const distanciaEntreTubosSecundarios = 2
-const fc = 2.15 //factor de correccion
+const fc = 2.15 //factor de correccion para el largo del tubo
 const dimensionesTuboPrincipal = {
     radio: 0.15,
     altura: filasDeTubosSecundarios * distanciaEntreTubosSecundarios + fc,
@@ -99,12 +100,21 @@ const dimensionesPanelSolar = {
     ancho: 1.3,
     largo: 6,
 }
+const dimensionesTriangulosTubo = {
+    filas: 1,
+    columnas: 20,
+}
+const dimensionesTriangulosPlano = {
+    filas: 1,
+    columnas: 1,
+}
+const dimensionesTriangulosTapa = dimensionesTriangulosTubo
 
 // Load objects into our scene
 function load() {
     scene.add(new Floor(80, 2));
     scene.add(new Axis(82));
-
+    scene.add(new Torus("torus",5, 1.5, 10, 10))
     cargarPanelesSolares()
 }
 function removerPanelesSolares(){
@@ -121,16 +131,16 @@ function removerPanelesSolares(){
 }
 
 function cargarPanelesSolares(){
-    scene.add(new Tubo('tuboPrincipal', dimensionesTuboPrincipal))
-    scene.add(new Tapa('tapaPrincipal', dimensionesTuboPrincipal.radio))
+    scene.add(new Tubo('tuboPrincipal', dimensionesTuboPrincipal, dimensionesTriangulosTubo))
+    scene.add(new Tapa('tapaPrincipal', dimensionesTuboPrincipal.radio, dimensionesTriangulosTapa))
 
     for (let i = 0; i < filasDeTubosSecundarios; i++) {
-        scene.add(new Tubo('tuboSecundario', dimensionesTuboSecundario))
-        scene.add(new Tapa('tapaSecundaria1', dimensionesTuboSecundario.radio))
-        scene.add(new Tapa('tapaSecundaria2', dimensionesTuboSecundario.radio))
+        scene.add(new Tubo('tuboSecundario', dimensionesTuboSecundario, dimensionesTriangulosTubo))
+        scene.add(new Tapa('tapaSecundaria1', dimensionesTuboSecundario.radio, dimensionesTriangulosTapa))
+        scene.add(new Tapa('tapaSecundaria2', dimensionesTuboSecundario.radio, dimensionesTriangulosTapa))
 
-        scene.add( new Plano('panelSolar1', dimensionesPanelSolar))
-        scene.add( new Plano('panelSolar2', dimensionesPanelSolar))
+        scene.add( new Plano('panelSolar1', dimensionesPanelSolar, dimensionesTriangulosPlano))
+        scene.add( new Plano('panelSolar2', dimensionesPanelSolar, dimensionesTriangulosPlano))
     }
 }
 
@@ -267,11 +277,12 @@ function dibujarMallaDeObjeto(object){
 
 
     // Draw
-    if (object.wireframe) {
-        gl.drawElements(gl.LINE_STRIP, object.indices.length, gl.UNSIGNED_SHORT, 0);
+    if (object.wireframe) { //piso y axis con con gl.LINES
+        gl.drawElements(gl.LINES, object.indices.length, gl.UNSIGNED_SHORT, 0);
     }
     else {
-        gl.drawElements(gl.TRIANGLE_STRIP, object.indices.length, gl.UNSIGNED_SHORT, 0);
+        const tipoDeDibujo = (triangleStrip) ? gl.TRIANGLE_STRIP : gl.TRIANGLES;
+        gl.drawElements(tipoDeDibujo, object.indices.length, gl.UNSIGNED_SHORT, 0);
     }
     // Clean
     gl.bindVertexArray(null);
@@ -279,7 +290,6 @@ function dibujarMallaDeObjeto(object){
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
 
 }
-
 // Update object positions
 function animate() {
     spherePosition += dxSphere;
@@ -353,7 +363,21 @@ function initControls() {
             value: fixedLight,
             onChange: v => fixedLight = v
         },
-        'Go Home': () => camera.goHome()
+        'Go Home': () => camera.goHome(),
+        'Wireframe': () => {
+
+            scene.traverse(object => {
+               if (object.alias !== 'floor' && object.alias !== 'axis') {
+                   object.wireframe = !wireframe;
+                }
+
+            })
+            wireframe = !wireframe;
+        },
+        'Triangle Strip': {
+        value: triangleStrip,
+            onChange: v => triangleStrip = v
+        },
     });
 }
 /*

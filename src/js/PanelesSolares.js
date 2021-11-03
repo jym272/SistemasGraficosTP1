@@ -1,104 +1,10 @@
 'use strict';
 import {ConstruirBuffers} from "./ConstruirBuffers";
-
-
-
-
-function OperacionesParaNormalizar() {
-    this.restaArray = function (array1, array2) {
-        let resultado = [];
-        for (let i = 0; i < array1.length; i++) {
-            resultado.push(array1[i] - array2[i]);
-        }
-        return resultado;
-    };
-    this.productoCruz = function (a, b) {
-        return [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
-    };
-    this.normalizar = function (array) {
-        let norm = Math.sqrt(array[0] ** 2 + array[1] ** 2 + array[2] ** 2);
-        return [array[0] / norm, array[1] / norm, array[2] / norm];
-    };
-}
-function TapaCalculos(radioDeLaTapa){
-    let Phi = function (u){
-        return 2 * Math.PI * u
-    }
-    let Radio = function (v){
-        return radioDeLaTapa*v
-    }
-    this.getPosicion = function (u,v ){
-        let phi = Phi(u);
-        let radio = Radio(v)
-        let x = radio * Math.cos(phi);
-        let z = radio * Math.sin(phi);
-        let y = 0
-        return [x, y, z];
-    }
-    this.getNormal = function (u, v) {
-        return [0,1,0]
-    };
-    this.getCoordenadasTextura = function (u, v) {
-        return [v, u];
-    };
-}
-function PlanoCalculos(dimensiones){
-
-        this.getPosicion = function (u, v) {
-            const x = (u - 0.5) * dimensiones.ancho;
-            const z = (v - 0.5) * dimensiones.largo;
-            return [x, 0, z];
-        };
-
-        this.getNormal = function (u, v) {
-            return [0, 1, 0];
-        };
-
-        this.getCoordenadasTextura = function (u, v) {
-            return [v, u];
-        };
-}
-function TuboCalculos(dimensionesTubo){
-
-    let Phi = function (u){
-        return 2 * Math.PI * u
-    }
-    this.getPosicion = function (u,v ){
-        let phi = Phi(u);
-        let rho = dimensionesTubo.radio;
-        let x = rho * Math.cos(phi);
-        let z = rho * Math.sin(phi);
-        let y = v * dimensionesTubo.altura;
-        return [x, y, z];
-    }
-    let delta = 0.0001;
-    this.getNormal = function (u, v) {
-        let operacion = new OperacionesParaNormalizar();
-        let punto_0 = this.getPosicion(u, v);
-        let punto_1 = this.getPosicion(u , v + delta);
-        let punto_2 = this.getPosicion(u + delta, v );
-
-        let vectorParaNormal_1 = operacion.restaArray(punto_0, punto_1);
-        let vectorParaNormal_2 = operacion.restaArray(punto_0, punto_2);
-        /*
-        if (u <= 0.5 && u !== 0) { //corrige cuando u=[0,2PI]
-            let vectorAux = vectorParaNormal_1;
-            vectorParaNormal_1 = vectorParaNormal_2;
-            vectorParaNormal_2 = vectorAux;
-        }*/
-        let productoCruz = operacion.productoCruz(vectorParaNormal_1, vectorParaNormal_2);
-        let normal =operacion.normalizar(productoCruz);
-        let normalReal = [Math.cos(2 * Math.PI*u), 0, Math.sin(2 * Math.PI*u)];
-
-        return normalReal;
-    };
-    this.getCoordenadasTextura = function (u, v) {
-        return [v, u];
-    };
-}
+import {vec3} from "gl-matrix";
 
 export class Tubo{
-    constructor(alias, dimensionesTubo)
+
+    constructor(alias, dimensionesTubo,dimensionesTriangulos)
     {
         this.alias = alias;
         this.vertices = [];
@@ -108,15 +14,32 @@ export class Tubo{
         this.wireframe = false;
         this.visible = true;
         this.dimensionesTubo = dimensionesTubo;
+        this.dimensionesTriangulos = dimensionesTriangulos;
         this.construir();
     }
+    superficie(){
+        const radio = this.dimensionesTubo.radio
+        const altura = this.dimensionesTubo.altura
+        return {
+                getPosicion: function (u, v) {
+                    let phi = 2 * Math.PI * u;
+                    let rho = radio;
+                    let x = rho * Math.cos(phi);
+                    let z = rho * Math.sin(phi);
+                    let y = v * altura;
+                    return [x, y, z];
+                },
+                getNormal: function (u, v) {
+                    return [Math.cos(2 * Math.PI * u), 0, Math.sin(2 * Math.PI * u)];
+                },
+                getCoordenadasTextura: function (u, v) {
+                    return [u, v];
+                },
+            }
+    }
     construir(){
-        const constructor = new ConstruirBuffers()
-
-        const mallaTubo = constructor.construir(
-            new TuboCalculos(this.dimensionesTubo),
-            dimensionesTriangulos,
-        )
+        const constructor = new ConstruirBuffers(this.dimensionesTriangulos)
+        const mallaTubo = constructor.construir(this.superficie())
 
         this.vertices = mallaTubo.positionBuffer;
         this.indices = mallaTubo.indexBuffer;
@@ -125,7 +48,7 @@ export class Tubo{
 }
 
 export class Tapa{
-    constructor(alias,radio)
+    constructor(alias,radio, dimensionesTriangulos)
     {
         this.alias = alias;
         this.vertices = [];
@@ -135,15 +58,31 @@ export class Tapa{
         this.normales = [];
         this.wireframe = false;
         this.visible = true;
+        this.dimensionesTriangulos = dimensionesTriangulos;
         this.construir();
     }
+    superficie(){
+        const radio = this.radio
+        return {
+            getPosicion: function (u, v) {
+                let phi = 2 * Math.PI * u;
+                let x = radio * v * Math.cos(phi);
+                let z = radio * v * Math.sin(phi);
+                let y = 0
+                return [x, y, z];
+            },
+            getNormal: function (u, v) {
+                return [0,1,0]
+            },
+            getCoordenadasTextura: function (u, v) {
+                return [u, v];
+            },
+        }
+    }
     construir(){
-        const constructor = new ConstruirBuffers()
+        const constructor = new ConstruirBuffers(this.dimensionesTriangulos)
 
-        const mallaTapa = constructor.construir(
-            new TapaCalculos(this.radio),
-            dimensionesTriangulos,
-        )
+        const mallaTapa = constructor.construir(this.superficie())
 
         this.vertices = mallaTapa.positionBuffer;
         this.indices = mallaTapa.indexBuffer;
@@ -151,18 +90,8 @@ export class Tapa{
     }
 }
 
-const dimensionesTriangulos = {
-    filas: 1,
-    columnas: 20,
-}
-
-const dimensionesTriangulosPlano = {
-    filas: 1,
-    columnas: 1,
-}
-
 export class Plano{
-    constructor(alias, dimensiones)
+    constructor(alias, dimensiones, dimensionesTriangulos)
     {
         this.alias = alias;
         this.vertices = [];
@@ -172,13 +101,58 @@ export class Plano{
         this.wireframe = false;
         this.visible = true;
         this.dimensiones = dimensiones;
+        this.dimensionesTriangulos = dimensionesTriangulos;
+        this.construir();
+    }
+    superficie(){
+        const ancho = this.dimensiones.ancho
+        const largo = this.dimensiones.largo
+        return {
+            getPosicion: function (u, v) {
+                const x = (u - 0.5) * ancho;
+                const z = (v - 0.5) * largo;
+                return [x, 0, z];
+            },
+            getNormal: function (u, v) {
+                return [0,1,0]
+            },
+            getCoordenadasTextura: function (u, v) {
+                return [u, v];
+            },
+        }
+    }
+    construir(){
+        const constructor = new ConstruirBuffers(this.dimensionesTriangulos)
+
+        const mallaPlano = constructor.construir(this.superficie())
+
+        this.vertices = mallaPlano.positionBuffer;
+        this.indices = mallaPlano.indexBuffer;
+        this.normales = mallaPlano.normalBuffer;
+    }
+}
+
+
+ class Torus1{
+    constructor( alias,radius = 1, tube = 0.4,
+                 radialSegments = 8, tubularSegments = 6,
+                 arc = Math.PI * 2 ){
+
+        this.alias = alias;
+        this.diffuse = [0.71875,0.0,0.1796,1.0]
+
+        this.normales = [];
+        this.vertices = [];
+        this.indices = [];
+        this.wireframe = false;
+        this.visible = true;
         this.construir();
     }
     construir(){
         const constructor = new ConstruirBuffers()
 
         const mallaPlano = constructor.construir(
-            new PlanoCalculos(this.dimensiones),
+            new TorusCalculos(this.dimensiones),
             dimensionesTriangulosPlano,
         )
 
@@ -188,14 +162,14 @@ export class Plano{
     }
 }
 
-/*
-class Torus{
+export class Torus{
 
-    constructor( radius = 1, tube = 0.4, radialSegments = 8, tubularSegments = 6, arc = Math.PI * 2 ) {
+    constructor( alias,radius = 1, tube = 0.4, radialSegments = 8, tubularSegments = 6, arc = Math.PI * 2 ) {
 
+        this.alias = alias;
+       this.diffuse = [0.71875,0.0,0.1796,1.0]
 
-        this.type = 'TorusGeometry';
-
+        this.wireframe = false;
         this.parameters = {
             radius: radius,
             tube: tube,
@@ -209,16 +183,15 @@ class Torus{
 
         // buffers
 
-        const indices = [];
-        const vertices = [];
-        const normals = [];
-        const uvs = [];
+        this.indices = [];
+        this.vertices = [];
+        this.normales = [];
+        this.textureCoords = [];
 
         // helper variables
-
-        const center = new Vector3();
-        const vertex = new Vector3();
-        const normal = new Vector3();
+        const center = vec3.create();
+        const vertex = vec3.create();
+        let normal = vec3.create();
 
         // generate vertices, normals and uvs
 
@@ -235,20 +208,31 @@ class Torus{
                 vertex.y = ( radius + tube * Math.cos( v ) ) * Math.sin( u );
                 vertex.z = tube * Math.sin( v );
 
-                vertices.push( vertex.x, vertex.y, vertex.z );
+                this.vertices.push( vertex.x, vertex.y, vertex.z );
 
                 // normal
 
                 center.x = radius * Math.cos( u );
                 center.y = radius * Math.sin( u );
-                normal.subVectors( vertex, center ).normalize();
+                center.z = 0
 
-                normals.push( normal.x, normal.y, normal.z );
+
+                normal.x = vertex.x - center.x
+                normal.y = vertex.y - center.y
+                normal.z = vertex.z - center.z
+
+                const len = Math.sqrt( normal.x * normal.x + normal.y * normal.y + normal.z * normal.z );
+                normal.x /= len;
+                normal.y /= len;
+                normal.z /= len;
+
+
+                this.normales.push( normal.x, normal.y, normal.z );
 
                 // uv
 
-                uvs.push( i / tubularSegments );
-                uvs.push( j / radialSegments );
+                this.textureCoords.push( i / tubularSegments );
+                this.textureCoords.push( j / radialSegments );
 
             }
 
@@ -269,27 +253,29 @@ class Torus{
 
                 // faces
 
-                indices.push( a, b, d );
-                indices.push( b, c, d );
+                this.indices.push( a, b, d );
+                this.indices.push( b, c, d );
 
             }
 
         }
 
         // build geometry
+        /*
+        console.log(this.indices)
+        console.log(this.vertices)
+        console.log(this.normales)
+        console.log(this.textureCoords)
 
+         */
+        /*
         this.setIndex( indices );
         this.setAttribute( 'position', new Float32BufferAttribute( vertices, 3 ) );
         this.setAttribute( 'normal', new Float32BufferAttribute( normals, 3 ) );
         this.setAttribute( 'uv', new Float32BufferAttribute( uvs, 2 ) );
 
-    }
-
-    static fromJSON( data ) {
-
-        return new TorusGeometry( data.radius, data.tube, data.radialSegments, data.tubularSegments, data.arc );
+         */
 
     }
 }
 
- */

@@ -71,7 +71,7 @@ function configure() {
 
     // Configure `camera` and `controls`
     camera = new Camera(Camera.ORBITING_TYPE, 70,0);
-    camera.goHome([0, 2, 15]);
+    camera.goHome([0, 8, 24]);
     camera.setFocus([0, 0, 0]);
     new Controls(camera, canvas);
 
@@ -84,8 +84,11 @@ function configure() {
     gl.uniform4fv(program.uLightSpecular, [1, 1, 1, 1]);
     gl.uniform1f(program.uShininess, 230);
 }
-let filasDeTubosSecundarios = 2;
-let anguloRotacionPanelSolar = 45;
+/*
+ * Constantes Paneles Solares
+ */
+let filasDeTubosSecundarios = 4; //Se comienza con 4 filas
+let anguloRotacionPanelSolar = 310; //grados inciales
 const distanciaEntreTubosSecundarios = 2
 const fc = 2.15 //factor de correccion para el largo del tubo
 const dimensionesTuboPrincipal = {
@@ -100,8 +103,6 @@ const dimensionesPanelSolar = {
     ancho: 1.3,
     largo: 6,
 }
-
-//Todas las dimensiones son enteras
 const dimensionesTriangulosTubo = {
     filas: 1,
     columnas: 20,
@@ -111,21 +112,52 @@ const dimensionesTriangulosPlano = {
     columnas: 1,
 }
 const dimensionesTriangulosTapa = dimensionesTriangulosTubo
+/*
+ * Constantes Anillo
+ */
+let arc =  Math.PI * 2;
 
 const dimensionesTriangulosTorus = {
-    filas: 10, //segmentosTubulares
-    columnas: 10, //segmentosRadiales
+    filas: 10, //segmentosTubulares   //para el deploy 30
+    columnas: 20, //segmentosRadiales  //para el deploy 80
 }
-
-// Load objects into our scene
+const radioDelAnillo = 15.20,
+      radioInteriorDelAnillo = 0.8,
+    distanciaEntreTubos = 0.40;
+const dimTuboAnillo = {
+    radio: 0.05,
+    altura: radioDelAnillo*2,
+}
+const dimTuboInteriorAnillo = {
+    radio: 0.05,
+    altura: distanciaEntreTubos*2*Math.sqrt(2),
+}
+const dimTriangulosTuboAnillo = {
+    filas: 1,
+    columnas: 10,
+}
+// Se carga todos los objetos a la escena
 function load() {
     scene.add(new Floor(80, 2));
     scene.add(new Axis(82));
-    // scene.add(new Torus("torus",5, 1.5, 10, 10))
-    scene.add(new Torus1("torus",5, 1.5,dimensionesTriangulosTorus))
-
+    cargarAnillo()
     cargarPanelesSolares()
 }
+function cargarAnillo(){
+    scene.add(new Torus1("torus",radioDelAnillo, radioInteriorDelAnillo,dimensionesTriangulosTorus, arc))
+    scene.add(new Tubo('anillo_tuboH1', dimTuboAnillo, dimTriangulosTuboAnillo))
+    scene.add(new Tubo('anillo_tuboH2', dimTuboAnillo, dimTriangulosTuboAnillo))
+
+    scene.add(new Tubo('anillo_tuboV1', dimTuboAnillo, dimTriangulosTuboAnillo))
+    scene.add(new Tubo('anillo_tuboV2', dimTuboAnillo, dimTriangulosTuboAnillo))
+
+    const cantidadDeAnillosInteriores = 2 * Math.ceil(dimTuboAnillo.altura/(distanciaEntreTubos*2))
+
+    for (let i = 0; i < cantidadDeAnillosInteriores; i++) {
+         scene.add(new Tubo('anillo_tuboInterior', dimTuboInteriorAnillo, dimTriangulosTuboAnillo))
+    }
+}
+
 function removerPanelesSolares(){
     scene.remove('tuboPrincipal');
     scene.remove('tapaPrincipal');
@@ -167,67 +199,55 @@ function draw() {
             tuboSecundarioTransform : null,
             distanciaRelativaConElTuboPrincipal : 3.5,
         }
-        let tuboTransform
-        let tuboSecundarioTransform
-        let distanciaRelativaConElTuboPrincipal = 3.5 //distancia con el nucleo
+        const Anillo = {
+            torusTransform : transforms.modelViewMatrix, //momentario sino null es para los segmentos del menu
+            distanciaTubosInteriores : radioDelAnillo,
+            sentidoTuboInterior : 1,
+            desplazamientoTuboInterior : 0,
+            factorDesplazamientoEntreTubosInteriores: 3,
+        }
         // Iterate over every object in the scene
         scene.traverse(object => {
             // Calculate local transformations
             transforms.calculateModelView();
             transforms.push();
 
-            // Depending on which object, apply transformation
+            // Depending on which object, apply transformation:
 
             if(object.alias === 'torus'){
-                const torusTransform = transforms.modelViewMatrix;
-                mat4.rotate(torusTransform, torusTransform, Math.PI/2 * spherePosition/30, [0,0, 1]);
+                Anillo.torusTransform = transforms.modelViewMatrix;
+              //mat4.rotate(Anillo.torusTransform, Anillo.torusTransform, Math.PI/2 * spherePosition/30, [0,0, 1]);
+               // mat4.translate(torusTransform, torusTransform, [0, 0, -5]);
+            }else if(object.alias === 'anillo_tuboH1') {
+                const tuboH1Transform = transforms.modelViewMatrix;
+                mat4.translate(tuboH1Transform, Anillo.torusTransform, [-distanciaEntreTubos, -dimTuboAnillo.altura/2, 0]);
+            }else if(object.alias === 'anillo_tuboH2') {
+                const tuboH2Transform = transforms.modelViewMatrix;
+                mat4.translate(tuboH2Transform, Anillo.torusTransform, [distanciaEntreTubos, -dimTuboAnillo.altura/2, 0]);
+            }else if(object.alias === 'anillo_tuboV1') {
+                const tuboV1Transform = transforms.modelViewMatrix;
+                mat4.translate(tuboV1Transform, Anillo.torusTransform, [dimTuboAnillo.altura/2, distanciaEntreTubos, 0]);
+                mat4.rotate(tuboV1Transform, tuboV1Transform, Math.PI/2, [0,0,1]);
+            }else if(object.alias === 'anillo_tuboV2') {
+                const tuboV2Transform = transforms.modelViewMatrix;
+                mat4.translate(tuboV2Transform, Anillo.torusTransform, [dimTuboAnillo.altura/2, -distanciaEntreTubos, 0]);
+                mat4.rotate(tuboV2Transform, tuboV2Transform, Math.PI/2, [0,0,1]);
+            }else if(object.alias === 'anillo_tuboInterior') {
+                const tubointeriorTransform = transforms.modelViewMatrix;
+                if(Anillo.desplazamientoTuboInterior < dimTuboAnillo.altura)
+                    mat4.translate(tubointeriorTransform, Anillo.torusTransform, [0, Anillo.distanciaTubosInteriores  - Anillo.desplazamientoTuboInterior, 0]);
+                else
+                    mat4.translate(tubointeriorTransform, Anillo.torusTransform, [Anillo.factorDesplazamientoEntreTubosInteriores * Anillo.distanciaTubosInteriores - Anillo.desplazamientoTuboInterior, 0, 0]);
 
+                mat4.rotate(tubointeriorTransform, tubointeriorTransform, Anillo.sentidoTuboInterior * Math.PI/4, [0,0,1]);
+                mat4.translate(tubointeriorTransform, tubointeriorTransform, [0, -dimTuboInteriorAnillo.altura/2, 0]);
+                Anillo.sentidoTuboInterior *= -1;
+                Anillo.desplazamientoTuboInterior += distanciaEntreTubos*2
             }
-
             transformacionesPanelesSolares(object.alias, PanelesSolares);
 
-            /*
-            if (object.alias === 'tuboPrincipal') {
 
-                tuboTransform = transforms.modelViewMatrix;
-                mat4.translate(tuboTransform, tuboTransform, [0, 0, 0]);
-                mat4.rotateX(tuboTransform, tuboTransform, Math.PI/2);
-
-            }else if (object.alias === 'tapaPrincipal') {
-
-                const tapaPrincipalTransform = transforms.modelViewMatrix;
-                mat4.translate(tapaPrincipalTransform, tuboTransform, [0, dimensionesTuboPrincipal.altura, 0]);
-
-            }else if(object.alias === 'tuboSecundario'){
-
-                tuboSecundarioTransform = transforms.modelViewMatrix;
-                mat4.translate(tuboSecundarioTransform, tuboTransform, [dimensionesTuboSecundario.altura/2,distanciaRelativaConElTuboPrincipal, 0]);
-                mat4.rotateZ(tuboSecundarioTransform, tuboSecundarioTransform, Math.PI/2);
-                distanciaRelativaConElTuboPrincipal+=distanciaEntreTubosSecundarios
-
-            }else if (object.alias === 'tapaSecundaria1'){
-                const tapaSecundariaTransform = transforms.modelViewMatrix;
-                mat4.translate(tapaSecundariaTransform, tuboSecundarioTransform, [0, dimensionesTuboSecundario.altura, 0]);
-            }else if (object.alias === 'tapaSecundaria2'){
-                const tapaSecundariaTransform = transforms.modelViewMatrix;
-                mat4.translate(tapaSecundariaTransform, tuboSecundarioTransform, [0, 0, 0]);
-                mat4.rotateX(tapaSecundariaTransform, tapaSecundariaTransform, Math.PI);
-            }else if (object.alias === 'panelSolar1'){
-                const planoTransform = transforms.modelViewMatrix;
-                mat4.translate(planoTransform, tuboSecundarioTransform, [0, -dimensionesPanelSolar.largo/2, 0]);
-                mat4.rotateX(planoTransform, planoTransform, -Math.PI/2);
-                mat4.rotateZ(planoTransform, planoTransform, 2*Math.PI*anguloRotacionPanelSolar/360);
-
-            } else if (object.alias === 'panelSolar2'){
-                const planoTransform = transforms.modelViewMatrix;
-                mat4.translate(planoTransform, tuboSecundarioTransform, [0,dimensionesTuboSecundario.altura + dimensionesPanelSolar.largo/2, 0]);
-                mat4.rotateX(planoTransform, planoTransform, -Math.PI/2);
-                mat4.rotateZ(planoTransform, planoTransform, 2*Math.PI*anguloRotacionPanelSolar/360);
-
-            }
-
-             */
-
+            ///////////////////////////////////////////
             transforms.setMatrixUniforms();
             transforms.pop();
 
@@ -327,8 +347,8 @@ function onFrame() {
 
     let steps = Math.floor(elapsedTime / frequency);
     while (steps > 0) {
-        animate();
-        //draw()
+        //animate();
+        draw()
         steps -= 1;
     }
 
@@ -393,7 +413,35 @@ function initControls() {
         value: triangleStrip,
             onChange: v => triangleStrip = v
         },
+        'Arco Toro': {
+            value: arc,
+            min:0, max:360, step:1,
+            onChange: v => {
+                arc = v * Math.PI * 2 / 360;
+                cargarYDescargarToro();
+            }
+        },
+        'Seg tubulares': {
+            value: dimensionesTriangulosTorus.filas,
+            min:0, max:100, step:1,
+            onChange: v => {
+                dimensionesTriangulosTorus.filas = v;
+                cargarYDescargarToro();
+            }
+        },
+        'Seg radiales': {
+            value: dimensionesTriangulosTorus.columnas,
+            min:0, max:100, step:1,
+            onChange: v => {
+                dimensionesTriangulosTorus.columnas = v;
+                cargarYDescargarToro();
+            }
+        },
     });
+}
+function cargarYDescargarToro(){
+    scene.remove('torus');
+    scene.add(new Torus1("torus",radioDelAnillo, radioInteriorDelAnillo,dimensionesTriangulosTorus, arc))
 }
 /*
 function initControls1() {

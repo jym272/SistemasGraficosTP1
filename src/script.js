@@ -10,7 +10,7 @@ import {Axis} from "./js/Axis";
 import {Camera} from "./js/Camera";
 import {Controls} from "./js/Controls";
 import {Transforms} from "./js/Transforms";
-import {Tubo, Tapa, Plano, Torus, Torus1} from "./js/PanelesSolares";
+import {Tubo, Tapa, Plano, Torus, Tubo1, Cilindro} from "./js/PanelesSolares";
 
 
 
@@ -71,14 +71,14 @@ function configure() {
 
     // Configure `camera` and `controls`
     camera = new Camera(Camera.ORBITING_TYPE, 70,0);
-    camera.goHome([0, 8, 24]);
+    camera.goHome([0, 0, 24]);
     camera.setFocus([0, 0, 0]);
     new Controls(camera, canvas);
 
     // Configure `transforms`
     transforms = new Transforms(gl, program, camera, canvas);
 
-    gl.uniform3fv(program.uLightPosition, [15, 15, 0]);
+    gl.uniform3fv(program.uLightPosition, [0, 8, 24]);
     gl.uniform4fv(program.uLightAmbient, [0.2, 0.2, 0.2, 1]);
     gl.uniform4fv(program.uLightDiffuse, [1, 1, 1, 1]);
     gl.uniform4fv(program.uLightSpecular, [1, 1, 1, 1]);
@@ -137,14 +137,40 @@ const dimTriangulosTuboAnillo = {
     columnas: 10,
 }
 // Se carga todos los objetos a la escena
+
+//var pasajeras
+const dimensionesPastillaCuerpo = {
+    radio : 2.50,
+    altura: 0.8,
+};
+const dimensionesCilindro = {
+    radioSuperior: 2.30,
+    radioInferior: dimensionesPastillaCuerpo.radio,
+    altura: 0.10,
+};
+const dimensionesTriangulos = {
+    filas : 1, //segmentosRadiales
+    columnas : 50, //segmentosDeAltura
+};
+
 function load() {
     scene.add(new Floor(80, 2));
     scene.add(new Axis(82));
     cargarAnillo()
     cargarPanelesSolares()
+    scene.add(new Tubo('pastillaCuerpo', dimensionesPastillaCuerpo, dimensionesTriangulos))
+    scene.add(new Cilindro('pastillaCilindroSup', dimensionesCilindro, dimensionesTriangulos))
+    scene.add(new Cilindro('pastillaCilindroInf', dimensionesCilindro, dimensionesTriangulos))
+    scene.add(new Tapa('pastillaTapaSup', dimensionesCilindro.radioSuperior, dimensionesTriangulos))
+    scene.add(new Tapa('pastillaTapaInf', dimensionesCilindro.radioSuperior, dimensionesTriangulos))
+
+
 }
+
+
+
 function cargarAnillo(){
-    scene.add(new Torus1("torus",radioDelAnillo, radioInteriorDelAnillo,dimensionesTriangulosTorus, arc))
+    scene.add(new Torus("torus",radioDelAnillo, radioInteriorDelAnillo,dimensionesTriangulosTorus, arc))
     scene.add(new Tubo('anillo_tuboH1', dimTuboAnillo, dimTriangulosTuboAnillo))
     scene.add(new Tubo('anillo_tuboH2', dimTuboAnillo, dimTriangulosTuboAnillo))
 
@@ -205,6 +231,10 @@ function draw() {
             sentidoTuboInterior : 1,
             desplazamientoTuboInterior : 0,
             factorDesplazamientoEntreTubosInteriores: 3,
+            //pastilla
+            pastillaTransform : null,
+            alturaTapaSuperior : 0.9,
+            alturaTapaInferior : 0.1,
         }
         // Iterate over every object in the scene
         scene.traverse(object => {
@@ -213,11 +243,37 @@ function draw() {
             transforms.push();
 
             // Depending on which object, apply transformation:
+            if (object.alias === 'pastillaCuerpo') {
+                Anillo.pastillaTransform = transforms.modelViewMatrix;
+                mat4.rotate(Anillo.pastillaTransform, Anillo.torusTransform, Math.PI / 2, [1, 0, 0]);
+                mat4.translate(Anillo.pastillaTransform, Anillo.pastillaTransform, [0, -dimensionesPastillaCuerpo.altura/2, 0]);
 
-            if(object.alias === 'torus'){
+            } else if (object.alias === 'pastillaCilindroSup') {
+                const pastillaCilindroSupTransform = transforms.modelViewMatrix;
+                mat4.rotate(pastillaCilindroSupTransform, Anillo.pastillaTransform, Math.PI / 2, [0, 1, 0]);
+                mat4.translate(pastillaCilindroSupTransform, pastillaCilindroSupTransform, [0, dimensionesPastillaCuerpo.altura, 0]);
+
+            }else if (object.alias === 'pastillaCilindroInf') {
+                const pastillaCilindroInfTransform = transforms.modelViewMatrix;
+               mat4.rotate(pastillaCilindroInfTransform, Anillo.pastillaTransform, -Math.PI, [1, 0, 0]);
+               mat4.rotate(pastillaCilindroInfTransform, pastillaCilindroInfTransform, Math.PI/2, [0, 1, 0]);
+
+            }else if (object.alias === 'pastillaTapaSup') {
+                const pastillaTapaSupTransform = transforms.modelViewMatrix;
+                mat4.rotate(pastillaTapaSupTransform, Anillo.pastillaTransform, 0, [1, 0, 0]);
+                mat4.translate(pastillaTapaSupTransform, pastillaTapaSupTransform, [0, Anillo.alturaTapaSuperior, 0]);
+
+            }else if (object.alias === 'pastillaTapaInf') {
+                const pastillaTapaInfTransform = transforms.modelViewMatrix;
+                mat4.rotate(pastillaTapaInfTransform, Anillo.pastillaTransform, -Math.PI, [1, 0, 0]);
+                mat4.translate(pastillaTapaInfTransform, pastillaTapaInfTransform, [0, Anillo.alturaTapaInferior, 0]);
+            }
+
+
+
+                if(object.alias === 'torus'){
                 Anillo.torusTransform = transforms.modelViewMatrix;
-              //mat4.rotate(Anillo.torusTransform, Anillo.torusTransform, Math.PI/2 * spherePosition/30, [0,0, 1]);
-               // mat4.translate(torusTransform, torusTransform, [0, 0, -5]);
+             //mat4.rotate(Anillo.torusTransform, Anillo.torusTransform, Math.PI/2, [1,0, 0]);
             }else if(object.alias === 'anillo_tuboH1') {
                 const tuboH1Transform = transforms.modelViewMatrix;
                 mat4.translate(tuboH1Transform, Anillo.torusTransform, [-distanciaEntreTubos, -dimTuboAnillo.altura/2, 0]);
@@ -313,7 +369,7 @@ function dibujarMallaDeObjeto(object){
 
     // Draw
     if (object.wireframe) { //piso y axis con con gl.LINES
-        gl.drawElements(gl.LINES, object.indices.length, gl.UNSIGNED_SHORT, 0);
+        gl.drawElements(gl.LINE_STRIP, object.indices.length, gl.UNSIGNED_SHORT, 0);
     }
     else {
         const tipoDeDibujo = (triangleStrip) ? gl.TRIANGLE_STRIP : gl.TRIANGLES;

@@ -10,7 +10,7 @@ import {Axis} from "./js/Axis";
 import {Camera} from "./js/Camera";
 import {Controls} from "./js/Controls";
 import {Transforms} from "./js/Transforms";
-import {Tubo, Tapa, Plano, Torus, Tubo1, Cilindro} from "./js/PanelesSolares";
+import {Tubo, Tapa, Plano, Torus, Cilindro} from "./js/PanelesSolares";
 
 
 
@@ -85,6 +85,12 @@ function configure() {
     gl.uniform1f(program.uShininess, 230);
 }
 /*
+ * COLORES
+ */
+const colorPastilla = [169/255, 183/255, 43/255, 1];
+const colorPanelSolar = colorPastilla;
+const colorGenerico = [0.71875,0.0,0.1796,1.0];
+/*
  * Constantes Paneles Solares
  */
 let filasDeTubosSecundarios = 4; //Se comienza con 4 filas
@@ -136,40 +142,73 @@ const dimTriangulosTuboAnillo = {
     filas: 1,
     columnas: 10,
 }
-// Se carga todos los objetos a la escena
-
-//var pasajeras
+//pastilla del anillo
 const dimensionesPastillaCuerpo = {
     radio : 2.50,
     altura: 0.8,
 };
-const dimensionesCilindro = {
+const dimensionesCilindroPastilla = {
     radioSuperior: 2.30,
     radioInferior: dimensionesPastillaCuerpo.radio,
     altura: 0.10,
 };
-const dimensionesTriangulos = {
+const dimensionesTriangulosPastilla = {
     filas : 1, //segmentosRadiales
     columnas : 50, //segmentosDeAltura
 };
-
+/*
+ * Constantes Nucleo
+ */
+//nucleo del panel solar:
+const dimensionesTriangulosNucleo = dimensionesTriangulosPastilla
+const dimensionesNucleoPS = {
+    radio : 2.00,
+    altura: 4.0,
+};
+const dimensionesCilindroNucleoPS = {
+    radioSuperior: 1.6,
+    radioInferior: dimensionesNucleoPS.radio,
+    altura: 0.7,
+};
+// Se carga todos los objetos a la escena
 function load() {
     scene.add(new Floor(80, 2));
     scene.add(new Axis(82));
     cargarAnillo()
+    cargarNucleo()
     cargarPanelesSolares()
-    scene.add(new Tubo('pastillaCuerpo', dimensionesPastillaCuerpo, dimensionesTriangulos))
-    scene.add(new Cilindro('pastillaCilindroSup', dimensionesCilindro, dimensionesTriangulos))
-    scene.add(new Cilindro('pastillaCilindroInf', dimensionesCilindro, dimensionesTriangulos))
-    scene.add(new Tapa('pastillaTapaSup', dimensionesCilindro.radioSuperior, dimensionesTriangulos))
-    scene.add(new Tapa('pastillaTapaInf', dimensionesCilindro.radioSuperior, dimensionesTriangulos))
-
 
 }
 
+function cargarNucleo(){
+    //nucleo del panel solar
+    scene.add(new Tubo('nucleoPS', dimensionesNucleoPS, dimensionesTriangulosNucleo), {
+        diffuse: colorGenerico,
+    });
 
+    scene.add(new Cilindro('nucleoPSCilindroSup', dimensionesCilindroNucleoPS, dimensionesTriangulosNucleo), {
+        diffuse: colorGenerico,
+    });
+    scene.add(new Cilindro('nucleoPSCilindroInf', dimensionesCilindroNucleoPS, dimensionesTriangulosNucleo), {
+        diffuse: colorGenerico,
+    });
 
+    scene.add(new Tapa('nucleoPSTapaSup', dimensionesCilindroNucleoPS.radioSuperior, dimensionesTriangulosNucleo), {
+        diffuse: colorGenerico,
+    });
+
+    scene.add(new Tapa('nucleoPSTapaInf', dimensionesCilindroNucleoPS.radioSuperior, dimensionesTriangulosNucleo), {
+        diffuse: colorGenerico,
+    });
+
+    //nucleo del anillo
+    //nucleo circular
+    //nucleos violea - Bezier
+
+}
 function cargarAnillo(){
+    //anillo y tubos interiores
+
     scene.add(new Torus("torus",radioDelAnillo, radioInteriorDelAnillo,dimensionesTriangulosTorus, arc))
     scene.add(new Tubo('anillo_tuboH1', dimTuboAnillo, dimTriangulosTuboAnillo))
     scene.add(new Tubo('anillo_tuboH2', dimTuboAnillo, dimTriangulosTuboAnillo))
@@ -182,6 +221,28 @@ function cargarAnillo(){
     for (let i = 0; i < cantidadDeAnillosInteriores; i++) {
          scene.add(new Tubo('anillo_tuboInterior', dimTuboInteriorAnillo, dimTriangulosTuboAnillo))
     }
+
+
+
+    //pastilla
+
+    scene.add(new Tubo('pastillaCuerpo', dimensionesPastillaCuerpo, dimensionesTriangulosPastilla), {
+        diffuse: colorPastilla,
+    });
+    scene.add(new Cilindro('pastillaCilindroSup', dimensionesCilindroPastilla, dimensionesTriangulosPastilla), {
+        diffuse: colorPastilla,
+    });
+    scene.add(new Cilindro('pastillaCilindroInf', dimensionesCilindroPastilla, dimensionesTriangulosPastilla), {
+        diffuse: colorPastilla,
+    });
+    scene.add(new Tapa('pastillaTapaSup', dimensionesCilindroPastilla.radioSuperior, dimensionesTriangulosPastilla), {
+        diffuse: colorPastilla,
+    });
+    scene.add(new Tapa('pastillaTapaInf', dimensionesCilindroPastilla.radioSuperior, dimensionesTriangulosPastilla), {
+        diffuse: colorPastilla,
+    });
+
+
 }
 
 function removerPanelesSolares(){
@@ -201,13 +262,18 @@ function cargarPanelesSolares(){
     scene.add(new Tubo('tuboPrincipal', dimensionesTuboPrincipal, dimensionesTriangulosTubo))
     scene.add(new Tapa('tapaPrincipal', dimensionesTuboPrincipal.radio, dimensionesTriangulosTapa))
 
+
     for (let i = 0; i < filasDeTubosSecundarios; i++) {
         scene.add(new Tubo('tuboSecundario', dimensionesTuboSecundario, dimensionesTriangulosTubo))
         scene.add(new Tapa('tapaSecundaria1', dimensionesTuboSecundario.radio, dimensionesTriangulosTapa))
         scene.add(new Tapa('tapaSecundaria2', dimensionesTuboSecundario.radio, dimensionesTriangulosTapa))
 
-        scene.add( new Plano('panelSolar1', dimensionesPanelSolar, dimensionesTriangulosPlano))
-        scene.add( new Plano('panelSolar2', dimensionesPanelSolar, dimensionesTriangulosPlano))
+        scene.add( new Plano('panelSolar1', dimensionesPanelSolar, dimensionesTriangulosPlano), {
+            diffuse: colorPanelSolar,
+        });
+        scene.add( new Plano('panelSolar2', dimensionesPanelSolar, dimensionesTriangulosPlano), {
+            diffuse: colorPanelSolar,
+        });
     }
 }
 
@@ -224,6 +290,7 @@ function draw() {
             tuboTransform : null,
             tuboSecundarioTransform : null,
             distanciaRelativaConElTuboPrincipal : 3.5,
+            distanciaConElNucleo: 4.5,
         }
         const Anillo = {
             torusTransform : transforms.modelViewMatrix, //momentario sino null es para los segmentos del menu
@@ -236,6 +303,9 @@ function draw() {
             alturaTapaSuperior : 0.9,
             alturaTapaInferior : 0.1,
         }
+        const Nucleo = {
+            nucleoPSTransform : null,
+        }
         // Iterate over every object in the scene
         scene.traverse(object => {
             // Calculate local transformations
@@ -243,7 +313,38 @@ function draw() {
             transforms.push();
 
             // Depending on which object, apply transformation:
-            if (object.alias === 'pastillaCuerpo') {
+
+
+           if (object.alias === 'nucleoPS') {
+                Nucleo.nucleoPSTransform = transforms.modelViewMatrix;
+                mat4.rotate(Nucleo.nucleoPSTransform, Nucleo.nucleoPSTransform, Math.PI / 2, [1, 0, 0]);
+
+              mat4.translate(Nucleo.nucleoPSTransform, Nucleo.nucleoPSTransform, [0, 2.5, 0]);
+
+            }else if (object.alias === 'nucleoPSCilindroSup') {
+                const nucleoPSCilindroSupTransform = transforms.modelViewMatrix;
+                mat4.rotate(nucleoPSCilindroSupTransform, Nucleo.nucleoPSTransform, Math.PI / 2, [0, 1, 0]);
+                mat4.translate(nucleoPSCilindroSupTransform, nucleoPSCilindroSupTransform, [0, dimensionesNucleoPS.altura, 0]);
+
+            }else if (object.alias === 'nucleoPSCilindroInf') {
+               const nucleoPSCilindroInfTransform = transforms.modelViewMatrix;
+               mat4.rotate(nucleoPSCilindroInfTransform, Nucleo.nucleoPSTransform, -Math.PI/2, [0, 1, 0]);
+               mat4.rotate(nucleoPSCilindroInfTransform, nucleoPSCilindroInfTransform, -Math.PI, [1, 0, 0]);
+           }else if (object.alias === 'nucleoPSTapaSup') {
+               const nucleoPSTapaSupTransform = transforms.modelViewMatrix;
+               mat4.translate(nucleoPSTapaSupTransform, Nucleo.nucleoPSTransform, [0,
+                   dimensionesNucleoPS.altura + dimensionesCilindroNucleoPS.altura, 0]);
+
+           }else if (object.alias === 'nucleoPSTapaInf') {
+               const nucleoPSTapaInfTransform = transforms.modelViewMatrix;
+               mat4.rotate(nucleoPSTapaInfTransform, Nucleo.nucleoPSTransform, Math.PI, [1, 0, 0]);
+               mat4.translate(nucleoPSTapaInfTransform, nucleoPSTapaInfTransform, [0,
+                   dimensionesCilindroNucleoPS.altura, 0]);
+           }
+
+
+
+           else if (object.alias === 'pastillaCuerpo') {
                 Anillo.pastillaTransform = transforms.modelViewMatrix;
                 mat4.rotate(Anillo.pastillaTransform, Anillo.torusTransform, Math.PI / 2, [1, 0, 0]);
                 mat4.translate(Anillo.pastillaTransform, Anillo.pastillaTransform, [0, -dimensionesPastillaCuerpo.altura/2, 0]);
@@ -267,11 +368,8 @@ function draw() {
                 const pastillaTapaInfTransform = transforms.modelViewMatrix;
                 mat4.rotate(pastillaTapaInfTransform, Anillo.pastillaTransform, -Math.PI, [1, 0, 0]);
                 mat4.translate(pastillaTapaInfTransform, pastillaTapaInfTransform, [0, Anillo.alturaTapaInferior, 0]);
-            }
 
-
-
-                if(object.alias === 'torus'){
+            } else if(object.alias === 'torus'){ //ANILLO
                 Anillo.torusTransform = transforms.modelViewMatrix;
              //mat4.rotate(Anillo.torusTransform, Anillo.torusTransform, Math.PI/2, [1,0, 0]);
             }else if(object.alias === 'anillo_tuboH1') {
@@ -300,7 +398,7 @@ function draw() {
                 Anillo.sentidoTuboInterior *= -1;
                 Anillo.desplazamientoTuboInterior += distanciaEntreTubos*2
             }
-            transformacionesPanelesSolares(object.alias, PanelesSolares);
+            transformacionesPanelesSolares(object.alias, PanelesSolares, Nucleo);
 
 
             ///////////////////////////////////////////
@@ -315,13 +413,14 @@ function draw() {
         console.error(error);
     }
 }
-function transformacionesPanelesSolares(alias,ps){
+function transformacionesPanelesSolares(alias,ps, Nucleo){
 
-    if (alias === 'tuboPrincipal') {
+    if (alias === 'tuboPrincipal') {  //CONEXION CON EL NUCLEOPS
 
         ps.tuboTransform = transforms.modelViewMatrix;
-        mat4.translate(ps.tuboTransform, ps.tuboTransform, [0, 0, 0]);
-        mat4.rotateX(ps.tuboTransform, ps.tuboTransform, Math.PI/2);
+      mat4.translate(ps.tuboTransform, Nucleo.nucleoPSTransform, [0, ps.distanciaConElNucleo, 0]);
+       // mat4.rotateX(ps.tuboTransform, ps.tuboTransform, Math.PI/2); //puedo rotar todo
+        //  El tubo principal ACAAA
     }else if (alias === 'tapaPrincipal') {
 
         const tapaPrincipalTransform = transforms.modelViewMatrix;

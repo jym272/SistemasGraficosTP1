@@ -3,9 +3,11 @@
 ->menu para la cantidad de paneles #LISTO
 
 ->crear el toro #LISTO
-->crear la pastilla central del anillo #
-->crear los bloques del anillo #
+->crear la pastilla central del anillo #LISTO
 
+->crear los bloques del anillo #
+->hacer que gire el mastil principal de los paneles solares respecto del nucleo
+-> terminar los nucleos
 
 
 //piso y axis con con gl.LINES ---> tendriq que construir un piso y axis con gl.LINES_STRIP

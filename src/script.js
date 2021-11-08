@@ -9,7 +9,18 @@ import {Axis} from "./js/Axis";
 import {Camera} from "./js/Camera";
 import {Controls} from "./js/Controls";
 import {Transforms} from "./js/Transforms";
-import {Tubo, Tapa, Plano, Torus, Cilindro,Test, SupTest, Test1, TapaTest} from "./js/PanelesSolares";
+import {
+    Tubo,
+    Tapa,
+    Plano,
+    Torus,
+    Cilindro,
+    SupTest,
+} from "./js/Superficies";
+import {
+    Forma,
+    TapaSuperficieParametrica,
+} from "./js/SuperficiesDeBarrido";
 
 
 
@@ -179,30 +190,69 @@ const dimensionesCilindroNucleoPS = { //dimensiones de todos los nucleos
 function load() {
     scene.add(new Floor(80, 2));
     scene.add(new Axis(82));
-  // cargarNucleo()
+   //cargarNucleo()
     //cargarPanelesSolares()
     //cargarAnillo()
    test()
 }
+
+function crearForma(divisiones){
+    /*
+        const shape = new Shape();
+        shape.moveTo(2,1.5)
+        shape.bezierCurveTo(2,1.8,1.8,2,1.5,2)
+        shape.lineTo(-1.5,2)
+        shape.bezierCurveTo(-1.8,2,-2,1.8,-2,1.5)
+        shape.lineTo(-2,-1.5)
+        shape.bezierCurveTo(-2,-1.8,-1.8,-2,-1.5,-2)
+        shape.lineTo(1.5,-2)
+        shape.bezierCurveTo(1.8,-2,2,-1.8,2,-1.5)
+        shape.lineTo(2,1.5)
+        const nuevosPuntos = shape.extractPoints(12).shape
+
+
+        console.log(nuevosPuntos)
+        console.log(puntosDeLaTapa)
+
+
+         */
+
+    const forma = new Forma();
+    forma.iniciarEn(2,1.5)
+    forma.CurvaBezierA(2,1.8,1.8,2,1.5,2)
+    forma.lineaA(-1.5,2)
+    forma.CurvaBezierA(-1.8,2,-2,1.8,-2,1.5)
+    forma.lineaA(-2,-1.5)
+    forma.CurvaBezierA(-2,-1.8,-1.8,-2,-1.5,-2)
+    forma.lineaA(1.5,-2)
+    forma.CurvaBezierA(1.8,-2,2,-1.8,2,-1.5)
+    forma.lineaA(2,1.5)
+
+    return forma.extraerPuntos(divisiones)
+
+}
+
+
+
+// columnas son las divisiones, filas -> v, columnas -> u
+// filas-> el paso discreto del camino / columnas -> el paso discreto de la forma
+
+
+
+
 function test(){
     //const t = new Test()
     const t = new SupTest("suptest")
     scene.add(t)
   //  const test1 = new Test1()
+    const puntosDeLaTapa =   crearForma(12)
+    const pasoDiscretoForma = puntosDeLaTapa.length-1
 
-    const tapatest = new TapaTest("tapatest")
-    scene.add(tapatest)
+    scene.add(new TapaSuperficieParametrica(
+        "tapatest", puntosDeLaTapa, {filas: 1, columnas: pasoDiscretoForma}))
 
-    const tapatestatras = new TapaTest("tapatestatras")
-    scene.add(tapatestatras)
-
-
-
-
-
-
-
-
+    scene.add(new TapaSuperficieParametrica(
+        "tapatestatras", puntosDeLaTapa,  {filas: 1, columnas: pasoDiscretoForma}))
 
 
 

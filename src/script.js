@@ -9,7 +9,7 @@ import {Axis} from "./js/Axis";
 import {Camera} from "./js/Camera";
 import {Controls} from "./js/Controls";
 import {Transforms} from "./js/Transforms";
-import {Tubo, Tapa, Plano, Torus, Cilindro} from "./js/PanelesSolares";
+import {Tubo, Tapa, Plano, Torus, Cilindro,Test, SupTest, Test1, TapaTest} from "./js/PanelesSolares";
 
 
 
@@ -179,12 +179,34 @@ const dimensionesCilindroNucleoPS = { //dimensiones de todos los nucleos
 function load() {
     scene.add(new Floor(80, 2));
     scene.add(new Axis(82));
-    cargarNucleo()
-    cargarPanelesSolares()
-    cargarAnillo()
+  // cargarNucleo()
+    //cargarPanelesSolares()
+    //cargarAnillo()
+   test()
+}
+function test(){
+    //const t = new Test()
+    const t = new SupTest("suptest")
+    scene.add(t)
+  //  const test1 = new Test1()
+
+    const tapatest = new TapaTest("tapatest")
+    scene.add(tapatest)
+
+    const tapatestatras = new TapaTest("tapatestatras")
+    scene.add(tapatestatras)
+
+
+
+
+
+
+
+
+
+
 
 }
-
 
 
 function cargarNucleo(){
@@ -521,6 +543,23 @@ function draw() {
             construir.setAlias(object.alias)
 
             //Dependiendo del objeto se aplica la transformacion
+
+            //test
+            if(object.alias === 'tapatest') {
+                    const tapates = transforms.modelViewMatrix;
+                    mat4.translate(tapates, tapates, [0, 1.3, 3]);
+                    mat4.rotate(tapates, tapates, Math.PI/2, [1, 0, 0]);
+            } else if(object.alias === 'tapatestatras') {
+                const tapates = transforms.modelViewMatrix;
+                mat4.translate(tapates, tapates, [0, 0, 0]);
+                mat4.rotate(tapates, tapates, -3*Math.PI/4, [1, 0, 0]);
+            }
+
+
+            //////////////////////////////////////////////////////////
+
+
+
 
             construir.nucleoDelPanelSolar()
 

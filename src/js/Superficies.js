@@ -15,6 +15,7 @@ export class Superficie {
         this.diffuse = [0.71875,0.0,0.1796,1.0] //rojo metalico
         this.visible = true;
         this.dimensionesTriangulos = dimensionesTriangulos;
+        this.wireframe = false;
 
     }
     superficie(){
@@ -308,39 +309,13 @@ export class Torus{
 
 // columnas son las divisiones, filas -> v, columnas -> u
 // filas-> el paso discreto del camino / columnas -> el paso discreto de la forma
-export class SupTest{
-    constructor(alias,radio, dimensionesTriangulos = {filas:10,columnas:52})
+export class SuperficieParametrica extends  Superficie{
+    constructor(alias,puntosForma,puntosRecorrido,dimensionesTriangulos)
     {
+        super(dimensionesTriangulos)
         this.alias = alias;
-        this.vertices = [];
-        this.radio = radio
-        this.indices = [];
-        this.diffuse = [0.71875,0.0,0.1796,1.0]
-        this.normales = [];
-        this.textureCoords = [];
-        this.wireframe = false;
-        this.visible = true;
-        this.dimensionesTriangulos = dimensionesTriangulos;
-
-
-        const shape = new Shape();
-        shape.moveTo(2,1.5)
-        shape.bezierCurveTo(2,1.8,1.8,2,1.5,2)
-        shape.lineTo(-1.5,2)
-        shape.bezierCurveTo(-1.8,2,-2,1.8,-2,1.5)
-        shape.lineTo(-2,-1.5)
-        shape.bezierCurveTo(-2,-1.8,-1.8,-2,-1.5,-2)
-        shape.lineTo(1.5,-2)
-        shape.bezierCurveTo(1.8,-2,2,-1.8,2,-1.5)
-        shape.lineTo(2,1.5)
-
-
-
-        const nuevosPuntos = shape.extractPoints(12).shape
-        this.points = nuevosPuntos;
-
-
-
+        this.puntosForma = puntosForma
+        this.puntosRecorrido = puntosRecorrido
 
         //curva de recorrido
 
@@ -361,8 +336,6 @@ export class SupTest{
             const nuevotan3= new Vector3(0,tan.y,tan.x)
             this.arrayTangentes.push(nuevotan3)
         }
-        
-
 
         const normal = new Vector3(1,0,0)
 
@@ -376,17 +349,10 @@ export class SupTest{
         }
 
 
-
-
-
-
-
         this.construir();
-
-
     }
     superficie() {
-        const puntos = this.points
+        const puntos = this.puntosForma
         let i = 0
         let j = 0
         const anchoDelCuadrado = 4
@@ -401,17 +367,11 @@ export class SupTest{
             // filas-> el paso discreto del camino / columnas -> el paso discreto de la form
 
             getPosicion: function (u, v) {
-                //console.log(u,v)
                 //recorre todos los puntos de u respecto a v (0...1,0)
                 //luego (0...1, 1) ..etc
-                /*
-                const x =  puntos[i][0]
-                const y =  puntos[i][1]
 
+                const [x, y] = puntos[i]
 
-                 */
-                const x =  puntos[i].x
-                const y =  puntos[i].y
                 //recorrrido
                 const vBinormalActual = vectorBinormales[j]
                 const vTangenteActual = vectorTangentes[j]
@@ -446,43 +406,40 @@ export class SupTest{
 
 
             getNormal(u,v){
-
-                /*
-                const x =  puntos[i].x
-                const y =  puntos[i].y
                 // simula la normal, funciona mejor con formas muy redondas, y no planas
 
-*/
+                const [x_noTransformado, y_noTransformado] = puntos[i]
 
-                const x =  vectorTransformado.x
+                let x =  vectorTransformado.x
                 const y =  vectorTransformado.y - puntoActual.y
                 const z = vectorTransformado.z - puntoActual.x
 
-                i++
+                i++ //voy al sig punto
                 if(u===1){
-                    i=0
-                    j++
+                    i=0 //me di una vuelta de la forma, termine un nivel, vuelvo al inicio para el sig nivel
+                    j++ //avanzo al sig nivel
                 }
+
+                /*
+                 * Configuracion de la normal para un cubo con lados redondeados
+                 */
+                //las caras verticales tienen la normal en el eje x
+                if(x_noTransformado ===2 )
+                    return [1, 0, 0]
+                else if(x_noTransformado ===-2)
+                    return [-1,0,0]
+                //para la normal en las caras horizontales solo se tiene en cuenta los ejes y z
+                if(y_noTransformado ===2 || y_noTransformado ===-2) {
+                    x = 0
+                }
+                ////////////////////////////////////////////////////////////////////
+
                 const normal = new Vector3(x,y,z).normalize()
-                //return [1,0,0]
                 return [normal.x,normal.y,normal.z]
             },
             getCoordenadasTextura: function (u, v) {
                 return [u, 1-v];
             },
         }
-    }
-    construir(){
-        const constructor = new ConstruirBuffers(this.dimensionesTriangulos)
-
-        const mallaTapa = constructor.construir(this.superficie())
-
-
-        
-        this.vertices = mallaTapa.positionBuffer;
-        this.indices = mallaTapa.indexBuffer;
-        this.normales = mallaTapa.normalBuffer;
-        this.textureCoords = mallaTapa.uvBuffer;
-
     }
 }

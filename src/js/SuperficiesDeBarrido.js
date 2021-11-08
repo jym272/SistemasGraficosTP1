@@ -94,18 +94,17 @@ export class Forma {
 // columnas son las divisiones, filas -> v, columnas -> u
 // filas-> el paso discreto del camino / columnas -> el paso discreto de la forma
 export class TapaSuperficieParametrica extends Superficie{
-    constructor(alias, puntosDeLaTapa,dimensionesTriangulos)
+    constructor(alias, puntosDeLaForma,dimensionesTriangulos)
     {
         super(dimensionesTriangulos)
         this.alias = alias;
-        this.puntosDeLaTapa = puntosDeLaTapa;
-        this.wireframe = false;
+        this.puntosDeLaForma = puntosDeLaForma;
         this.construir();
 
 
     }
     superficie(){
-        const puntos = this.puntosDeLaTapa
+        const puntos = this.puntosDeLaForma
         let i =0
         return {
             getPosicion: function (u, v) {

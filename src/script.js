@@ -15,7 +15,7 @@ import {
     Plano,
     Torus,
     Cilindro,
-    SupTest,
+    SuperficieParametrica,
 } from "./js/Superficies";
 import {
     Forma,
@@ -190,9 +190,9 @@ const dimensionesCilindroNucleoPS = { //dimensiones de todos los nucleos
 function load() {
     scene.add(new Floor(80, 2));
     scene.add(new Axis(82));
-   //cargarNucleo()
+  // cargarNucleo()
     //cargarPanelesSolares()
-    //cargarAnillo()
+   // cargarAnillo()
    test()
 }
 
@@ -218,15 +218,23 @@ function crearForma(divisiones){
          */
 
     const forma = new Forma();
-    forma.iniciarEn(2,1.5)
+    forma.iniciarEn(2,0)
+    forma.lineaA(2,0.5)
+    forma.lineaA(2,1.5)
+
     forma.CurvaBezierA(2,1.8,1.8,2,1.5,2)
+    forma.lineaA(0,2)
     forma.lineaA(-1.5,2)
     forma.CurvaBezierA(-1.8,2,-2,1.8,-2,1.5)
+    forma.lineaA(-2,0)
     forma.lineaA(-2,-1.5)
     forma.CurvaBezierA(-2,-1.8,-1.8,-2,-1.5,-2)
+    forma.lineaA(0,-2)
     forma.lineaA(1.5,-2)
     forma.CurvaBezierA(1.8,-2,2,-1.8,2,-1.5)
-    forma.lineaA(2,1.5)
+    forma.lineaA(2,-0.5)
+
+    forma.lineaA(2,0)
 
     return forma.extraerPuntos(divisiones)
 
@@ -238,21 +246,19 @@ function crearForma(divisiones){
 // filas-> el paso discreto del camino / columnas -> el paso discreto de la forma
 
 
-
-
 function test(){
-    //const t = new Test()
-    const t = new SupTest("suptest")
-    scene.add(t)
   //  const test1 = new Test1()
-    const puntosDeLaTapa =   crearForma(12)
-    const pasoDiscretoForma = puntosDeLaTapa.length-1
+    const puntosDeLaForma =   crearForma(12)
+    const pasoDiscretoForma = puntosDeLaForma.length-1
+    const puntosDelRecorrido =0
+
+    scene.add(new SuperficieParametrica("suptest", puntosDeLaForma, puntosDelRecorrido, {filas:10,columnas:pasoDiscretoForma}))
 
     scene.add(new TapaSuperficieParametrica(
-        "tapatest", puntosDeLaTapa, {filas: 1, columnas: pasoDiscretoForma}))
+        "tapatest", puntosDeLaForma, {filas: 1, columnas: pasoDiscretoForma}))
 
     scene.add(new TapaSuperficieParametrica(
-        "tapatestatras", puntosDeLaTapa,  {filas: 1, columnas: pasoDiscretoForma}))
+        "tapatestatras", puntosDeLaForma,  {filas: 1, columnas: pasoDiscretoForma}))
 
 
 

@@ -1,5 +1,7 @@
 'use strict';
 import * as dat from 'dat.gui';
+import {vec3} from "gl-matrix";
+import {Vector3} from "three";
 
 
 
@@ -255,8 +257,65 @@ export const utils = {
     });
 
     return ts;
-  }
+  },
 
+  restarVectores(pt1,pt2){
+
+    const resultado = [];
+    for(let i = 0; i < pt1.length; i++){
+      resultado.push(pt1[i] - pt2[i]);
+    }
+
+    return resultado
+  },
+
+  normalizarVector(unVector){
+
+    const resultado = [];   let suma = 0;
+    for(let i = 0; i < unVector.length; i++){
+      suma += unVector[i] * unVector[i];
+    }
+    suma = Math.sqrt(suma);
+    for(let i = 0; i < unVector.length; i++){
+      resultado.push(unVector[i] / suma);
+    }
+    return resultado;
+  },
+  calcularNormales(puntosTangentes){
+
+    const normales = []
+    for (let i = 0; i < puntosTangentes.length; i++) {
+      const tangente = puntosTangentes[i]
+      normales.push([tangente[1], - tangente[0]])
+    }
+
+    return normales;
+  },
+  pasarTanAVector3(tangentes){
+    const resultado = [];
+    for(let i = 0; i < tangentes.length; i++){
+      resultado.push([0,tangentes[i][1], tangentes[i][0]]);
+    }
+    return resultado;
+  },
+  productoCruz(v1,v2){
+
+    const resultado = [];
+    resultado[0] = v1[1] * v2[2] - v1[2] * v2[1];
+    resultado[1] = v1[2] * v2[0] - v1[0] * v2[2];
+    resultado[2] = v1[0] * v2[1] - v1[1] * v2[0];
+    return resultado;
+  },
+  calcularVectorBinormal(vectorNormal, arrayDeTangentes){
+
+    const vectorBinormal = []
+    for (let i = 0; i < arrayDeTangentes.length; i++) {
+      const tangente = arrayDeTangentes[i]
+      const binormal = this.productoCruz(tangente, vectorNormal)
+      vectorBinormal.push(utils.normalizarVector(binormal))
+    }
+    return vectorBinormal
+  },
 };
 
 

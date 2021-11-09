@@ -21,6 +21,9 @@ import {
     Forma,
     TapaSuperficieParametrica,
 } from "./js/SuperficiesDeBarrido";
+import * as THREE from "three";
+import {Vector3} from "three";
+import {CurvaCubicaDeBezier} from "./js/CurvasDeBezier";
 
 
 
@@ -197,68 +200,72 @@ function load() {
 }
 
 function crearForma(divisiones){
-    /*
-        const shape = new Shape();
-        shape.moveTo(2,1.5)
-        shape.bezierCurveTo(2,1.8,1.8,2,1.5,2)
-        shape.lineTo(-1.5,2)
-        shape.bezierCurveTo(-1.8,2,-2,1.8,-2,1.5)
-        shape.lineTo(-2,-1.5)
-        shape.bezierCurveTo(-2,-1.8,-1.8,-2,-1.5,-2)
-        shape.lineTo(1.5,-2)
-        shape.bezierCurveTo(1.8,-2,2,-1.8,2,-1.5)
-        shape.lineTo(2,1.5)
-        const nuevosPuntos = shape.extractPoints(12).shape
-
-
-        console.log(nuevosPuntos)
-        console.log(puntosDeLaTapa)
-
-
-         */
 
     const forma = new Forma();
-    forma.iniciarEn(2,0)
-    forma.lineaA(2,0.5)
-    forma.lineaA(2,1.5)
-
+    //conservar el ingreso de datos, bezier, punto, bezier, punto .... IMPORTANTE PARA LAS NORMALES
+    forma.iniciarEn(2,1.5)
     forma.CurvaBezierA(2,1.8,1.8,2,1.5,2)
-    forma.lineaA(0,2)
     forma.lineaA(-1.5,2)
     forma.CurvaBezierA(-1.8,2,-2,1.8,-2,1.5)
-    forma.lineaA(-2,0)
     forma.lineaA(-2,-1.5)
     forma.CurvaBezierA(-2,-1.8,-1.8,-2,-1.5,-2)
-    forma.lineaA(0,-2)
     forma.lineaA(1.5,-2)
     forma.CurvaBezierA(1.8,-2,2,-1.8,2,-1.5)
-    forma.lineaA(2,-0.5)
+    forma.lineaA(2,1.5)  //la ultima tangente/normal a mano
 
-    forma.lineaA(2,0)
+    const { puntos, puntosTangentes } = forma.extraerPuntos(divisiones)
 
-    return forma.extraerPuntos(divisiones)
+    const normales = utils.calcularNormales(puntosTangentes)
 
+    normales.push([1,0])  //la ultima tangente/normal a mano
+
+    return {
+        puntos,
+        normales
+    };
 }
+function crearRecorrido(pasoDiscreto) {
+    const curva = new CurvaCubicaDeBezier(
+        [0,0],
+        [1,1],
+        [2,1.3],
+        [3,1.3]
+    );
 
+    const {puntos,tangentes} = curva.getPoints(pasoDiscreto)
+
+    const arrayDeTangentes = utils.pasarTanAVector3(tangentes)
+
+    const vectorNormal = [1,0,0]
+    const arrayDeBinormales = utils.calcularVectorBinormal(vectorNormal, arrayDeTangentes)
+
+    return {
+        puntos,
+        tangentes: arrayDeTangentes,
+        binormales: arrayDeBinormales,
+        vectorNormal
+    }
+}
 
 
 // columnas son las divisiones, filas -> v, columnas -> u
 // filas-> el paso discreto del camino / columnas -> el paso discreto de la forma
 
-
 function test(){
   //  const test1 = new Test1()
-    const puntosDeLaForma =   crearForma(12)
-    const pasoDiscretoForma = puntosDeLaForma.length-1
-    const puntosDelRecorrido =0
+    //llamar a crearForma y recibir puntos y arrayTangentes
+    const datosDeLaForma = crearForma(12)
+    const datosDelRecorrido = crearRecorrido(10) //las filas del triangulo
+    const pasoDiscretoForma = datosDeLaForma.puntos.length-1
 
-    scene.add(new SuperficieParametrica("suptest", puntosDeLaForma, puntosDelRecorrido, {filas:10,columnas:pasoDiscretoForma}))
+
+    scene.add(new SuperficieParametrica("suptest", datosDeLaForma, datosDelRecorrido, {filas:10,columnas:pasoDiscretoForma}))
 
     scene.add(new TapaSuperficieParametrica(
-        "tapatest", puntosDeLaForma, {filas: 1, columnas: pasoDiscretoForma}))
+        "tapatest", datosDeLaForma.puntos, {filas: 10, columnas: pasoDiscretoForma}))
 
     scene.add(new TapaSuperficieParametrica(
-        "tapatestatras", puntosDeLaForma,  {filas: 1, columnas: pasoDiscretoForma}))
+        "tapatestatras", datosDeLaForma.puntos,  {filas: 1, columnas: pasoDiscretoForma}))
 
 
 

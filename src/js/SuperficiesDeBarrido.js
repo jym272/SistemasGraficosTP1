@@ -3,6 +3,7 @@
 
 import {CurvaCubicaDeBezier} from "./CurvasDeBezier";
 import {Superficie} from "./Superficies";
+
 export class Forma {
 
     constructor(  ) {
@@ -20,17 +21,23 @@ export class Forma {
     extraerPuntos( divisiones = 12 ) {
 
         const puntos = [];
+        const puntosTangentes = [];
+
         let last;
         for ( let i = 0, curvas = this.curvas; i < curvas.length; i ++ ) {
 
             const curva = curvas[ i ];
 
-            let pts
+            let pts,tan
             if(curva && curva.type === 'CurvaDeBezier'){ //solo tengo lineas o bezier
-                pts = curva.getPoints( divisiones ) //puntos de bezier
+                const {puntos, tangentes} = curva.getPoints( divisiones ) //puntos de bezier
+                pts = puntos
+                tan = tangentes  //tangentes de bezier, solo trabajo con estas siguiendo la forma: linea,bezier, linea,bezier, etc
+                if(tan) {
+                    puntosTangentes.push(...tan) //acumula las tangentes si existen
+                }
             }else{
                 pts = curva
-
             }
 
             for ( let j = 0; j < pts.length; j ++ ) {
@@ -40,12 +47,15 @@ export class Forma {
                 if ( last && last[0] === punto[0] && last[1] === punto[1] ) continue; // Avoid dupes!
 
                 puntos.push( punto );
+
                 last = punto;
             }
+
         }
-
-        return puntos;
-
+        return{
+            puntos,
+            puntosTangentes
+        };
     }
     clonarPuntoActual() {
         const puntoActualX = this.puntoActual[0];
@@ -54,6 +64,7 @@ export class Forma {
         return [puntoActualX, puntoActualY];
 
     }
+
     CurvaBezierA( aCP1x, aCP1y, aCP2x, aCP2y, aX, aY ) {
 
         const curva = new CurvaCubicaDeBezier(

@@ -1,6 +1,7 @@
 'use strict';
+import {utils} from './utils';
 
-function CubicBezierP0( t, p ) {
+function CubicBezierP0(t, p ) {
 
     const k = 1 - t;
     return k * k * k * p;
@@ -46,15 +47,20 @@ export class CurvaCubicaDeBezier{
 
     getPoints( divisions = 5 ) {
 
-        const points = [];
+        const puntos = [];
+        const tangentes = [];
 
         for ( let d = 0; d <= divisions; d ++ ) {
 
-            points.push( this.getPoint( d / divisions ) );
+            puntos.push( this.getPoint( d / divisions ) );
+            tangentes.push( this.getTangent( d / divisions ) );
 
         }
 
-        return points;
+        return {
+            puntos,
+            tangentes
+        };
 
     }
 
@@ -67,6 +73,23 @@ export class CurvaCubicaDeBezier{
         point[0] = CubicBezier( t, v0[0], v1[0], v2[0], v3[0] )
         point[1] = CubicBezier( t, v0[1], v1[1], v2[1], v3[1] )
         return point;
+
+    }
+
+    getTangent( t) {
+        const delta = 0.0001;
+        let t1 = t - delta;
+        let t2 = t + delta;
+
+        if ( t1 < 0 ) t1 = 0;
+        if ( t2 > 1 ) t2 = 1;
+
+        const pt1 = this.getPoint( t1 );
+        const pt2 = this.getPoint( t2 );
+
+        const tangent = utils.restarVectores( pt2, pt1 );
+
+        return utils.normalizarVector( tangent );
 
     }
 

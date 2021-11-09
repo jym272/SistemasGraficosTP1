@@ -3,7 +3,7 @@ import {ConstruirBuffers} from "./ConstruirBuffers";
 import * as THREE from 'three';
 import { Matrix4, Matrix3, Vector3, Vector4} from "three";
 import {mat4, vec3, vec4} from "gl-matrix";
-
+import {utils} from "./utils";
 
 export class Superficie {
 
@@ -315,75 +315,25 @@ export class SuperficieParametrica extends  Superficie{
     {
         super(dimensionesTriangulos)
         this.alias = alias;
-        this.puntosForma = datosDeLaForma.puntos
         this.datosDelRecorrido = datosDelRecorrido
-        this.normalesForma = datosDeLaForma.normales
-        //curva de recorrido
-
-        const curve = new THREE.CubicBezierCurve(
-            new THREE.Vector2( 0, 0 ),
-            new THREE.Vector2( 1, 1 ),
-            new THREE.Vector2( 2, 1.3 ),
-            new THREE.Vector2( 3, 1.3 ),
-        )
-
-
-
-
-
-        const divisionesRecorrido = this.dimensionesTriangulos.filas
-        this.puntosRecorrido =curve.getPoints(divisionesRecorrido)
-        //console.log(this.puntosRecorrido)
-        this.arrayTangentes= []
-        //con for llenar el array
-        for (let i = 0; i <= divisionesRecorrido; i++) {
-            const tan = curve.getTangent(i/divisionesRecorrido)
-            const nuevotan3= new Vector3(0,tan.y,tan.x)
-            this.arrayTangentes.push(nuevotan3)
-        }
-
-        const normal = new Vector3(1,0,0)
-
-        //calculo de binormal con el array de tangentes y normal
-        this.binormales = []
-        for (let i = 0; i < this.arrayTangentes.length; i++) {
-            const tangente = this.arrayTangentes[i]
-            const binormal = new Vector3().crossVectors(tangente, normal)
-            binormal.normalize()
-            this.binormales.push(binormal)
-        }
-
-        console.log(datosDelRecorrido)
-
+        this.datosDeLaForma = datosDeLaForma
         this.construir();
     }
     superficie() {
-        const puntos = this.puntosForma
         let i = 0
         let j = 0
-        const anchoDelCuadrado = 4
-        const vectorBinormales = this.binormales
-        const vectorTangentes = this.arrayTangentes
-        const puntosRecorrido = this.puntosRecorrido
-        const normales = this.normalesForma
-        let vectorTransformado
-        let normalTransformada
-        let puntoActual
         const recorrido = this.datosDelRecorrido
+        const forma = this.datosDeLaForma
+        let normalTransformada
         return {
             // columnas son las divisiones, filas -> v, columnas -> u
             // filas-> el paso discreto del camino / columnas -> el paso discreto de la form
-
             getPosicion: function (u, v) {
                 //recorre todos los puntos de u respecto a v (0...1,0)
                 //luego (0...1, 1) ..etc
 
-                const [x, y] = puntos[i]
-
-                //recorrrido
-                const vBinormalActual = vectorBinormales[j]
-                const vTangenteActual = vectorTangentes[j]
-                puntoActual = puntosRecorrido[j]
+                const[verticeFormaX, verticeFormaY] = forma.puntos[i]
+                const[normalesFormaX, normalesFormaY] = forma.normales[i]
 
                 const vectorBinormal = recorrido.binormales[j]
                 const vectorTangente = recorrido.tangentes[j]
@@ -398,51 +348,30 @@ export class SuperficieParametrica extends  Superficie{
                     vectorNormal[2], vectorBinormal[2], vectorTangente[2], puntoRecorrido[0],
                     0, 0, 0, 1
                 )
-
-                mat4.transpose(matrizDeNivel, matrizDeNivel)
-
-                const nuevamatrixDeNivel = new Matrix4()
-                nuevamatrixDeNivel.set(
-                    1,vBinormalActual.x,vTangenteActual.x,0,
-                    0,vBinormalActual.y,vTangenteActual.y,puntoActual.y,
-                    0,vBinormalActual.z,vTangenteActual.z,puntoActual.x,
-                    0,0,0,1
+                mat4.transpose(matrizDeNivel, matrizDeNivel) //debido al ingreso(poco intuitivo) de la matriz en forma de columnas
+                const verticesTransformados = vec4.create()
+                vec4.set(
+                    verticesTransformados,
+                    verticeFormaX, verticeFormaY, 0, 1)
+                vec4.transformMat4(verticesTransformados, verticesTransformados, matrizDeNivel )
+                
+                const matrizDeNivelInversa = mat4.create()
+                mat4.set(
+                    matrizDeNivelInversa,
+                    vectorNormal[0], vectorBinormal[0], vectorTangente[0], 0,
+                    vectorNormal[1], vectorBinormal[1], vectorTangente[1], 0,
+                    vectorNormal[2], vectorBinormal[2], vectorTangente[2], 0,
+                    0, 0, 0, 1
                 )
-              //  console.log(nuevamatrixDeNivel)
-               // console.log(matrizDeNivel)
+                mat4.transpose(matrizDeNivelInversa, matrizDeNivelInversa)
+                normalTransformada = vec4.create()
+                vec4.set(
+                    normalTransformada,
+                    normalesFormaX,
+                    normalesFormaY,0, 1)
+                vec4.transformMat4(normalTransformada, normalTransformada, matrizDeNivelInversa)
 
-
-
-
-                //la normal seria la misma que la posicion
-                const vector = new Vector4(x,y,0,1)
-                const nuevamatrixNormal = new Matrix3()
-                nuevamatrixNormal.set(
-                    1,vBinormalActual.x,vTangenteActual.x,
-                    0,vBinormalActual.y,vTangenteActual.y,
-                    0,vBinormalActual.z,vTangenteActual.z,
-                )
-
-               // const nuevaNormal = new Vector4(normales[i].x, normales[i].y,0,1)
-
-                //normalTransformada = nuevaNormal.applyMatrix4(nuevamatrixDeNivel)
-                const nuevaNormal = new Vector3(normales[i][0], normales[i][1],0)
-
-
-                normalTransformada = nuevaNormal.applyMatrix3(nuevamatrixNormal)
-                vectorTransformado =vector.applyMatrix4( nuevamatrixDeNivel )
-
-
-
-               const vv = vec4.create()
-                vec4.set(vv, x,y,0,1)
-
-                vec4.transformMat4(vv, vv, matrizDeNivel )
-                console.log(vv)
-                console.log(vectorTransformado)
-                //return [vectorTransformado.x,vectorTransformado.y,vectorTransformado.z]
-                return [vv[0],vv[1],vv[2]]
-                //return [x, y, anchoDelCuadrado*v];
+                return [verticesTransformados[0],verticesTransformados[1],verticesTransformados[2]]
             },
             getNormal(u,v){
                 i++ //voy al sig punto
@@ -450,45 +379,9 @@ export class SuperficieParametrica extends  Superficie{
                     i=0 //me di una vuelta de la forma, termine un nivel, vuelvo al inicio para el sig nivel
                     j++ //avanzo al sig nivel
                 }
-
-                const normal = new Vector3(normalTransformada.x,normalTransformada.y,normalTransformada.z).normalize()
-                return [normal.x,normal.y,normal.z]
+                const normal = utils.normalizarVector([normalTransformada[0],normalTransformada[1],normalTransformada[2]])
+                return [normal[0],normal[1],normal[2]]
             },
-
-            getNormal1(u,v){
-                // simula la normal, funciona mejor con formas muy redondas, y no planas
-
-                const [x_noTransformado, y_noTransformado] = puntos[i]
-
-                let x =  vectorTransformado.x
-                const y =  vectorTransformado.y - puntoActual.y
-                const z = vectorTransformado.z - puntoActual.x
-
-                i++ //voy al sig punto
-                if(u===1){
-                    i=0 //me di una vuelta de la forma, termine un nivel, vuelvo al inicio para el sig nivel
-                    j++ //avanzo al sig nivel
-                }
-
-                /*
-                 * Configuracion de la normal para un cubo con lados redondeados
-                 */
-                //las caras verticales tienen la normal en el eje x
-                if(x_noTransformado ===2 )
-                    return [1, 0, 0]
-                else if(x_noTransformado ===-2)
-                    return [-1,0,0]
-                //para la normal en las caras horizontales solo se tiene en cuenta los ejes y z
-                if(y_noTransformado ===2 || y_noTransformado ===-2) {
-                    x = 0
-                }
-                ////////////////////////////////////////////////////////////////////
-
-                const normal = new Vector3(x,y,z).normalize()
-                return [normal.x,normal.y,normal.z]
-            },
-
-
             getCoordenadasTextura: function (u, v) {
                 return [u, 1-v];
             },

@@ -231,7 +231,12 @@ function crearRecorrido(pasoDiscreto) {
         [2,1.3],
         [3,1.3]
     );
-
+    const curva1 = new CurvaCubicaDeBezier(
+        [0,0],
+        [10,5],
+        [20,50],
+        [40,0]
+    );
     const {puntos,tangentes} = curva.getPoints(pasoDiscreto)
 
     const arrayDeTangentes = utils.pasarTanAVector3(tangentes)
@@ -251,18 +256,24 @@ function crearRecorrido(pasoDiscreto) {
 // columnas son las divisiones, filas -> v, columnas -> u
 // filas-> el paso discreto del camino / columnas -> el paso discreto de la forma
 
+
 function test(){
-  //  const test1 = new Test1()
-    //llamar a crearForma y recibir puntos y arrayTangentes
-    const datosDeLaForma = crearForma(12)
-    const datosDelRecorrido = crearRecorrido(10) //las filas del triangulo
+    const pasoDiscretoRecorrido = 220;
+    const divisionesForma = 20
+
+    const datosDeLaForma = crearForma(divisionesForma)
+    const datosDelRecorrido = crearRecorrido(pasoDiscretoRecorrido)
     const pasoDiscretoForma = datosDeLaForma.puntos.length-1
 
+    const dimensiones = {
+        filas: pasoDiscretoRecorrido, //paso discreto del recorrido
+        columnas: pasoDiscretoForma, //divisiones de la forma
+    }
 
-    scene.add(new SuperficieParametrica("suptest", datosDeLaForma, datosDelRecorrido, {filas:10,columnas:pasoDiscretoForma}))
+    scene.add(new SuperficieParametrica("suptest", datosDeLaForma, datosDelRecorrido, dimensiones))
 
     scene.add(new TapaSuperficieParametrica(
-        "tapatest", datosDeLaForma.puntos, {filas: 10, columnas: pasoDiscretoForma}))
+        "tapatest", datosDeLaForma.puntos, {filas: 1, columnas: pasoDiscretoForma}))
 
     scene.add(new TapaSuperficieParametrica(
         "tapatestatras", datosDeLaForma.puntos,  {filas: 1, columnas: pasoDiscretoForma}))

@@ -15,14 +15,13 @@ import {
     Plano,
     Torus,
     Cilindro,
-    SuperficieParametrica,
 } from "./js/Superficies";
 import {
     Forma,
     TapaSuperficieParametrica,
+    SuperficieParametrica,
 } from "./js/SuperficiesDeBarrido";
-import * as THREE from "three";
-import {Vector3} from "three";
+
 import {CurvaCubicaDeBezier} from "./js/CurvasDeBezier";
 
 
@@ -105,8 +104,9 @@ function configure() {
  * COLORES
  */
 const colorPastilla = [169/255, 183/255, 43/255, 1];
-const colorPanelSolar = colorPastilla;
+const colorPanelSolar = [86/255, 16/255, 248/255, 1]; //colorPastilla;
 const colorGenerico = [0.71875,0.0,0.1796,1.0];
+const colorVioleta = [255/255,0/255,138/255,1.0];
 /*
  * Constantes Paneles Solares
  */
@@ -189,32 +189,70 @@ const dimensionesCilindroNucleoPS = { //dimensiones de todos los nucleos
     radioInferior: dimensionesNucleoPS.radio,
     altura: 0.7,
 };
+/*
+ * Constantes Modulo Violeta
+ */
+const profundidadModuloVioleta = 2.0;
 // Se carga todos los objetos a la escena
 function load() {
     scene.add(new Floor(80, 2));
     scene.add(new Axis(82));
-  // cargarNucleo()
+
+    //cargarNucleo()
     //cargarPanelesSolares()
-   // cargarAnillo()
-   test()
+    //cargarAnillo()
+    //moduloVioleta()
+    bloquesDelAnillo()
+}
+function bloquesDelAnillo(){
+    const pasoDiscretoRecorrido = 1;
+    const divisionesForma = 20
+
+    const datosDeLaForma = crearFormaModuloVioleta(divisionesForma)
+    const datosDelRecorrido = crearRecorridoModuloVioleta(pasoDiscretoRecorrido)
+    const pasoDiscretoForma = datosDeLaForma.puntos.length-1
+
+    const dimensiones = {
+        filas: pasoDiscretoRecorrido, //paso discreto del recorrido
+        columnas: pasoDiscretoForma, //divisiones de la forma
+    }
+
+    scene.add(new SuperficieParametrica("bloque", datosDeLaForma, datosDelRecorrido, dimensiones),{
+        diffuse: colorVioleta,
+    });
+
+
+    //No necesito las tapas
+    /*
+    scene.add(new TapaSuperficieParametrica(
+        "moduloVioletaPSTapaAdelante", datosDeLaForma.puntos, {filas: 1, columnas: pasoDiscretoForma}),{
+        diffuse: colorVioleta,
+    });
+
+
+    scene.add(new TapaSuperficieParametrica(
+        "moduloVioletaPSTapaAtras", datosDeLaForma.puntos,  {filas: 1, columnas: pasoDiscretoForma}),{
+        diffuse: colorVioleta,
+    });
+
+     */
 }
 
-function crearForma(divisiones){
+function crearFormaModuloVioleta(divisiones){
 
     const forma = new Forma();
     //conservar el ingreso de datos, bezier, punto, bezier, punto .... IMPORTANTE PARA LAS NORMALES
-    forma.iniciarEn(2,1.5)
-    forma.CurvaBezierA(2,1.8,1.8,2,1.5,2)
-    forma.lineaA(-1.5,2)
-    forma.CurvaBezierA(-1.8,2,-2,1.8,-2,1.5)
-    forma.lineaA(-2,-1.5)
-    forma.CurvaBezierA(-2,-1.8,-1.8,-2,-1.5,-2)
-    forma.lineaA(1.5,-2)
-    forma.CurvaBezierA(1.8,-2,2,-1.8,2,-1.5)
-    forma.lineaA(2,1.5)  //la ultima tangente/normal a mano
+    forma.iniciarEn(1,0.5)
+    forma.CurvaBezierA(1,0.8,0.8,1,0.5,1)
+    forma.lineaA(-0.5,1)
+    forma.CurvaBezierA(-0.8,1,-1,0.8,-1,0.5)
+    forma.lineaA(-1,-0.5)
+    forma.CurvaBezierA(-1,-0.8,-0.8,-1,-0.5,-1)
+    forma.lineaA(0.5,-1)
+    forma.CurvaBezierA(0.8,-1,1,-0.8,1,-0.5)
+    forma.lineaA(1,0.5)  //la ultima tangente/normal a mano
 
     const { puntos, puntosTangentes } = forma.extraerPuntos(divisiones)
-
     const normales = utils.calcularNormales(puntosTangentes)
 
     normales.push([1,0])  //la ultima tangente/normal a mano
@@ -224,18 +262,13 @@ function crearForma(divisiones){
         normales
     };
 }
-function crearRecorrido(pasoDiscreto) {
+
+function crearRecorridoModuloVioleta(pasoDiscreto) {
     const curva = new CurvaCubicaDeBezier(
         [0,0],
-        [1,1],
-        [2,1.3],
-        [3,1.3]
-    );
-    const curva1 = new CurvaCubicaDeBezier(
-        [0,0],
-        [10,5],
-        [20,50],
-        [40,0]
+        [0.666,0],
+        [1.333,0],
+        [profundidadModuloVioleta,0]
     );
     const {puntos,tangentes} = curva.getPoints(pasoDiscreto)
 
@@ -252,17 +285,12 @@ function crearRecorrido(pasoDiscreto) {
     }
 }
 
-
-// columnas son las divisiones, filas -> v, columnas -> u
-// filas-> el paso discreto del camino / columnas -> el paso discreto de la forma
-
-
-function test(){
-    const pasoDiscretoRecorrido = 220;
+function moduloVioleta(){
+    const pasoDiscretoRecorrido = 1;
     const divisionesForma = 20
 
-    const datosDeLaForma = crearForma(divisionesForma)
-    const datosDelRecorrido = crearRecorrido(pasoDiscretoRecorrido)
+    const datosDeLaForma = crearFormaModuloVioleta(divisionesForma)
+    const datosDelRecorrido = crearRecorridoModuloVioleta(pasoDiscretoRecorrido)
     const pasoDiscretoForma = datosDeLaForma.puntos.length-1
 
     const dimensiones = {
@@ -270,18 +298,29 @@ function test(){
         columnas: pasoDiscretoForma, //divisiones de la forma
     }
 
-    scene.add(new SuperficieParametrica("suptest", datosDeLaForma, datosDelRecorrido, dimensiones))
+    scene.add(new SuperficieParametrica("moduloVioletaPS", datosDeLaForma, datosDelRecorrido, dimensiones),{
+        diffuse: colorVioleta,
+    });
+    scene.add(new SuperficieParametrica("moduloVioletaAnillo", datosDeLaForma, datosDelRecorrido, dimensiones),{
+        diffuse: colorVioleta,
+    });
+
+    //No necesito las tapas
+    /*
+    scene.add(new TapaSuperficieParametrica(
+        "moduloVioletaPSTapaAdelante", datosDeLaForma.puntos, {filas: 1, columnas: pasoDiscretoForma}),{
+        diffuse: colorVioleta,
+    });
+
 
     scene.add(new TapaSuperficieParametrica(
-        "tapatest", datosDeLaForma.puntos, {filas: 1, columnas: pasoDiscretoForma}))
-
-    scene.add(new TapaSuperficieParametrica(
-        "tapatestatras", datosDeLaForma.puntos,  {filas: 1, columnas: pasoDiscretoForma}))
-
+        "moduloVioletaPSTapaAtras", datosDeLaForma.puntos,  {filas: 1, columnas: pasoDiscretoForma}),{
+        diffuse: colorVioleta,
+    });
+*/
 
 
 }
-
 
 function cargarNucleo(){
     //nucleo del panel solar
@@ -330,6 +369,7 @@ function cargarNucleo(){
     //nucleos violea - Bezier
 
 }
+
 function cargarAnillo(){
     //pastilla
 
@@ -429,17 +469,47 @@ const Anillo = {
     alturaTapaSuperior : 0.9,
     alturaTapaInferior : 0.1,
 }
+
 class TransformacionesAfin{
-    //setter de alias
+    constructor() {
+        this.distanciaNucleoDelAnilloYNave = dimensionesNucleoPS.altura + dimensionesCilindroNucleoPS.altura
+        this.distanciaModuloVioletaYNave = dimensionesNucleoPS.altura + 2*dimensionesCilindroNucleoPS.altura +profundidadModuloVioleta
+    }
     setAlias(alias){
         this.alias = alias;
     }
+    modulosVioleta(){
+        if (this.alias === 'moduloVioletaPS') {
+            Nave.naveTransform = transforms.modelViewMatrix
+            const moduloVioletaPSTransform = transforms.modelViewMatrix
+            mat4.translate(moduloVioletaPSTransform, Nave.naveTransform, [0, 0, 0])
 
+        } else if (this.alias === 'moduloVioletaAnillo') {
+            Nave.naveTransform = transforms.modelViewMatrix
+            const moduloVioletaAnilloTransform = transforms.modelViewMatrix
+            mat4.translate(moduloVioletaAnilloTransform, Nave.naveTransform, [0, 0,
+                -this.distanciaModuloVioletaYNave ])
+        }
+        /* No necesito las tapas
+        if(this.alias === 'moduloVioletaPSTapaAdelante') {
+            const tapates = transforms.modelViewMatrix;
+            mat4.translate(tapates, tapates, [0, 0, 2]);
+            mat4.rotate(tapates, tapates, Math.PI/2, [1, 0, 0]);
+        } else if(this.alias === 'moduloVioletaPSTapaAtras') {
+            const tapates = transforms.modelViewMatrix;
+            mat4.translate(tapates, tapates, [0, 0, 0]);
+            mat4.rotate(tapates, tapates, -Math.PI/2, [1, 0, 0]);
+        }
+
+         */
+
+    }
     nucleoDelPanelSolar(){
+        const distanciaModuloVioleta = profundidadModuloVioleta + dimensionesCilindroNucleoPS.altura
         if (this.alias === 'nucleoPS') {
             Nave.naveTransform = transforms.modelViewMatrix
             Nucleo.nucleoPSTransform = transforms.modelViewMatrix
-            mat4.translate(Nucleo.nucleoPSTransform, Nave.naveTransform, [0, 0, 6.5])
+            mat4.translate(Nucleo.nucleoPSTransform, Nave.naveTransform, [0, 0, distanciaModuloVioleta])
             mat4.rotate(Nucleo.nucleoPSTransform,Nucleo.nucleoPSTransform , Math.PI/2, [1, 0, 0])
 
         }else if (this.alias === 'nucleoPSCilindroSup') {
@@ -509,8 +579,7 @@ class TransformacionesAfin{
         if (this.alias === 'nucleoAnillo') {
             Nave.naveTransform = transforms.modelViewMatrix
             Nucleo.nucleoAnilloTransform = transforms.modelViewMatrix
-
-            mat4.translate(Nucleo.nucleoAnilloTransform, Nave.naveTransform, [0, 0, -5])
+            mat4.translate(Nucleo.nucleoAnilloTransform, Nave.naveTransform, [0, 0, -this.distanciaNucleoDelAnilloYNave])
             mat4.rotate(Nucleo.nucleoAnilloTransform,Nucleo.nucleoAnilloTransform , Math.PI/2, [1, 0, 0])
 
         }
@@ -618,23 +687,8 @@ function draw() {
 
             //Dependiendo del objeto se aplica la transformacion
 
-            //test
-            if(object.alias === 'tapatest') {
-                    const tapates = transforms.modelViewMatrix;
-                    mat4.translate(tapates, tapates, [0, 1.3, 3]);
-                    mat4.rotate(tapates, tapates, Math.PI/2, [1, 0, 0]);
-            } else if(object.alias === 'tapatestatras') {
-                const tapates = transforms.modelViewMatrix;
-                mat4.translate(tapates, tapates, [0, 0, 0]);
-                mat4.rotate(tapates, tapates, -3*Math.PI/4, [1, 0, 0]);
-            }
-
 
             //////////////////////////////////////////////////////////
-
-
-
-
             construir.nucleoDelPanelSolar()
 
             construir.panelesSolares()
@@ -643,6 +697,7 @@ function draw() {
 
             construir.anillo()
 
+            construir.modulosVioleta()
             ///////////////////////////////////////////
             transforms.setMatrixUniforms();
             transforms.pop();
@@ -650,7 +705,8 @@ function draw() {
             dibujarMallaDeObjeto(object)
 
         });
-        PanelesSolares.distanciaRelativaConElTuboPrincipal = 3.5 //se resetea
+        //se resetea para el frame
+        PanelesSolares.distanciaRelativaConElTuboPrincipal = 3.5
         Anillo.sentidoTuboInterior = 1
         Anillo.desplazamientoTuboInterior = 0
 

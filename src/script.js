@@ -24,8 +24,6 @@ import {
 
 import {CurvaCubicaDeBezier} from "./js/CurvasDeBezier";
 
-
-
 let
     gl, scene, program, camera, transforms, construir,
     elapsedTime, initialTime,
@@ -141,8 +139,8 @@ const dimensionesTriangulosTapa = dimensionesTriangulosTubo
 let arc =  Math.PI * 2;
 
 const dimensionesTriangulosTorus = {
-    filas: 30, //segmentosTubulares   //para el deploy 30
-    columnas: 80, //segmentosRadiales  //para el deploy 80
+    filas: 10, //segmentosTubulares   //para el deploy 30
+    columnas: 20, //segmentosRadiales  //para el deploy 80
 }
 const radioDelAnillo = 15.20,
       radioInteriorDelAnillo = 0.8,
@@ -207,25 +205,55 @@ function load() {
     scene.add(new Floor(80, 2));
     scene.add(new Axis(82));
 
-    cargarNucleo()
-    cargarPanelesSolares()
-   cargarAnillo()
-    bloquesDelAnillo()
-     moduloVioleta()
+  cargarNucleo()
+   cargarPanelesSolares()
+  cargarAnillo()
+    violetaTest()
+
+    // bloquesDelAnillo()
+  moduloVioleta()
+
 
 }
+function crearRecorridoCircular(radio,t, divisiones){
 
-function bloquesDelAnillo(){
+    const phi = 2*Math.PI *t
+
+    const arrayCoordenadas = []
+    const arrayNormales = []
+    const arrayTangentes = []
+    for (let i = 0; i <= divisiones; i++) {
+        const angulo =  phi * i/divisiones
+
+        const x = radio * Math.cos(angulo)
+        const y = radio * Math.sin(angulo)
+        //y las normales son
+        const nx = Math.cos(angulo)
+        const ny = Math.sin(angulo)
+        //y las tangentes son
+        const tx = -Math.sin(angulo)
+        const ty = Math.cos(angulo)
+
+        arrayCoordenadas.push([x,y])
+        arrayNormales.push([nx,ny,0])
+        arrayTangentes.push([tx,ty, 0])
+
+    }
+    const normal = [0,0,1] //normal de la curva es el eje z,
+
+    return {
+        puntos : arrayCoordenadas,
+        tangentes: arrayTangentes,
+        binormales: arrayNormales,
+        vectorNormal : normal
+    };
+}
+
+function violetaTest(){
+
     const pasoDiscretoRecorrido = 20;
     const divisionesForma = 10
 
-
-    const curvaRecorrido = new CurvaCubicaDeBezier(
-        [radioDelAnillo,0],
-        [15.4,4.14],
-        [12.84,8.89],
-        [coordTapaSuperior,coordTapaSuperior]
-    );
     const formaSuperficie = new Forma();
     //conservar el ingreso de datos, bezier, punto, bezier, punto .... IMPORTANTE PARA LAS NORMALES
     formaSuperficie.iniciarEn(2.2,0.6)
@@ -236,7 +264,79 @@ function bloquesDelAnillo(){
     formaSuperficie.CurvaBezierA(-2.2,-0.8,-2,-1,-1.8,-1)
     formaSuperficie.lineaA(1.8,-1)
     formaSuperficie.CurvaBezierA(2,-1,2.2,-0.8,2.2,-0.6)
-    formaSuperficie.lineaA(2.2,0.6)  //la ultima tangente/normal a mano
+    formaSuperficie.lineaA(2.2,0.6).curvaCerrada(true)  //la ultima tangente/normal a mano->Observar la direccion de la normal
+
+
+
+
+    const datosDeLaForma = crearForma(divisionesForma, formaSuperficie)
+    const pasoDiscretoForma = datosDeLaForma.puntos.length-1
+
+    const fullBloque = 1.0
+    const datosDelRecorridoFull = crearRecorridoCircular(15.2, fullBloque, pasoDiscretoRecorrido)
+
+
+    const dimensiones = {
+        filas: pasoDiscretoRecorrido, //paso discreto del recorrido
+        columnas: pasoDiscretoForma, //divisiones de la forma
+    }
+
+    /*
+    scene.add(new SuperficieParametrica("bloque8", datosDeLaForma, datosDelRecorridoFull, dimensiones, true),{
+        diffuse: colorVioleta,
+    });
+
+
+     */
+    /*
+    anguloGiroTapaSuperior = Math.atan(datosDelRecorrido.binormales[pasoDiscretoRecorrido][1]/datosDelRecorrido.binormales[pasoDiscretoRecorrido][0])
+    anguloGiroTapaInferior = Math.atan(datosDelRecorrido.binormales[0][1]/datosDelRecorrido.binormales[0][0])
+
+    console.log(anguloGiroTapaSuperior, anguloGiroTapaInferior)
+
+
+     */
+
+    const Bloque7 = 7/8
+
+    const datosDelRecorrido3cuartos = crearRecorridoCircular(15.2, Bloque7, pasoDiscretoRecorrido)
+    scene.add(new SuperficieParametrica("bloque7", datosDeLaForma, datosDelRecorrido3cuartos, dimensiones, true),{
+        diffuse: colorVioleta,
+    });
+
+
+}
+
+function bloquesDelAnillo(){
+    const pasoDiscretoRecorrido = 20;
+    const divisionesForma = 10
+
+    const curvaRecorrido = new CurvaCubicaDeBezier(
+        [15.2,0],
+        [15.4,4.14],
+        [12.84,8.89],
+        [10.748,10.748]
+    );
+
+    const curvaRecorrido2 = new CurvaCubicaDeBezier(
+        [10.748,10.748],
+        [8.07,13.55],
+        [3.77,15.26],
+        [0,15.2]
+    );
+
+
+    const formaSuperficie = new Forma();
+    //conservar el ingreso de datos, bezier, punto, bezier, punto .... IMPORTANTE PARA LAS NORMALES
+    formaSuperficie.iniciarEn(2.2,0.6)
+    formaSuperficie.CurvaBezierA(2.2,0.8,2,1,1.8,1)
+    formaSuperficie.lineaA(-1.8,1)
+    formaSuperficie.CurvaBezierA(-2,1,-2.2,0.8,-2.2,0.6)
+    formaSuperficie.lineaA(-2.2,-0.6)
+    formaSuperficie.CurvaBezierA(-2.2,-0.8,-2,-1,-1.8,-1)
+    formaSuperficie.lineaA(1.8,-1)
+    formaSuperficie.CurvaBezierA(2,-1,2.2,-0.8,2.2,-0.6)
+    formaSuperficie.lineaA(2.2,0.6).curvaCerrada(true)  //la ultima tangente/normal a mano->Observar la direccion de la normal
 
 
     const datosDeLaForma = crearForma(divisionesForma, formaSuperficie)
@@ -250,6 +350,7 @@ function bloquesDelAnillo(){
         filas: pasoDiscretoRecorrido, //paso discreto del recorrido
         columnas: pasoDiscretoForma, //divisiones de la forma
     }
+    console.log(dimensiones)
 
     for (let i =0; i<4; i++){
         scene.add(new SuperficieParametrica("bloque", datosDeLaForma, datosDelRecorrido, dimensiones),{
@@ -269,7 +370,6 @@ function bloquesDelAnillo(){
     }
 
 
-
 }
 //Cuidado, la ultima tangente esta a mano, verificar dependiendo la forma
 function crearForma(divisiones, formaSuperficie){
@@ -277,10 +377,10 @@ function crearForma(divisiones, formaSuperficie){
     const { puntos, puntosTangentes } = formaSuperficie.extraerPuntos(divisiones)
     const normales = utils.calcularNormales(puntosTangentes)
 
-    normales.push([1,0])  //la ultima tangente/normal a mano
-
     if(puntos.length !== normales.length){
-        console.error("No coinciden puntos y normales",puntos.length, normales.length)
+        console.error("Se agrega la normal [1,0] al pt:",puntos[puntos.length - 1])
+        normales.push([1,0])  //la ultima tangente/normal a mano
+
     }
     return {
         puntos,
@@ -288,19 +388,19 @@ function crearForma(divisiones, formaSuperficie){
     };
 }
 
-function crearRecorrido(pasoDiscreto, curvaRecorrido) {
+function crearRecorrido(pasoDiscreto, curvaRecorrido, normalDelCamino = [1,0,0]) {
 
-    const {puntos,tangentes} = curvaRecorrido.getPoints(pasoDiscreto)
+    const {puntos,puntosTangentes} = curvaRecorrido.extraerPuntos(pasoDiscreto)
+   // console.log(puntos, tangentes)
+    const arrayDeTangentes = utils.pasarTanAVector3(puntosTangentes)
 
-    const arrayDeTangentes = utils.pasarTanAVector3(tangentes)
-
-    const vectorNormal = [1,0,0]
+    const vectorNormal = normalDelCamino
     const arrayDeBinormales = utils.calcularVectorBinormal(vectorNormal, arrayDeTangentes)
 
 
     //comparar la longitud de puntos, tangentes, y binormales, y si son distintos devolver error
-    if(puntos.length !== tangentes.length || tangentes.length !== arrayDeBinormales.length){
-        console.error("No coinciden puntos, tangentes y binormales",puntos.length, tangentes.length, arrayDeBinormales.length)
+    if(puntos.length !== puntosTangentes.length || puntosTangentes.length !== arrayDeBinormales.length){
+        console.error("No coinciden puntos, tangentes y binormales",puntos.length, puntosTangentes.length, arrayDeBinormales.length)
     }
 
     return {
@@ -325,44 +425,50 @@ function moduloVioleta(){
     const formaSuperficie = new Forma();
     //conservar el ingreso de datos, bezier, punto, bezier, punto .... IMPORTANTE PARA LAS NORMALES
     formaSuperficie.iniciarEn(1,0.5)
-    formaSuperficie.CurvaBezierA(1,0.8,0.8,1,0.5,1)
-    formaSuperficie.lineaA(-0.5,1)
-    formaSuperficie.CurvaBezierA(-0.8,1,-1,0.8,-1,0.5)
-    formaSuperficie.lineaA(-1,-0.5)
-    formaSuperficie.CurvaBezierA(-1,-0.8,-0.8,-1,-0.5,-1)
-    formaSuperficie.lineaA(0.5,-1)
-    formaSuperficie.CurvaBezierA(0.8,-1,1,-0.8,1,-0.5)
-    formaSuperficie.lineaA(1,0.5)  //la ultima tangente/normal a mano
+        .CurvaBezierA(1,0.8,0.8,1,0.5,1)
+        .lineaA(-0.5,1)
+        .CurvaBezierA(-0.8,1,-1,0.8,-1,0.5)
+        .lineaA(-1,-0.5)
+        .CurvaBezierA(-1,-0.8,-0.8,-1,-0.5,-1)
+        .lineaA(0.5,-1)
+        .CurvaBezierA(0.8,-1,1,-0.8,1,-0.5)
+        .lineaA(1,0.5).curvaCerrada(true)  //la ultima tangente/normal a mano
+
+
+    const datosDelRecorrido = crearRecorrido(pasoDiscretoRecorrido, curvaRecorrido)
+
 
     const datosDeLaForma = crearForma(divisionesForma, formaSuperficie)
-    const datosDelRecorrido = crearRecorrido(pasoDiscretoRecorrido, curvaRecorrido)
-    const pasoDiscretoForma = datosDeLaForma.puntos.length-1
-
-    const dimensiones = {
-        filas: pasoDiscretoRecorrido, //paso discreto del recorrido
-        columnas: pasoDiscretoForma, //divisiones de la forma
-    }
-
-    scene.add(new SuperficieParametrica("moduloVioletaPS", datosDeLaForma, datosDelRecorrido, dimensiones),{
-        diffuse: colorVioleta,
-    });
-    scene.add(new SuperficieParametrica("moduloVioletaAnillo", datosDeLaForma, datosDelRecorrido, dimensiones),{
-        diffuse: colorVioleta,
-    });
-
-    //No necesito las tapas
-    /*
-    scene.add(new TapaSuperficieParametrica(
-        "moduloVioletaPSTapaAdelante", datosDeLaForma.puntos, {filas: 1, columnas: pasoDiscretoForma}),{
-        diffuse: colorVioleta,
-    });
 
 
-    scene.add(new TapaSuperficieParametrica(
-        "moduloVioletaPSTapaAtras", datosDeLaForma.puntos,  {filas: 1, columnas: pasoDiscretoForma}),{
-        diffuse: colorVioleta,
-    });
+   const pasoDiscretoForma = datosDeLaForma.puntos.length-1
+
+   const dimensiones = {
+       filas: pasoDiscretoRecorrido, //paso discreto del recorrido
+       columnas: pasoDiscretoForma, //divisiones de la forma
+   }
+
+   scene.add(new SuperficieParametrica("moduloVioletaPS", datosDeLaForma, datosDelRecorrido, dimensiones),{
+       diffuse: colorVioleta,
+   });
+   scene.add(new SuperficieParametrica("moduloVioletaAnillo", datosDeLaForma, datosDelRecorrido, dimensiones),{
+       diffuse: colorVioleta,
+   });
+
+   //No necesito las tapas
+   /*
+   scene.add(new TapaSuperficieParametrica(
+       "moduloVioletaPSTapaAdelante", datosDeLaForma.puntos, {filas: 1, columnas: pasoDiscretoForma}),{
+       diffuse: colorVioleta,
+   });
+
+
+   scene.add(new TapaSuperficieParametrica(
+       "moduloVioletaPSTapaAtras", datosDeLaForma.puntos,  {filas: 1, columnas: pasoDiscretoForma}),{
+       diffuse: colorVioleta,
+   });
 */
+
 
 
 }
@@ -514,45 +620,55 @@ const Anillo = {
     alturaTapaSuperior : 0.9,
     alturaTapaInferior : 0.1,
 }
+const Bloques = {
+    bloqueTransform : null,
+    centrarElBloque : 0.42,
 
+    distanciaNucleoDelAnilloYNave : dimensionesNucleoPS.altura + dimensionesCilindroNucleoPS.altura,
+    distanciaModuloVioletaYNave : dimensionesNucleoPS.altura + 2*dimensionesCilindroNucleoPS.altura +profundidadModuloVioleta,
+    posicionBloque : 0
+}
 class TransformacionesAfin{
     constructor() {
-        //posicionamiento
-        this.distanciaNucleoDelAnilloYNave = dimensionesNucleoPS.altura + dimensionesCilindroNucleoPS.altura
-        this.distanciaModuloVioletaYNave = dimensionesNucleoPS.altura + 2*dimensionesCilindroNucleoPS.altura +profundidadModuloVioleta
-        //matrices
-        this.posicionBloque = 0 //pueden estar en el objeto o ser constantes globales
-        this.bloqueTransform = null
-
-    }
-    resetear(){
-        this.posicionBloque = 0
     }
     setAlias(alias){
         this.alias = alias;
     }
     bloques() {
 
-        if (this.alias === 'bloque') {
+        if(this.alias === 'bloque7'){
+            const bloque7Transform = transforms.modelViewMatrix
 
-            const centrarElBloque = 0.42
-            this.bloqueTransform = transforms.modelViewMatrix
-            mat4.rotate(this.bloqueTransform, Anillo.pastillaTransform, Math.PI + this.posicionBloque * Math.PI / 2 + Math.PI / 8, [0, 1, 0])
-            mat4.rotate(this.bloqueTransform, this.bloqueTransform, Math.PI / 2, [0, 0, 1])
-            mat4.translate(this.bloqueTransform, this.bloqueTransform, [centrarElBloque, 0, 0])
-            this.posicionBloque++
+            mat4.rotate(bloque7Transform, Anillo.pastillaTransform, -3*Math.PI/8, [0,1, 0])
+            mat4.translate(bloque7Transform, bloque7Transform, [0, Bloques.centrarElBloque, 0])
+            mat4.rotate(bloque7Transform, bloque7Transform, Math.PI/2, [1,0, 0])
+
+        } else if(this.alias === 'bloque8'){
+            const bloque8Transform = transforms.modelViewMatrix
+            mat4.translate(bloque8Transform, Anillo.pastillaTransform, [0, Bloques.centrarElBloque, 0])
+            mat4.rotate(bloque8Transform, bloque8Transform, Math.PI/2, [1,0, 0])
+
+
+        }else if (this.alias === 'bloque') {
+
+            Bloques.bloqueTransform = transforms.modelViewMatrix
+            mat4.rotate(Bloques.bloqueTransform, Anillo.pastillaTransform, Math.PI + Bloques.posicionBloque * Math.PI / 2 + Math.PI / 8, [0, 1, 0])
+            mat4.rotate(Bloques.bloqueTransform, Bloques.bloqueTransform, Math.PI / 2, [0, 0, 1])
+            mat4.translate(Bloques.bloqueTransform, Bloques.bloqueTransform, [Bloques.centrarElBloque, 0, 0])
+            Bloques.posicionBloque++
 
         } else if (this.alias === 'bloqueTapaAdelante') {
             const bloqueTapaAdelanteTransform = transforms.modelViewMatrix
-            mat4.translate(bloqueTapaAdelanteTransform, this.bloqueTransform, [0, coordTapaSuperior, coordTapaSuperior]);
+            mat4.translate(bloqueTapaAdelanteTransform, Bloques.bloqueTransform, [0, coordTapaSuperior, coordTapaSuperior]);
             mat4.rotate(bloqueTapaAdelanteTransform, bloqueTapaAdelanteTransform, -anguloGiroTapaSuperior, [1, 0, 0])
 
         } else if (this.alias === 'bloqueTapaAtras') {
             const bloqueTapaAtrasTransform = transforms.modelViewMatrix
-            mat4.translate(bloqueTapaAtrasTransform,this.bloqueTransform, [0, 0, radioDelAnillo]);
+            mat4.translate(bloqueTapaAtrasTransform,Bloques.bloqueTransform, [0, 0, radioDelAnillo]);
             mat4.rotate(bloqueTapaAtrasTransform, bloqueTapaAtrasTransform, -Math.PI - anguloGiroTapaInferior, [1, 0, 0])
 
         }
+
     }
 
     modulosVioleta(){
@@ -565,7 +681,7 @@ class TransformacionesAfin{
             Nave.naveTransform = transforms.modelViewMatrix
             const moduloVioletaAnilloTransform = transforms.modelViewMatrix
             mat4.translate(moduloVioletaAnilloTransform, Nave.naveTransform, [0, 0,
-                -this.distanciaModuloVioletaYNave ])
+                -Bloques.distanciaModuloVioletaYNave ])
         }
         /* No necesito las tapas
         if(this.alias === 'moduloVioletaPSTapaAdelante') {
@@ -581,6 +697,7 @@ class TransformacionesAfin{
          */
 
     }
+
     nucleoDelPanelSolar(){
         const distanciaModuloVioleta = profundidadModuloVioleta + dimensionesCilindroNucleoPS.altura
         if (this.alias === 'nucleoPS') {
@@ -656,7 +773,7 @@ class TransformacionesAfin{
         if (this.alias === 'nucleoAnillo') {
             Nave.naveTransform = transforms.modelViewMatrix
             Nucleo.nucleoAnilloTransform = transforms.modelViewMatrix
-            mat4.translate(Nucleo.nucleoAnilloTransform, Nave.naveTransform, [0, 0, -this.distanciaNucleoDelAnilloYNave])
+            mat4.translate(Nucleo.nucleoAnilloTransform, Nave.naveTransform, [0, 0, -Bloques.distanciaNucleoDelAnilloYNave])
             mat4.rotate(Nucleo.nucleoAnilloTransform,Nucleo.nucleoAnilloTransform , Math.PI/2, [1, 0, 0])
 
         }
@@ -688,9 +805,8 @@ class TransformacionesAfin{
         if (this.alias === 'pastillaCuerpo') {
             const pastillaEnElMedio = 2-0.45;
             Anillo.pastillaTransform = transforms.modelViewMatrix;
-            console.log(spherePosition)
-            mat4.rotate(Anillo.pastillaTransform, Nucleo.nucleoAnilloTransform, Math.PI/2 * spherePosition/10, [0, 1, 0]);
-            mat4.translate(Anillo.pastillaTransform, Anillo.pastillaTransform, [0, pastillaEnElMedio, 0]);
+           // mat4.rotate(Anillo.pastillaTransform, Nucleo.nucleoAnilloTransform, Math.PI/2 * spherePosition/10, [0, 1, 0]);
+            mat4.translate(Anillo.pastillaTransform, Nucleo.nucleoAnilloTransform, [0, pastillaEnElMedio, 0]);
 
         } else if (this.alias === 'pastillaCilindroSup') {
             const pastillaCilindroSupTransform = transforms.modelViewMatrix;
@@ -777,6 +893,7 @@ function draw() {
             construir.anillo()
 
             construir.bloques()
+
             construir.modulosVioleta()
             ///////////////////////////////////////////
             transforms.setMatrixUniforms();
@@ -786,7 +903,7 @@ function draw() {
 
         });
         //se resetea para el siguiente frame
-        construir.resetear()
+        Bloques.posicionBloque = 0
         PanelesSolares.distanciaRelativaConElTuboPrincipal = 3.5
         Anillo.sentidoTuboInterior = 1
         Anillo.desplazamientoTuboInterior = 0

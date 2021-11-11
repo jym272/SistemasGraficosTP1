@@ -1,7 +1,6 @@
 'use strict';
 import * as dat from 'dat.gui';
 import {vec3} from "gl-matrix";
-import {Vector3} from "three";
 
 
 

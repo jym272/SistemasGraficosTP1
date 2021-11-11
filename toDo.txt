@@ -1,0 +1,7 @@
+si es una forma, recorrido cerrado, la tangente del primer punto es la del ultimo punto
+
+
+--> analizar bien las tangentes y las fromas 
+
+formas con solo curvas de bezier
+

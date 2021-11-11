@@ -11,6 +11,10 @@ export class Forma {
     constructor(  ) {
         this.curvas = [];
         this.puntoActual = [0,0]; // x,y
+        this.esCurvaCerrada = false
+    }
+    curvaCerrada(boolean){
+        this.esCurvaCerrada = boolean;
     }
     actualizarPuntoActual( x, y ) {
 
@@ -23,21 +27,18 @@ export class Forma {
     extraerPuntos( divisiones = 12 ) {
 
         const puntos = [];
-        const puntosTangentes = [];
-
+        const PuntosTangentes = [];
         let last;
         for ( let i = 0, curvas = this.curvas; i < curvas.length; i ++ ) {
 
             const curva = curvas[ i ];
 
-            let pts,tan
+            let pts,tan;
             if(curva && curva.type === 'CurvaDeBezier'){ //solo tengo lineas o bezier
-                const {puntos, tangentes} = curva.getPoints( divisiones ) //puntos de bezier
+                const {puntos, puntosTangentes} = curva.extraerPuntos( divisiones ) //puntos de bezier
                 pts = puntos
-                tan = tangentes  //tangentes de bezier, solo trabajo con estas siguiendo la forma: linea,bezier, linea,bezier, etc
-                if(tan) {
-                    puntosTangentes.push(...tan) //acumula las tangentes si existen
-                }
+                tan = puntosTangentes  //tangentes de bezier, solo trabajo con estas siguiendo la forma: linea,bezier, linea,bezier, etc
+                PuntosTangentes.push(...tan)
             }else{
                 pts = curva
             }
@@ -46,7 +47,11 @@ export class Forma {
 
                 const punto = pts[ j ];
 
-                if ( last && last[0] === punto[0] && last[1] === punto[1] ) continue; // Avoid dupes!
+                if ( last && last[0] === punto[0] && last[1] === punto[1] ) {
+
+                    continue; // Avoid dupes!
+
+                }
 
                 puntos.push( punto );
 
@@ -54,9 +59,12 @@ export class Forma {
             }
 
         }
+        if(this.esCurvaCerrada === true){
+            PuntosTangentes.push(PuntosTangentes[0])
+        }
         return{
             puntos,
-            puntosTangentes
+            puntosTangentes : PuntosTangentes
         };
     }
     clonarPuntoActual() {
@@ -142,17 +150,19 @@ export class TapaSuperficieParametrica extends Superficie{
 // columnas son las divisiones, filas -> v, columnas -> u
 // filas-> el paso discreto del camino / columnas -> el paso discreto de la forma
 export class SuperficieParametrica extends  Superficie{
-    constructor(alias,datosDeLaForma, datosDelRecorrido,dimensionesTriangulos)
+    constructor(alias,datosDeLaForma, datosDelRecorrido,dimensionesTriangulos, recorridoXY = false)
     {
         super(dimensionesTriangulos, alias)
         this.datosDelRecorrido = datosDelRecorrido
         this.datosDeLaForma = datosDeLaForma
+        this.recorridoXY = recorridoXY
         this.construir();
     }
     superficie() {
         let i = 0
         let j = 0
         const recorrido = this.datosDelRecorrido
+        const recorridoXY = this.recorridoXY
         const forma = this.datosDeLaForma
         let normalTransformada
         return {
@@ -170,14 +180,22 @@ export class SuperficieParametrica extends  Superficie{
                 const puntoRecorrido = recorrido.puntos[j]
                 const vectorNormal = recorrido.vectorNormal
 
-                const matrizDeNivel = mat4.create()
+
+                const matrizDeNivel = mat4.create();
+                (recorridoXY)?
                 mat4.set(
                     matrizDeNivel,
-                    vectorNormal[0], vectorBinormal[0], vectorTangente[0], 0,
+                    vectorNormal[0], vectorBinormal[0], vectorTangente[0], puntoRecorrido[0],
                     vectorNormal[1], vectorBinormal[1], vectorTangente[1], puntoRecorrido[1],
-                    vectorNormal[2], vectorBinormal[2], vectorTangente[2], puntoRecorrido[0],
+                    vectorNormal[2], vectorBinormal[2], vectorTangente[2], 0,
                     0, 0, 0, 1
-                )
+                ):mat4.set(
+                        matrizDeNivel,
+                        vectorNormal[0], vectorBinormal[0], vectorTangente[0], 0,
+                        vectorNormal[1], vectorBinormal[1], vectorTangente[1], puntoRecorrido[1],
+                        vectorNormal[2], vectorBinormal[2], vectorTangente[2], puntoRecorrido[0],
+                        0, 0, 0, 1
+                    );
                 mat4.transpose(matrizDeNivel, matrizDeNivel) //debido al ingreso(poco intuitivo) de la matriz en forma de columnas
                 const verticesTransformados = vec4.create()
                 vec4.set(

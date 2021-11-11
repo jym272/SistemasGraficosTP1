@@ -46,26 +46,27 @@ export class CurvaCubicaDeBezier{
 
     }
 
-    getPoints( divisions = 5 ) {
+    extraerPuntos( divisions = 5 ) {
 
         const puntos = [];
-        const tangentes = [];
+        const puntosTangentes = [];
 
         for ( let d = 0; d <= divisions; d ++ ) {
 
-            puntos.push( this.getPoint( d / divisions ) );
-            tangentes.push( this.getTangent( d / divisions ) );
+            puntos.push( this.extraerPunto( d / divisions ) );
+            puntosTangentes.push( this.getTangent( d / divisions ) );
+            //console.log(puntos, tangentes)
 
         }
 
         return {
             puntos,
-            tangentes
+            puntosTangentes,
         };
 
     }
 
-    getPoint( t, optionalTarget = [0,0]) {
+    extraerPunto( t, optionalTarget = [0,0]) {
 
         const point = optionalTarget;
 
@@ -85,8 +86,8 @@ export class CurvaCubicaDeBezier{
         if ( t1 < 0 ) t1 = 0;
         if ( t2 > 1 ) t2 = 1;
 
-        const pt1 = this.getPoint( t1 );
-        const pt2 = this.getPoint( t2 );
+        const pt1 = this.extraerPunto( t1 );
+        const pt2 = this.extraerPunto( t2 );
 
         const tangent = utils.restarVectores( pt2, pt1 );
 

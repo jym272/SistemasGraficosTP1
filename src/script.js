@@ -207,11 +207,11 @@ function load() {
 
   cargarNucleo()
    cargarPanelesSolares()
-  cargarAnillo()
+   cargarAnillo()
     violetaTest()
 
     // bloquesDelAnillo()
-  moduloVioleta()
+  // moduloVioleta()
 
 
 }
@@ -249,60 +249,118 @@ function crearRecorridoCircular(radio,t, divisiones){
     };
 }
 
-function violetaTest(){
 
-    const pasoDiscretoRecorrido = 20;
-    const divisionesForma = 10
+class Bloque{
+    constructor(type = Bloque.BLOQUES_8) {
 
-    const formaSuperficie = new Forma();
-    //conservar el ingreso de datos, bezier, punto, bezier, punto .... IMPORTANTE PARA LAS NORMALES
-    formaSuperficie.iniciarEn(2.2,0.6)
-    formaSuperficie.CurvaBezierA(2.2,0.8,2,1,1.8,1)
-    formaSuperficie.lineaA(-1.8,1)
-    formaSuperficie.CurvaBezierA(-2,1,-2.2,0.8,-2.2,0.6)
-    formaSuperficie.lineaA(-2.2,-0.6)
-    formaSuperficie.CurvaBezierA(-2.2,-0.8,-2,-1,-1.8,-1)
-    formaSuperficie.lineaA(1.8,-1)
-    formaSuperficie.CurvaBezierA(2,-1,2.2,-0.8,2.2,-0.6)
-    formaSuperficie.lineaA(2.2,0.6).curvaCerrada(true)  //la ultima tangente/normal a mano->Observar la direccion de la normal
+        this.bloqueActual = null
+        this.bloque6 = []
+        this.bloque5 = []
+        this.bloque4 = []
+        this.construirBloques()
+        this.setType(type)
+    }
+    construirBloques(){
+        const pasoDiscretoRecorrido = 20;
+        const divisionesForma = 10
+
+        const formaSuperficie = new Forma();
+        //conservar el ingreso de datos, bezier, punto, bezier, punto .... IMPORTANTE PARA LAS NORMALES
+        formaSuperficie.iniciarEn(2.2,0.6)
+        formaSuperficie.CurvaBezierA(2.2,0.8,2,1,1.8,1)
+        formaSuperficie.lineaA(-1.8,1)
+        formaSuperficie.CurvaBezierA(-2,1,-2.2,0.8,-2.2,0.6)
+        formaSuperficie.lineaA(-2.2,-0.6)
+        formaSuperficie.CurvaBezierA(-2.2,-0.8,-2,-1,-1.8,-1)
+        formaSuperficie.lineaA(1.8,-1)
+        formaSuperficie.CurvaBezierA(2,-1,2.2,-0.8,2.2,-0.6)
+        formaSuperficie.lineaA(2.2,0.6).curvaCerrada(true)  //la ultima tangente/normal a mano->Observar la direccion de la normal
+
+
+
+        const datosDeLaForma = crearForma(divisionesForma, formaSuperficie)
+        const pasoDiscretoForma = datosDeLaForma.puntos.length-1
+
+        const fullBloque = 1.0
+        const datosDelRecorridoFull = crearRecorridoCircular(15.2, fullBloque, pasoDiscretoRecorrido)
+
+
+        const dimensiones = {
+            filas: pasoDiscretoRecorrido, //paso discreto del recorrido
+            columnas: pasoDiscretoForma, //divisiones de la forma
+        }
+
+        this.dictionary = {};
+        Bloque.TYPES.forEach(item => {
+            this.dictionary[item] = []
+        });
+
+
+        this.dictionary[Bloque.BLOQUES_8].push(new SuperficieParametrica("bloque8", datosDeLaForma, datosDelRecorridoFull, dimensiones, true))
+
+        const Bloque7 = 7/8
+        const datosDelRecorrido3cuartos = crearRecorridoCircular(15.2, Bloque7, pasoDiscretoRecorrido)
+
+        this.dictionary[Bloque.BLOQUES_7].push( new SuperficieParametrica("bloque7", datosDeLaForma, datosDelRecorrido3cuartos, dimensiones, true))
+
+        this.dictionary[Bloque.BLOQUES_7].push(new TapaSuperficieParametrica(
+            "bloque7TapaAdelante", datosDeLaForma.puntos, {filas: 1, columnas: pasoDiscretoForma}))
+
+        this.dictionary[Bloque.BLOQUES_7].push(new TapaSuperficieParametrica(
+            "bloque7TapaAtras", datosDeLaForma.puntos,  {filas: 1, columnas: pasoDiscretoForma}))
 
 
 
 
-    const datosDeLaForma = crearForma(divisionesForma, formaSuperficie)
-    const pasoDiscretoForma = datosDeLaForma.puntos.length-1
-
-    const fullBloque = 1.0
-    const datosDelRecorridoFull = crearRecorridoCircular(15.2, fullBloque, pasoDiscretoRecorrido)
+        console.log(this.dictionary)
 
 
-    const dimensiones = {
-        filas: pasoDiscretoRecorrido, //paso discreto del recorrido
-        columnas: pasoDiscretoForma, //divisiones de la forma
+
+        /*
+        anguloGiroTapaSuperior = Math.atan(datosDelRecorrido.binormales[pasoDiscretoRecorrido][1]/datosDelRecorrido.binormales[pasoDiscretoRecorrido][0])
+        anguloGiroTapaInferior = Math.atan(datosDelRecorrido.binormales[0][1]/datosDelRecorrido.binormales[0][0])
+
+        console.log(anguloGiroTapaSuperior, anguloGiroTapaInferior)
+
+
+         */
+
+
     }
 
-    /*
-    scene.add(new SuperficieParametrica("bloque8", datosDeLaForma, datosDelRecorridoFull, dimensiones, true),{
-        diffuse: colorVioleta,
-    });
+    setType(type) {
+        ~Bloque.TYPES.indexOf(type)
+            ? this.type = type
+            : console.error(`Bloque type (${type}) not supported`);
+
+            if(this.bloqueActual != null)
+                this.bloqueActual.forEach(item => {
+                    scene.remove(item.alias)
+                });
+
+            this.actualizarEscena2()
+    }
+    actualizarEscena2(){
+        this.dictionary[this.type].forEach(item => {
+            scene.add(item,{
+                diffuse: colorVioleta,
+            });
+        });
+        this.bloqueActual = this.dictionary[this.type]
+    }
+}
 
 
-     */
-    /*
-    anguloGiroTapaSuperior = Math.atan(datosDelRecorrido.binormales[pasoDiscretoRecorrido][1]/datosDelRecorrido.binormales[pasoDiscretoRecorrido][0])
-    anguloGiroTapaInferior = Math.atan(datosDelRecorrido.binormales[0][1]/datosDelRecorrido.binormales[0][0])
+// Two defined modes for the camera
+Bloque.TYPES = ['BLOQUES_8', 'BLOQUES_7', 'BLOQUES_6', 'BLOQUES_5', 'BLOQUES_4'];
+Bloque.TYPES.forEach(type => Bloque[type] = type)
 
-    console.log(anguloGiroTapaSuperior, anguloGiroTapaInferior)
+let bloque
+function violetaTest(){
+    bloque = new Bloque(Bloque.BLOQUES_8) //inicializar en config
 
 
-     */
 
-    const Bloque7 = 7/8
-
-    const datosDelRecorrido3cuartos = crearRecorridoCircular(15.2, Bloque7, pasoDiscretoRecorrido)
-    scene.add(new SuperficieParametrica("bloque7", datosDeLaForma, datosDelRecorrido3cuartos, dimensiones, true),{
-        diffuse: colorVioleta,
-    });
 
 
 }
@@ -610,7 +668,7 @@ const PanelesSolares= {
     distanciaConElNucleo: 4.5,
 }
 const Anillo = {
-    torusTransform : null,// transforms.modelViewMatrix, //momentario sino null es para los segmentos del menu
+    torusTransform :  null,//transforms.modelViewMatrix, //momentario sino null es para los segmentos del menu
     distanciaTubosInteriores : radioDelAnillo,
     sentidoTuboInterior : 1,
     desplazamientoTuboInterior : 0,
@@ -626,7 +684,9 @@ const Bloques = {
 
     distanciaNucleoDelAnilloYNave : dimensionesNucleoPS.altura + dimensionesCilindroNucleoPS.altura,
     distanciaModuloVioletaYNave : dimensionesNucleoPS.altura + 2*dimensionesCilindroNucleoPS.altura +profundidadModuloVioleta,
-    posicionBloque : 0
+    posicionBloque : 0,
+
+
 }
 class TransformacionesAfin{
     constructor() {
@@ -637,19 +697,38 @@ class TransformacionesAfin{
     bloques() {
 
         if(this.alias === 'bloque7'){
-            const bloque7Transform = transforms.modelViewMatrix
-
-            mat4.rotate(bloque7Transform, Anillo.pastillaTransform, -3*Math.PI/8, [0,1, 0])
-            mat4.translate(bloque7Transform, bloque7Transform, [0, Bloques.centrarElBloque, 0])
-            mat4.rotate(bloque7Transform, bloque7Transform, Math.PI/2, [1,0, 0])
-
-        } else if(this.alias === 'bloque8'){
-            const bloque8Transform = transforms.modelViewMatrix
-            mat4.translate(bloque8Transform, Anillo.pastillaTransform, [0, Bloques.centrarElBloque, 0])
-            mat4.rotate(bloque8Transform, bloque8Transform, Math.PI/2, [1,0, 0])
+            Bloques.bloqueTransform = transforms.modelViewMatrix
 
 
-        }else if (this.alias === 'bloque') {
+            mat4.rotate(Bloques.bloqueTransform, Anillo.pastillaTransform, -3*Math.PI/8, [0,1, 0])
+            mat4.translate(Bloques.bloqueTransform, Bloques.bloqueTransform, [0, Bloques.centrarElBloque, 0])
+            mat4.rotate(Bloques.bloqueTransform, Bloques.bloqueTransform, Math.PI/2, [1,0, 0])
+
+
+
+        }else if(this.alias === 'bloque7TapaAdelante'){
+            const bloque7TapaAdelanteTransform = transforms.modelViewMatrix
+            mat4.translate(bloque7TapaAdelanteTransform, Bloques.bloqueTransform, [15.2, 0, 0])
+            mat4.rotate(bloque7TapaAdelanteTransform, bloque7TapaAdelanteTransform,Math.PI, [1, 0, 1])
+        }else if(this.alias === 'bloque7TapaAtras'){
+            const bloque7TapaAtrasTransform = transforms.modelViewMatrix
+
+            mat4.translate(bloque7TapaAtrasTransform, Bloques.bloqueTransform, [15.2/Math.sqrt(2), -15.2/Math.sqrt(2), 0])
+            mat4.rotate(bloque7TapaAtrasTransform, bloque7TapaAtrasTransform,Math.PI, [1, 0, 1])
+            mat4.rotate(bloque7TapaAtrasTransform, bloque7TapaAtrasTransform,3*Math.PI/4, [1, 0, 0])
+
+        }
+
+        else if(this.alias === 'bloque8'){
+            Bloques.bloqueTransform = transforms.modelViewMatrix
+            mat4.translate(Bloques.bloqueTransform, Anillo.pastillaTransform, [0, Bloques.centrarElBloque, 0])
+            mat4.rotate(Bloques.bloqueTransform, Bloques.bloqueTransform, Math.PI/2, [1,0, 0])
+
+
+        }
+
+/*
+        else if (this.alias === 'bloque') {
 
             Bloques.bloqueTransform = transforms.modelViewMatrix
             mat4.rotate(Bloques.bloqueTransform, Anillo.pastillaTransform, Math.PI + Bloques.posicionBloque * Math.PI / 2 + Math.PI / 8, [0, 1, 0])
@@ -669,6 +748,8 @@ class TransformacionesAfin{
 
         }
 
+
+         */
     }
 
     modulosVioleta(){
@@ -991,6 +1072,13 @@ function initControls() {
             onChange: v => {
                 camera.goHome();
                 camera.setType(v);
+            }
+        },
+        'Bloques': {
+            value: bloque.type,
+            options: [Bloque.BLOQUES_8, Bloque.BLOQUES_7, Bloque.BLOQUES_6, Bloque.BLOQUES_5, Bloque.BLOQUES_4],
+            onChange: v => {
+                bloque.setType(v);
             }
         },
         'Paneles Solares Filas': {

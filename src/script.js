@@ -1129,10 +1129,13 @@ function initControls() {
             min: 0, max: 360, step: 1,
             onChange: v => anguloRotacionPanelSolar = v,
         },
+        /*
         'Static Light Position': {
             value: fixedLight,
             onChange: v => fixedLight = v
         },
+
+         */
         'Go Home': () => camera.goHome(),
         'Wireframe': () => {
 
@@ -1148,31 +1151,7 @@ function initControls() {
         value: triangleStrip,
             onChange: v => triangleStrip = v
         },
-        'Arco Toro': {
-            value: arc,
-            min:0, max:360, step:1,
-            onChange: v => {
-                arc = v * Math.PI * 2 / 360;
-                cargarYDescargarToro();
-            }
-        },
-        'Seg tubulares': {
-            value: dimensionesTriangulosTorus.filas,
-            min:0, max:100, step:1,
-            onChange: v => {
-                dimensionesTriangulosTorus.filas = v;
-                cargarYDescargarToro();
-            }
-        },
-        'Seg radiales': {
-            value: dimensionesTriangulosTorus.columnas,
-            min:0, max:100, step:1,
-            onChange: v => {
-                dimensionesTriangulosTorus.columnas = v;
-                cargarYDescargarToro();
-            }
-        },
-    },{closed: true}
+    },{closed: false}
         );
 }
 function cargarYDescargarToro(){

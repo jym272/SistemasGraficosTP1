@@ -1,5 +1,5 @@
 'use strict';
-import './style.css'
+//import './style.css'
 import {utils} from './js/utils';
 import {mat4} from "gl-matrix";
 import {Program} from "./js/Program";
@@ -34,7 +34,7 @@ let
     dxCone = 0.15,
     spherePosition = 0,
     conePosition = 0,
-    frequency = 5; //ms
+    frequency = 20; //ms
 
 function configure() {
     // Configure `canvas`
@@ -1060,7 +1060,6 @@ function animate() {
     if (spherePosition >= 100 || spherePosition <= -100) {
         dxSphere = -dxSphere;
     }
-
     conePosition += dxCone;
     if (conePosition >= 35 || conePosition <= -35) {
         dxCone = -dxCone;
@@ -1068,12 +1067,15 @@ function animate() {
 
     draw();
 }
-
+frequency = 30
 function onFrame() {
     elapsedTime = (new Date).getTime() - initialTime;
-    if (elapsedTime < frequency) return;
+    if (elapsedTime < frequency) return; //no me sirve, intente de nuevo
+
+    // console.log(elapsedTime)
 
     let steps = Math.floor(elapsedTime / frequency);
+    console.log(steps)
     while (steps > 0) {
         animate();
         //draw()

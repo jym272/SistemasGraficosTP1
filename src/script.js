@@ -30,11 +30,10 @@ let
     fixedLight = false,
     triangleStrip = true,
     wireframe = false,
-    dxSphere = 0.1,
-    dxCone = 0.15,
-    spherePosition = 0,
-    conePosition = 0,
-    frequency = 20; //ms
+    dxAnillo = 0.01,
+    posicionAnillo = 0,
+    lightPosition = [0, 120, 120],
+    animationRate; //ms
 
 function configure() {
     // Configure `canvas`
@@ -88,7 +87,7 @@ function configure() {
     // Configure `transforms`
     transforms = new Transforms(gl, program, camera, canvas);
 
-    gl.uniform3fv(program.uLightPosition, [0, 8, 24]);
+    gl.uniform3fv(program.uLightPosition, lightPosition);
     gl.uniform4fv(program.uLightAmbient, [0.2, 0.2, 0.2, 1]);
     gl.uniform4fv(program.uLightDiffuse, [1, 1, 1, 1]);
     gl.uniform4fv(program.uLightSpecular, [1, 1, 1, 1]);
@@ -126,7 +125,7 @@ const dimensionesPanelSolar = {
 }
 const dimensionesTriangulosTubo = {
     filas: 1,
-    columnas: 20,
+    columnas: 10,
 }
 const dimensionesTriangulosPlano = {
     filas: 1,
@@ -155,7 +154,7 @@ const dimTuboInteriorAnillo = {
 }
 const dimTriangulosTuboAnillo = {
     filas: 1,
-    columnas: 10,
+    columnas: 8,
 }
 //pastilla del anillo
 const dimensionesPastillaCuerpo = {
@@ -171,7 +170,7 @@ const dimensionesCilindroPastilla = {
 };
 const dimensionesTriangulosPastilla = {
     filas : 1, //segmentosRadiales
-    columnas : 50, //segmentosDeAltura
+    columnas : 30, //segmentosDeAltura
 };
 /*
  * Constantes Nucleo
@@ -194,17 +193,11 @@ const profundidadModuloVioleta = 2.0;
 /*
  * Constantes Bloques del Anillo
  */
-//ubicar las tapas de los bloques
-const coordTapaSuperior =10.748 //para x e y
-let
-    anguloGiroTapaSuperior,
-    anguloGiroTapaInferior;
 
 // Se carga todos los objetos a la escena
 function load() {
     scene.add(new Floor(80, 2));
     scene.add(new Axis(82));
-
     cargarNucleo()
     cargarPanelesSolares()
     cargarAnillo()
@@ -249,7 +242,7 @@ function crearRecorridoCircular(radio,t, divisiones){
 
 
 class Bloque{
-    constructor(type = Bloque.BLOQUES_8, pasoDiscretoRecorrido = 30, divisionesForma = 10) {
+    constructor(type = Bloque.BLOQUES_8, pasoDiscretoRecorrido = 30, divisionesForma = 8) {
 
         this.bloqueActual = null
         this.pasoDiscretoRecorrido = pasoDiscretoRecorrido
@@ -316,8 +309,9 @@ class Bloque{
         dimensiones["filas"] = pasoDiscretoRecorrido
 
         const Bloque1 = 1/8
-        const datosDelRecorridoBloque1= crearRecorridoCircular(radioDelAnillo, Bloque1, pasoDiscretoRecorrido)
-
+        dimensiones["filas"] = pasoDiscretoRecorrido -20
+        const datosDelRecorridoBloque1= crearRecorridoCircular(radioDelAnillo, Bloque1, dimensiones["filas"])
+        //dimensiones["filas"] = pasoDiscretoRecorrido
         //reutilizo las transformaciones de esta tapa para el bloque 6
         this.dictionary[Bloque.BLOQUES_6].push(new TapaSuperficieParametrica(
             "bloque7TapaAdelante", datosDeLaForma.puntos,  {filas: 1, columnas: pasoDiscretoForma}))
@@ -330,8 +324,11 @@ class Bloque{
             "bloque61TapaAtras", datosDeLaForma.puntos,  {filas: 1, columnas: pasoDiscretoForma}))
         //Bloque5
         const Bloque5 = 3/8
-        const datosDelRecorridoBloque5= crearRecorridoCircular(radioDelAnillo, Bloque5, pasoDiscretoRecorrido)
+        dimensiones["filas"] = pasoDiscretoRecorrido -10
+        const datosDelRecorridoBloque5= crearRecorridoCircular(radioDelAnillo, Bloque5, dimensiones["filas"])
         this.dictionary[Bloque.BLOQUES_5].push( new SuperficieParametrica("bloque5", datosDeLaForma, datosDelRecorridoBloque5, dimensiones, true))
+
+        dimensiones["filas"] = pasoDiscretoRecorrido -20
         //reutilizo las transformaciones de esta tapa para el bloque 5
         this.dictionary[Bloque.BLOQUES_5].push(new TapaSuperficieParametrica(
             "bloque7TapaAdelante", datosDeLaForma.puntos,  {filas: 1, columnas: pasoDiscretoForma}))
@@ -436,7 +433,7 @@ function crearRecorrido(pasoDiscreto, curvaRecorrido, normalDelCamino = [1,0,0])
 
 function moduloVioleta(){
     const pasoDiscretoRecorrido = 1;
-    const divisionesForma = 20
+    const divisionesForma = 8
 
     const curvaRecorrido = new CurvaCubicaDeBezier(
         [0,0],
@@ -919,7 +916,7 @@ class TransformacionesAfin{
             const pastillaEnElMedio = 2-0.45;
             Anillo.pastillaTransform = transforms.modelViewMatrix;
             //cuando se descomente la linea de abajo, revisar las matrices de los transforms
-             mat4.rotate(Anillo.pastillaTransform, Nucleo.nucleoAnilloTransform, Math.PI/2 * spherePosition/20, [0, 1, 0]);
+             mat4.rotate(Anillo.pastillaTransform, Nucleo.nucleoAnilloTransform,  posicionAnillo/5, [0, 1, 0]);
             mat4.translate(Anillo.pastillaTransform, Anillo.pastillaTransform, [0, pastillaEnElMedio, 0]);
 
         } else if (this.alias === 'pastillaCilindroSup') {
@@ -995,7 +992,14 @@ function draw() {
             construir.setAlias(object.alias)
 
             //Dependiendo del objeto se aplica la transformacion
-
+            // If object is the light, we update its position
+            if (object.alias === 'light') {
+                //console.log(program)
+                const lightTransform = transforms.modelViewMatrix;
+                const lightPosition = gl.getUniform(program.program, program.uLightPosition);
+                console.log(lightPosition)
+                mat4.translate(lightTransform, lightTransform, [lightPosition[0], lightPosition[1], -lightPosition[2]]);
+            }
 
             //////////////////////////////////////////////////////////
             construir.nucleoDelPanelSolar()
@@ -1041,7 +1045,9 @@ function dibujarMallaDeObjeto(object){
 
     // Draw
     if (object.wireframe) { //piso y axis con con gl.LINES
-        gl.drawElements(gl.LINE_STRIP, object.indices.length, gl.UNSIGNED_SHORT, 0);
+        (object.alias === 'floor' || object.alias === 'axis') ?
+            gl.drawElements(gl.LINES, object.indices.length, gl.UNSIGNED_SHORT, 0) :
+            gl.drawElements(gl.LINE_STRIP, object.indices.length, gl.UNSIGNED_SHORT, 0);
     }
     else {
         const tipoDeDibujo = (triangleStrip) ? gl.TRIANGLE_STRIP : gl.TRIANGLES;
@@ -1055,30 +1061,20 @@ function dibujarMallaDeObjeto(object){
 }
 // Update object positions
 function animate() {
-    spherePosition += dxSphere;
-
-    if (spherePosition >= 100 || spherePosition <= -100) {
-        dxSphere = -dxSphere;
-    }
-    conePosition += dxCone;
-    if (conePosition >= 35 || conePosition <= -35) {
-        dxCone = -dxCone;
-    }
+    posicionAnillo += dxAnillo;
 
     draw();
 }
-frequency = 30
+animationRate = 30
 function onFrame() {
     elapsedTime = (new Date).getTime() - initialTime;
-    if (elapsedTime < frequency) return; //no me sirve, intente de nuevo
+    if (elapsedTime < animationRate) return; //no me sirve, intente de nuevo
 
     // console.log(elapsedTime)
 
-    let steps = Math.floor(elapsedTime / frequency);
-    console.log(steps)
+    let steps = Math.floor(elapsedTime / animationRate);
     while (steps > 0) {
         animate();
-        //draw()
         steps -= 1;
     }
 
@@ -1087,7 +1083,7 @@ function onFrame() {
 
 function render() {
     initialTime = new Date().getTime();
-    setInterval(onFrame, frequency / 1000);
+    setInterval(onFrame, animationRate / 1000);
 }
 
 function init() {
@@ -1131,13 +1127,13 @@ function initControls() {
             min: 0, max: 360, step: 1,
             onChange: v => anguloRotacionPanelSolar = v,
         },
-        /*
+/*
         'Static Light Position': {
             value: fixedLight,
             onChange: v => fixedLight = v
         },
 
-         */
+ */
         'Go Home': () => camera.goHome(),
         'Wireframe': () => {
 
@@ -1156,10 +1152,7 @@ function initControls() {
     },{closed: false}
         );
 }
-function cargarYDescargarToro(){
-    scene.remove('torus');
-    scene.add(new Torus1("torus",radioDelAnillo, radioInteriorDelAnillo,dimensionesTriangulosTorus, arc))
-}
+
 /*
 function initControls1() {
     utils.configureControls({

@@ -30,6 +30,7 @@ let
     fixedLight = false,
     triangleStrip = true,
     wireframe = false,
+    ajuste = 8,  //para ajustar posiciones de los objetos, se usa en el diseño
     dxAnillo = 0.01,
     posicionAnillo = 0,
     lightPosition = [0, 120, 120],
@@ -203,12 +204,73 @@ function load() {
     cargarAnillo()
     bloque = new Bloque(Bloque.BLOQUES_4)
     moduloVioleta()
+    cargarEsfera()
+
+}
+function cargarEsfera(){
+    //Creo una Superficie de Revolucion
+
+    //El recorrido va ser circular con radio 0, mientras mas puntos mas se parece a
+    //una circunferencia en lugar de un poligono -> tomar en cuenta para la tapa
+    const pasoDiscretoRecorrido = 30
+    const divisionesForma = 20 //precision en la forma,
+    ///////////////////////////////////////////////////////////////////
+    const porcionDeCircunferencia = 2/8 //la forma va de pi/4 a (pi-pi/4) -> 25% del circulo
+    const radio = Esfera.radio //2
+                    //reutilizo la funcion para crear una forma circular
+    const forma = crearRecorridoCircular(radio, porcionDeCircunferencia, divisionesForma)
+
+    //rotar los puntos del recorrido x,y 45 grados
+    const angulo =Esfera.angulo     //Math.PI/4 //tengo que rotar, los puntos obtenidos parten de cero
+    //los pts me sirven, las binormales, le quito la z y son las normales
+    const datosDeLaForma ={
+        puntos : forma.puntos.map(punto => {
+            return  [
+                punto[0] * Math.cos(angulo) - punto[1] * Math.sin(angulo),
+                punto[0] * Math.sin(angulo) + punto[1] * Math.cos(angulo)
+            ]
+        }),
+        normales : forma.binormales.map(punto => {
+            return  [
+                punto[0] * Math.cos(angulo) - punto[1] * Math.sin(angulo),
+                punto[0] * Math.sin(angulo) + punto[1] * Math.cos(angulo)
+            ]
+        })
+    }
+
+    const pasoDiscretoForma = datosDeLaForma.puntos.length-1
+    const dimensiones = {
+        filas: pasoDiscretoRecorrido, //paso discreto del recorrido
+        columnas: pasoDiscretoForma, //divisiones de la forma
+    }
+
+                                                //Klave para la sup de Rev
+    const datosDelRecorrido = crearRecorridoCircular(0, 1, dimensiones["filas"])
+
+    const nuevaSup = new SuperficieParametrica("esfera", datosDeLaForma, datosDelRecorrido, dimensiones, true)
+    scene.add(nuevaSup)
+
+    scene.add(new Tapa('esferaTapaAtras', radio*Math.sin(angulo), {
+        filas : 1, //segmentosRadiales
+        columnas : pasoDiscretoRecorrido, //segmentosDeAltura
+    }), {
+        diffuse: colorGenerico,
+    });
+
+    scene.add(new Tapa('esferaTapaAdelante', radio*Math.sin(angulo), {
+        filas : 1, //segmentosRadiales
+        columnas : pasoDiscretoRecorrido, //segmentosDeAltura
+    }), {
+        diffuse: colorGenerico,
+    });
+
+
 
 
 }
-function crearRecorridoCircular(radio,t, divisiones){
+function crearRecorridoCircular(radio,porcion, divisiones){
 
-    const phi = 2*Math.PI *t
+    const phi = 2*Math.PI *porcion
 
     const arrayCoordenadas = []
     const arrayNormales = []
@@ -647,8 +709,12 @@ const Bloques = {
     distanciaNucleoDelAnilloYNave : dimensionesNucleoPS.altura + dimensionesCilindroNucleoPS.altura,
     distanciaModuloVioletaYNave : dimensionesNucleoPS.altura + 2*dimensionesCilindroNucleoPS.altura +profundidadModuloVioleta,
     posicionBloque : 0,
-
-
+}
+const Esfera = {
+    esferaTransform : null,
+    radio :2,
+    angulo: Math.PI/4,
+    posRelativaALaNave: 8.8,
 }
 class TransformacionesAfin{
     constructor() {
@@ -656,6 +722,23 @@ class TransformacionesAfin{
     setAlias(alias){
         this.alias = alias;
     }
+    esfera(){
+        if(this.alias === 'esfera'){
+            Nave.naveTransform = transforms.modelViewMatrix
+            Esfera.esferaTransform = transforms.modelViewMatrix;
+            //colocar nave transform
+            mat4.translate(Esfera.esferaTransform, Nave.naveTransform, [0, 0,-Esfera.posRelativaALaNave]);
+        }else if (this.alias ===  'esferaTapaAtras'){
+            const esferaTapaAtrasTransform = transforms.modelViewMatrix;
+            mat4.translate(esferaTapaAtrasTransform, Esfera.esferaTransform, [0, 0, Esfera.radio*Math.cos(Esfera.angulo)]);
+            mat4.rotate(esferaTapaAtrasTransform, esferaTapaAtrasTransform, Math.PI/2, [1,0,0]);
+        }else if (this.alias ===  'esferaTapaAdelante'){
+            const esferaTapaAdenlanteTransform = transforms.modelViewMatrix;
+            mat4.translate(esferaTapaAdenlanteTransform, Esfera.esferaTransform, [0, 0, -Esfera.radio*Math.cos(Esfera.angulo)]);
+            mat4.rotate(esferaTapaAdenlanteTransform, esferaTapaAdenlanteTransform, Math.PI/2, [-1,0,0]);
+        }
+    }
+
     bloques() {
         if(this.alias === 'bloque7'){
             Bloques.bloqueTransform = transforms.modelViewMatrix
@@ -992,14 +1075,6 @@ function draw() {
             construir.setAlias(object.alias)
 
             //Dependiendo del objeto se aplica la transformacion
-            // If object is the light, we update its position
-            if (object.alias === 'light') {
-                //console.log(program)
-                const lightTransform = transforms.modelViewMatrix;
-                const lightPosition = gl.getUniform(program.program, program.uLightPosition);
-                console.log(lightPosition)
-                mat4.translate(lightTransform, lightTransform, [lightPosition[0], lightPosition[1], -lightPosition[2]]);
-            }
 
             //////////////////////////////////////////////////////////
             construir.nucleoDelPanelSolar()
@@ -1013,6 +1088,8 @@ function draw() {
             construir.bloques()
 
             construir.modulosVioleta()
+
+            construir.esfera()
             ///////////////////////////////////////////
             transforms.setMatrixUniforms();
             transforms.pop();
@@ -1105,6 +1182,7 @@ function initControls() {
                 camera.setType(v);
             }
         },
+
         'Bloques': {
             value: bloque.type,
             options: [Bloque.BLOQUES_4,Bloque.BLOQUES_5,Bloque.BLOQUES_6, Bloque.BLOQUES_7 ,Bloque.BLOQUES_8],
@@ -1112,6 +1190,8 @@ function initControls() {
                 bloque.setType(v);
             }
         },
+
+
         'Paneles Solares Filas': {
             value: filasDeTubosSecundarios,
             min: 1, max: 10, step: 1,
@@ -1127,6 +1207,14 @@ function initControls() {
             min: 0, max: 360, step: 1,
             onChange: v => anguloRotacionPanelSolar = v,
         },
+        /*
+        'Ajuste' : {
+            value: ajuste,
+            min: 8, max: 9, step: 0.1,
+            onChange: v => ajuste = v,
+        },
+
+         */
 /*
         'Static Light Position': {
             value: fixedLight,

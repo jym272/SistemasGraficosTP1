@@ -1,7 +1,13 @@
-si es una forma, recorrido cerrado, la tangente del primer punto es la del ultimo punto
+->colocar tapas secundarias #LISTO
+->menu para controlar el angulo de los paneles solares #LISTO
+->menu para la cantidad de paneles #LISTO
+
+->crear el toro #LISTO
+->crear la pastilla central del anillo #LISTO
+
+->crear los bloques del anillo #
+->hacer que gire el mastil principal de los paneles solares respecto del nucleo
+-> terminar los nucleos
 
 
---> analizar bien las tangentes y las fromas 
-
-formas con solo curvas de bezier
-
+//piso y axis con con gl.LINES ---> tendriq que construir un piso y axis con gl.LINES_STRIP

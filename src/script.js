@@ -14,7 +14,7 @@ import {
     Tapa,
     Plano,
     Torus,
-    Cilindro,
+    Cilindro, Superficie,
 } from "./js/Superficies";
 import {
     Forma,
@@ -25,7 +25,7 @@ import {
 import {CurvaCubicaDeBezier} from "./js/CurvasDeBezier";
 
 let
-    gl, scene, program, camera, transforms, construir, bloque,
+    gl, scene, program, camera, transforms, transformar, bloque,
     elapsedTime, initialTime,
     fixedLight = false,
     triangleStrip = true,
@@ -33,7 +33,7 @@ let
     ajuste = 8,  //para ajustar posiciones de los objetos, se usa en el diseño
     dxAnillo = 0.01,
     posicionAnillo = 0,
-    lightPosition = [0, 120, 120],
+    lightPosition = [0, 5, 12],
     animationRate; //ms
 
 function configure() {
@@ -95,7 +95,7 @@ function configure() {
     gl.uniform1f(program.uShininess, 230);
 
     //Transformaciones afines
-    construir = new TransformacionesAfin();
+    transformar = new TransformacionesAfin();
 
 }
 /*
@@ -205,6 +205,151 @@ function load() {
     bloque = new Bloque(Bloque.BLOQUES_4)
     moduloVioleta()
     cargarEsfera()
+   cargarCapsula()
+
+}
+function cargarCapsula(){
+    /*
+     *Capsula
+     *->Cola de la capsula construida con curva de bezier como forma y con un recorrido
+     *  colapsado circular con radio cero ---> Sup de revolucion
+     *->El recorrido va ser circular con radio 0, mientras mas puntos pasoDiscretoRecorrido
+     *  mas se parece a una circunferencia en lugar de un poligono -> tomar en cuenta para la tapa
+     */
+    const pasoDiscretoRecorrido = 30
+    const divisionesForma = 10 //precision en la forma,
+    //Azul Polenta [0,4/255,1,1],
+    const arraycolores=[
+        [247,144/255,0/255,1],//fuegoCuerpo
+        [247,90/255,0/255,1],//capsulaCola
+        [247,19/255,0/255,1],//fuegoCola
+    ]
+    const dimensionesCapsulaCilindro = {
+        filas : 1, //segmentosRadiales
+        columnas : pasoDiscretoRecorrido, //segmentosDeAltura
+    };
+    /*
+     * Abstraccion de la capsula
+     * -> transformando la matriz relacionada de este objeto muevo a la capsula
+     */
+    const capsula = new Superficie(null, 'capsula')
+    scene.add(capsula)
+
+    /*
+     *Cola
+     */
+    Capsula.curvaColav0x = -1.99
+    const curvaCola = new CurvaCubicaDeBezier(
+        [Capsula.curvaColav0x,0.78],
+        [-1.2,0.785],
+        [-0.66,0.52],
+        [-0.14,0.18]
+    );
+
+    const puntosBezierCola = curvaCola.extraerPuntos(divisionesForma)
+    const datosDeLaForma ={
+        puntos : puntosBezierCola.puntos,
+        normales : puntosBezierCola.puntosTangentes.map(p =>{
+            return [-p[1], p[0]]}),
+    }
+
+
+    //Creo una Superficie de Revolucion
+    const pasoDiscretoForma = datosDeLaForma.puntos.length-1
+    const dimensiones = {
+        filas: pasoDiscretoRecorrido, //paso discreto del recorrido
+        columnas: pasoDiscretoForma, //divisiones de la forma
+    }
+
+    //Klave para la sup de Rev -> radio 0
+    const datosDelRecorrido = crearRecorridoCircular(0, 1, dimensiones["filas"])
+
+    const capsulaCola = new SuperficieParametrica("capsulaCola", datosDeLaForma, datosDelRecorrido, dimensiones, true)
+    scene.add(capsulaCola,{
+        diffuse: arraycolores[1],
+    });
+
+    const capsulaFuegoCola = (new Cilindro('capsulaFuegoCola', {
+        radioSuperior: 0.78,
+        radioInferior: 0.05,
+        altura: 0.5,
+    }, dimensionesCapsulaCilindro, true))
+    scene.add(capsulaFuegoCola,{
+        diffuse: arraycolores[2],
+    });
+
+
+    /*
+     * Cuerpo de la Capsula
+     */
+    const curvaCuerpo = new CurvaCubicaDeBezier(
+        [0.3,1.5],
+        [1.185,1.44],
+        [1.844,1.185],
+        [2.5,0.7]
+    );
+    const puntosBezierCuerpo = curvaCuerpo.extraerPuntos(divisionesForma)
+
+    const datosDeLaFormaCuerpo ={
+        puntos : puntosBezierCuerpo.puntos,
+        normales : puntosBezierCuerpo.puntosTangentes.map(p =>{
+            return [-p[1], p[0]]}),
+    }
+
+    //Creo una Superficie de Revolucion
+    const pasoDiscretoCuerpo = datosDeLaFormaCuerpo.puntos.length-1
+    const dimensionesCuerpo = {
+        filas: pasoDiscretoRecorrido, //paso discreto del recorrido
+        columnas: pasoDiscretoCuerpo, //divisiones de la forma
+    }
+    const cuerpo = new SuperficieParametrica("capsulaCuerpoBezierA", datosDeLaFormaCuerpo, datosDelRecorrido, dimensionesCuerpo, true)
+    scene.add(cuerpo)
+
+    Capsula.CilAaltura = 0.1
+    const capsulaCuerpoCilindroA = (new Cilindro('capsulaCuerpoCilindroA', {
+        radioSuperior: 0.4,
+        radioInferior: 1.2,
+        altura: Capsula.CilAaltura,
+    }, dimensionesCapsulaCilindro))
+    scene.add(capsulaCuerpoCilindroA)
+
+    const capsulaCuerpoCilindroB = (new Cilindro('capsulaCuerpoCilindroB', {
+        radioSuperior: 1.2,
+        radioInferior: 1.5,
+        altura: 0.2,
+    }, dimensionesCapsulaCilindro))
+    scene.add(capsulaCuerpoCilindroB)
+
+    const capsulaCuerpoCilindroC = (new Cilindro('capsulaCuerpoCilindroC', {
+        radioSuperior: 0.7,
+        radioInferior: 0.6,
+        altura: 0.01,
+    }, dimensionesCapsulaCilindro))
+    scene.add(capsulaCuerpoCilindroC)
+
+    const capsulaCuerpoCilindroD = (new Cilindro('capsulaCuerpoCilindroD', {
+        radioSuperior: 0.6,
+        radioInferior: 0.4,
+        altura: 2.9-2.51,
+    }, dimensionesCapsulaCilindro))
+    scene.add(capsulaCuerpoCilindroD, {diffuse: colorGenerico})
+
+    const capsulaCuerpoCilindroE = (new Cilindro('capsulaCuerpoCilindroE', {
+        radioSuperior: 0.4,
+        radioInferior: 0,
+        altura: 0.001,
+    }, dimensionesCapsulaCilindro))
+    scene.add(capsulaCuerpoCilindroE)
+
+    Capsula.FuegoCuerpoAltura =0.5;
+    const capsulaFuegoCuerpo = (new Cilindro('capsulaFuegoCuerpo', {
+        radioSuperior: 1.2,
+        radioInferior: 0.05,
+        altura: Capsula.FuegoCuerpoAltura ,
+    }, dimensionesCapsulaCilindro, true))
+    scene.add(capsulaFuegoCuerpo,{
+        diffuse: arraycolores[0],
+    });
 
 }
 function cargarEsfera(){
@@ -263,10 +408,6 @@ function cargarEsfera(){
     }), {
         diffuse: colorGenerico,
     });
-
-
-
-
 }
 function crearRecorridoCircular(radio,porcion, divisiones){
 
@@ -301,7 +442,6 @@ function crearRecorridoCircular(radio,porcion, divisiones){
         vectorNormal : normal
     };
 }
-
 
 class Bloque{
     constructor(type = Bloque.BLOQUES_8, pasoDiscretoRecorrido = 30, divisionesForma = 8) {
@@ -703,7 +843,7 @@ const Anillo = {
     alturaTapaInferior : 0.1,
 }
 const Bloques = {
-    bloqueTransform : null,
+    bloqueTransform : null, //la reutilizo para todos los bloques ya que solo puedo exisitir un tipo de bloque a la vez
     centrarElBloque : 0.42,
 
     distanciaNucleoDelAnilloYNave : dimensionesNucleoPS.altura + dimensionesCilindroNucleoPS.altura,
@@ -716,12 +856,75 @@ const Esfera = {
     angulo: Math.PI/4,
     posRelativaALaNave: 8.8,
 }
+const Capsula = {
+    capsulaTransform : null,
+}
 class TransformacionesAfin{
     constructor() {
     }
     setAlias(alias){
         this.alias = alias;
     }
+
+    capsula(){
+        if(this.alias === 'capsula'){
+            Capsula.capsulaTransform = transforms.modelViewMatrix;
+            const posicionRespectoLaNave=[0,0,-10] //por ahora es respecto el mundo, cuanda la nave se mueva se cambia
+            mat4.translate(Capsula.capsulaTransform, Capsula.capsulaTransform, posicionRespectoLaNave);
+            mat4.rotate(Capsula.capsulaTransform, Capsula.capsulaTransform, Math.PI, [1, 0, 0]);
+        }else if(this.alias === 'capsulaCuerpoCilindroA') {
+            const capsulaCuerpoCilindroATransform = transforms.modelViewMatrix;
+
+            mat4.translate(capsulaCuerpoCilindroATransform, Capsula.capsulaTransform, [0, 0, 0.1]);
+            mat4.rotate(capsulaCuerpoCilindroATransform, capsulaCuerpoCilindroATransform, -Math.PI/2,[1, 0, 0]);
+
+        }else if(this.alias === 'capsulaCuerpoCilindroB') {
+            const capsulaCuerpoCilindroBTransform = transforms.modelViewMatrix;
+
+            mat4.translate(capsulaCuerpoCilindroBTransform, Capsula.capsulaTransform , [0, 0, 0.3]);
+            mat4.rotate(capsulaCuerpoCilindroBTransform, capsulaCuerpoCilindroBTransform, -Math.PI/2,[1, 0, 0]);
+        }else if(this.alias === 'capsulaCuerpoBezierA') {
+
+            const capsulaCuerpoBezierATransform = transforms.modelViewMatrix;
+            mat4.rotate(capsulaCuerpoBezierATransform, Capsula.capsulaTransform , Math.PI / 2, [0, 0, 1]);
+        }else if(this.alias === 'capsulaCuerpoCilindroC') {
+
+            const capsulaCuerpoCilindroCTransform = transforms.modelViewMatrix;
+            mat4.translate(capsulaCuerpoCilindroCTransform, Capsula.capsulaTransform , [0, 0, 2.51]);
+
+            mat4.rotate(capsulaCuerpoCilindroCTransform, capsulaCuerpoCilindroCTransform, -Math.PI/2,[1, 0, 0]);
+        }else if(this.alias === 'capsulaCuerpoCilindroD') {
+
+            const capsulaCuerpoCilindroDTransform = transforms.modelViewMatrix;
+            mat4.translate(capsulaCuerpoCilindroDTransform, Capsula.capsulaTransform , [0, 0, 2.9]);
+
+            mat4.rotate(capsulaCuerpoCilindroDTransform, capsulaCuerpoCilindroDTransform, -Math.PI/2,[1, 0, 0]);
+        }else if(this.alias === 'capsulaCuerpoCilindroE') {
+
+            const capsulaCuerpoCilindroETransform = transforms.modelViewMatrix;
+            mat4.translate(capsulaCuerpoCilindroETransform, Capsula.capsulaTransform , [0, 0, 2.9 +0.001]);
+
+            mat4.rotate(capsulaCuerpoCilindroETransform, capsulaCuerpoCilindroETransform, -Math.PI/2,[1, 0, 0]);
+        }else if(this.alias === 'capsulaCola'){
+
+            const capsulaColaTransform = transforms.modelViewMatrix;
+            mat4.translate(capsulaColaTransform, Capsula.capsulaTransform , [0, 0, 0.2]);
+        }else if(this.alias === 'capsulaFuegoCola') {
+
+            const capsulaCuerpoFuegoColaTransform = transforms.modelViewMatrix;
+            mat4.rotate(capsulaCuerpoFuegoColaTransform, Capsula.capsulaTransform , -Math.PI/2,[0, 0, 1]);
+            mat4.translate(capsulaCuerpoFuegoColaTransform, capsulaCuerpoFuegoColaTransform, [0, 0, (Capsula.curvaColav0x+0.5) +0.2]);
+            mat4.rotate(capsulaCuerpoFuegoColaTransform, capsulaCuerpoFuegoColaTransform, -Math.PI/2,[1, 0, 0]);
+        }else if(this.alias === 'capsulaFuegoCuerpo') {
+
+            const capsulaCuerpoFuegoColaTransform = transforms.modelViewMatrix;
+            mat4.translate(capsulaCuerpoFuegoColaTransform, Capsula.capsulaTransform , [0, 0, Capsula.CilAaltura +  Capsula.FuegoCuerpoAltura]);
+            mat4.rotate(capsulaCuerpoFuegoColaTransform, capsulaCuerpoFuegoColaTransform, -Math.PI/2,[1, 0, 0]);
+        }
+
+
+    }
+
     esfera(){
         if(this.alias === 'esfera'){
             Nave.naveTransform = transforms.modelViewMatrix
@@ -1071,25 +1274,30 @@ function draw() {
             transforms.calculateModelView();
             transforms.push();
 
+            //Actualizo el wireframe
+            if (object.alias !== 'floor' && object.alias !== 'axis') {
+                object.wireframe = wireframe;
+            }
             // Ubico las partes de la nave en la escena
-            construir.setAlias(object.alias)
+            transformar.setAlias(object.alias)
 
             //Dependiendo del objeto se aplica la transformacion
+          //////////////////////////////////////////////////////////
+            transformar.nucleoDelPanelSolar()
 
-            //////////////////////////////////////////////////////////
-            construir.nucleoDelPanelSolar()
+            transformar.panelesSolares()
 
-            construir.panelesSolares()
+            transformar.nucleoDelAnillo()
 
-            construir.nucleoDelAnillo()
+            transformar.anillo()
 
-            construir.anillo()
+            transformar.bloques()
 
-            construir.bloques()
+            transformar.modulosVioleta()
 
-            construir.modulosVioleta()
+            transformar.esfera()
 
-            construir.esfera()
+            transformar.capsula()
             ///////////////////////////////////////////
             transforms.setMatrixUniforms();
             transforms.pop();
@@ -1191,7 +1399,6 @@ function initControls() {
             }
         },
 
-
         'Paneles Solares Filas': {
             value: filasDeTubosSecundarios,
             min: 1, max: 10, step: 1,
@@ -1224,13 +1431,6 @@ function initControls() {
  */
         'Go Home': () => camera.goHome(),
         'Wireframe': () => {
-
-            scene.traverse(object => {
-               if (object.alias !== 'floor' && object.alias !== 'axis') {
-                   object.wireframe = !wireframe;
-                }
-
-            })
             wireframe = !wireframe;
         },
         'Triangle Strip': {

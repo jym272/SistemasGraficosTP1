@@ -1,5 +1,6 @@
 'use strict';
 import {ConstruirBuffers} from "./ConstruirBuffers";
+import {utils} from "./utils";
 
 export class Superficie {
 
@@ -32,17 +33,20 @@ export class Superficie {
 
 export class Cilindro extends Superficie {
 
-    constructor(alias, dimensionesCilindro,dimensionesTriangulos)
+    constructor(alias, dimensionesCilindro,dimensionesTriangulos, invertirNormales = false)
     {
         super(dimensionesTriangulos,alias)
         this.dimensionesCilindro = dimensionesCilindro;
+        this.invertirNormales = invertirNormales;
         this.construir();
+
     }
     superficie(){
         const radioSuperior = this.dimensionesCilindro.radioSuperior
         const radioInferior = this.dimensionesCilindro.radioInferior
         const altura = this.dimensionesCilindro.altura
         const pendiente =  (radioInferior - radioSuperior) / altura;
+        const invertirNormales = this.invertirNormales;
         return {
             getPosicion: function (u, v) {
 
@@ -56,11 +60,11 @@ export class Cilindro extends Superficie {
             },
             getNormal: function (u, v) {
                 const phi = 2 * Math.PI * u;
-                const normal = [Math.sin(phi), pendiente, Math.cos(phi)]
-                 //normalize vector
-                const length = Math.sqrt(normal[0] * normal[0] + normal[1] * normal[1] + normal[2] * normal[2]);
-                return [normal[0] / length, normal[1] / length, normal[2] / length];
-
+                const normal = utils.normalizarVector([Math.sin(phi), pendiente, Math.cos(phi)]);
+                if (invertirNormales === true)
+                    return normal.map(x => -x);
+                else
+                    return normal;
             },
             getCoordenadasTextura: function (u, v) {
                 return [u, 1-v];

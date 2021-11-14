@@ -3,7 +3,7 @@
 
 import {CurvaCubicaDeBezier} from "./CurvasDeBezier";
 import {Superficie} from "./Superficies";
-import {mat4, vec4} from "gl-matrix";
+import { mat4,  vec4} from "gl-matrix";
 import {utils} from "./utils";
 
 export class Forma {

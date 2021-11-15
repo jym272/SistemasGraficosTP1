@@ -25,7 +25,7 @@ import {
 import {CurvaCubicaDeBezier} from "./js/CurvasDeBezier";
 
 let
-    gl, scene, program, camera, transforms, transformar, bloque,
+    gl, scene, program, camera, transforms, transformar, bloque, panelSolar,
     elapsedTime, initialTime,
     fixedLight = false,
     triangleStrip = true,
@@ -207,60 +207,69 @@ const profundidadModuloVioleta = 2.0;
 function load() {
     scene.add(new Floor(80, 2));
     scene.add(new Axis(82));
-    // cargarNucleo()
-    // cargarPanelesSolares()
-    // cargarAnillo()
-    // bloque = new Bloque(Bloque.BLOQUES_4)
-    // moduloVioleta()
-    // cargarEsfera()
-   // cargarCapsula()
-    nuevosPanelesSolares()
+
+    cargarNucleo()
+    panelSolar = new PanelSolar()
+    cargarPanelesSolares()
+    cargarAnillo()
+    bloque = new Bloque(Bloque.BLOQUES_4)
+    moduloVioleta()
+    cargarEsfera()
+    cargarCapsula()
 
 }
-function nuevosPanelesSolares(){
+class PanelSolar{
+    constructor() {
+        this.construirComponentes()
+        this.panelesEnEscena = []
+    }
+    construirComponentes(){
+        this.componentes = []
+        /*
+         * Construccion del panelSolar
+         */
+        this.componentes.push(new Plano('panelTapaSuperior', dimensionesPanelSolar, dimensionesTriangulosPlano))
 
-    //primero diseño un solo panel
-    /*
-     * Abstraccion del panelSolar
-     */
-    const panelSolar = new Superficie(null, 'panelSolar')
-    scene.add(panelSolar)
+        this.componentes.push(new Plano('panelTapaInferior', dimensionesPanelSolar, dimensionesTriangulosPlano))
 
-    /*
-     * Construccion del panelSolar
-     */
-    const panelTapaSuperior = new Plano('panelTapaSuperior', dimensionesPanelSolar, dimensionesTriangulosPlano)
-    scene.add( panelTapaSuperior, {
-        diffuse: colorGenerico,
-    });
+        this.componentes.push(new Plano('panelLadoA', dimensionesPanelSolarLado, dimensionesTriangulosPlano))
 
-    const panelTapaInferior = new Plano('panelTapaInferior', dimensionesPanelSolar, dimensionesTriangulosPlano)
-    scene.add( panelTapaInferior, {
-        diffuse: colorGenerico,
-    });
+        this.componentes.push(new Plano('panelLadoA1', dimensionesPanelSolarLado, dimensionesTriangulosPlano))
 
-    const panelLadoA = new Plano('panelLadoA', dimensionesPanelSolarLado, dimensionesTriangulosPlano)
-    scene.add( panelLadoA, {
-        diffuse: colorGenerico,
-    });
+        this.componentes.push(new Plano('panelLadoB', dimensionesPanelSolarLadoLargo, dimensionesTriangulosPlano))
 
-    const panelLadoA1 = new Plano('panelLadoA1', dimensionesPanelSolarLado, dimensionesTriangulosPlano)
-    scene.add( panelLadoA1, {
-        diffuse: colorGenerico,
-    });
+        this.componentes.push(new Plano('panelLadoB1', dimensionesPanelSolarLadoLargo, dimensionesTriangulosPlano))
 
-    const panelLadoB = new Plano('panelLadoB', dimensionesPanelSolarLadoLargo, dimensionesTriangulosPlano)
-    scene.add( panelLadoB, {
-        diffuse: colorGenerico,
-    });
-
-    const panelLadoB1 = new Plano('panelLadoB1', dimensionesPanelSolarLadoLargo, dimensionesTriangulosPlano)
-    scene.add( panelLadoB1, {
-        diffuse: colorGenerico,
-    });
-
+    }
+    nuevo(alias){
+        const nuevoPanel = []
+        /*
+         * Abstraccion del panelSolar
+         */
+        nuevoPanel.push(new Superficie(null, alias))
+        nuevoPanel.push(...this.componentes)
+        this.agregarALaEscena(nuevoPanel)
+        this.panelesEnEscena.push(nuevoPanel)
+    }
+    agregarALaEscena(nuevoPanel){
+        nuevoPanel.forEach(componente => {
+            scene.add(componente)
+        })
+    }
+    removerParPaneles(unPar =2) {
+        let i = 0
+        if (this.panelesEnEscena.length < unPar)
+            console.error('No hay mas paneles para remover');
+        else {
+            while (i < unPar) {
+                this.panelesEnEscena.pop().forEach(componente => {
+                    scene.remove(componente.alias)
+                })
+                i++
+            }
+        }
+    }
 }
-
 function cargarCapsula(){
     /*
      *Capsula
@@ -844,9 +853,7 @@ function removerPanelesSolares(){
         scene.remove('tuboSecundario');
         scene.remove('tapaSecundaria1');
         scene.remove('tapaSecundaria2');
-
-        scene.remove('panelSolar1')
-        scene.remove('panelSolar2')
+        panelSolar.removerParPaneles()
     }
 }
 
@@ -854,18 +861,13 @@ function cargarPanelesSolares(){
     scene.add(new Tubo('tuboPrincipal', dimensionesTuboPrincipal, dimensionesTriangulosTubo))
     scene.add(new Tapa('tapaPrincipal', dimensionesTuboPrincipal.radio, dimensionesTriangulosTapa))
 
-
     for (let i = 0; i < filasDeTubosSecundarios; i++) {
         scene.add(new Tubo('tuboSecundario', dimensionesTuboSecundario, dimensionesTriangulosTubo))
         scene.add(new Tapa('tapaSecundaria1', dimensionesTuboSecundario.radio, dimensionesTriangulosTapa))
         scene.add(new Tapa('tapaSecundaria2', dimensionesTuboSecundario.radio, dimensionesTriangulosTapa))
 
-        scene.add( new Plano('panelSolar1', dimensionesPanelSolar, dimensionesTriangulosPlano), {
-            diffuse: colorPanelSolar,
-        });
-        scene.add( new Plano('panelSolar2', dimensionesPanelSolar, dimensionesTriangulosPlano), {
-            diffuse: colorPanelSolar,
-        });
+        panelSolar.nuevo('panelSolar1')
+        panelSolar.nuevo('panelSolar2')
     }
 }
 /*
@@ -1204,17 +1206,49 @@ class TransformacionesAfin{
             mat4.translate(tapaSecundariaTransform, PanelesSolares.tuboSecundarioTransform, [0, 0, 0]);
             mat4.rotateX(tapaSecundariaTransform, tapaSecundariaTransform, Math.PI);
         }else if (this.alias === 'panelSolar1'){
-            const planoTransform = transforms.modelViewMatrix;
-            mat4.translate(planoTransform, PanelesSolares.tuboSecundarioTransform, [0, -dimensionesPanelSolar.largo/2, 0]);
-            mat4.rotateX(planoTransform, planoTransform, -Math.PI/2);
-            mat4.rotateZ(planoTransform, planoTransform, 2*Math.PI*anguloRotacionPanelSolar/360);
+            PanelesSolares.panelTransform = transforms.modelViewMatrix;
+            mat4.translate(PanelesSolares.panelTransform, PanelesSolares.tuboSecundarioTransform, [0, -dimensionesPanelSolar.largo/2, 0]);
+            mat4.rotateX(PanelesSolares.panelTransform, PanelesSolares.panelTransform, -Math.PI/2);
+            mat4.rotateZ(PanelesSolares.panelTransform, PanelesSolares.panelTransform, 2*Math.PI*anguloRotacionPanelSolar/360);
 
         } else if (this.alias === 'panelSolar2'){
-            const planoTransform = transforms.modelViewMatrix;
-            mat4.translate(planoTransform, PanelesSolares.tuboSecundarioTransform, [0,dimensionesTuboSecundario.altura + dimensionesPanelSolar.largo/2, 0]);
-            mat4.rotateX(planoTransform, planoTransform, -Math.PI/2);
-            mat4.rotateZ(planoTransform, planoTransform, 2*Math.PI*anguloRotacionPanelSolar/360);
+            PanelesSolares.panelTransform = transforms.modelViewMatrix;
+            mat4.translate(PanelesSolares.panelTransform, PanelesSolares.tuboSecundarioTransform, [0,dimensionesTuboSecundario.altura + dimensionesPanelSolar.largo/2, 0]);
+            mat4.rotateX(PanelesSolares.panelTransform, PanelesSolares.panelTransform, -Math.PI/2);
+            mat4.rotateZ(PanelesSolares.panelTransform, PanelesSolares.panelTransform, 2*Math.PI*anguloRotacionPanelSolar/360);
 
+        }else if(this.alias === 'panelTapaSuperior'){
+            const panelTapaSuperiorTransform = transforms.modelViewMatrix;
+            mat4.translate(panelTapaSuperiorTransform, PanelesSolares.panelTransform,[0, dimensionesPanelSolarLado.ancho, 0]);
+        }else if(this.alias === 'panelTapaInferior'){
+            const panelTapaInferiorTransform = transforms.modelViewMatrix;
+            mat4.rotate(panelTapaInferiorTransform, PanelesSolares.panelTransform, Math.PI,[1, 0, 0]);
+
+        }else if(this.alias === 'panelLadoA'){
+            const panelLadoATransform = transforms.modelViewMatrix;
+            mat4.translate(panelLadoATransform, PanelesSolares.panelTransform,[0, dimensionesPanelSolarLado.ancho/2, dimensionesPanelSolar.largo/2]);
+
+            mat4.rotate(panelLadoATransform, panelLadoATransform, Math.PI/2,[0, 0, 1]);
+            mat4.rotate(panelLadoATransform, panelLadoATransform, Math.PI,[0, 1, 1]);
+
+        }else if(this.alias === 'panelLadoA1'){
+            const panelLadoA1Transform = transforms.modelViewMatrix;
+            mat4.translate(panelLadoA1Transform, PanelesSolares.panelTransform,[0, dimensionesPanelSolarLado.ancho/2, -dimensionesPanelSolar.largo/2]);
+
+            mat4.rotate(panelLadoA1Transform, panelLadoA1Transform, Math.PI/2,[1, 0, 0]);
+            mat4.rotate(panelLadoA1Transform, panelLadoA1Transform, -Math.PI,[1, 0, 1]);
+
+        }else if(this.alias === 'panelLadoB') {
+            const panelLadoBTransform = transforms.modelViewMatrix;
+            mat4.translate(panelLadoBTransform, PanelesSolares.panelTransform, [dimensionesPanelSolarLado.largo / 2, dimensionesPanelSolarLado.ancho/2, 0]);
+
+            mat4.rotate(panelLadoBTransform, panelLadoBTransform, Math.PI, [1, 1, 0]);
+        }
+        else if(this.alias === 'panelLadoB1') {
+            const panelLadoB1Transform = transforms.modelViewMatrix;
+            mat4.translate(panelLadoB1Transform, PanelesSolares.panelTransform, [-dimensionesPanelSolarLado.largo / 2, dimensionesPanelSolarLado.ancho/2, 0]);
+            mat4.rotate(panelLadoB1Transform, panelLadoB1Transform, -Math.PI, [0, 0, 1]);
+            mat4.rotate(panelLadoB1Transform, panelLadoB1Transform, -Math.PI, [1,1 , 0]);
         }
     }
 
@@ -1337,43 +1371,6 @@ function draw() {
 
             //Dependiendo del objeto se aplica la transformacion
 
-            if(object.alias === 'panelSolar'){
-                PanelesSolares.panelTransform = transforms.modelViewMatrix;
-              //  mat4.translate(PanelesSolares.panelTransform, PanelesSolares.panelTransform, [0, 0, 20]);
-            }
-            if(object.alias === 'panelTapaSuperior'){
-                const panelTapaSuperiorTransform = transforms.modelViewMatrix;
-                mat4.translate(panelTapaSuperiorTransform, PanelesSolares.panelTransform,[0, dimensionesPanelSolarLado.ancho, 0]);
-            }else if(object.alias === 'panelTapaInferior'){
-                const panelTapaInferiorTransform = transforms.modelViewMatrix;
-                mat4.rotate(panelTapaInferiorTransform, PanelesSolares.panelTransform, Math.PI,[1, 0, 0]);
-
-            }else if(object.alias === 'panelLadoA'){
-                const panelLadoATransform = transforms.modelViewMatrix;
-                mat4.translate(panelLadoATransform, PanelesSolares.panelTransform,[0, dimensionesPanelSolarLado.ancho/2, dimensionesPanelSolar.largo/2]);
-
-                mat4.rotate(panelLadoATransform, panelLadoATransform, Math.PI/2,[0, 0, 1]);
-                mat4.rotate(panelLadoATransform, panelLadoATransform, Math.PI,[0, 1, 1]);
-
-            }else if(object.alias === 'panelLadoA1'){
-                const panelLadoA1Transform = transforms.modelViewMatrix;
-                mat4.translate(panelLadoA1Transform, PanelesSolares.panelTransform,[0, dimensionesPanelSolarLado.ancho/2, -dimensionesPanelSolar.largo/2]);
-
-                mat4.rotate(panelLadoA1Transform, panelLadoA1Transform, Math.PI/2,[1, 0, 0]);
-                mat4.rotate(panelLadoA1Transform, panelLadoA1Transform, -Math.PI,[1, 0, 1]);
-
-            }else if(object.alias === 'panelLadoB') {
-                const panelLadoBTransform = transforms.modelViewMatrix;
-                mat4.translate(panelLadoBTransform, PanelesSolares.panelTransform, [dimensionesPanelSolarLado.largo / 2, dimensionesPanelSolarLado.ancho/2, 0]);
-
-                mat4.rotate(panelLadoBTransform, panelLadoBTransform, Math.PI, [1, 1, 0]);
-            }
-            else if(object.alias === 'panelLadoB1') {
-                const panelLadoB1Transform = transforms.modelViewMatrix;
-                mat4.translate(panelLadoB1Transform, PanelesSolares.panelTransform, [-dimensionesPanelSolarLado.largo / 2, dimensionesPanelSolarLado.ancho/2, 0]);
-                mat4.rotate(panelLadoB1Transform, panelLadoB1Transform, -Math.PI, [0, 0, 1]);
-                mat4.rotate(panelLadoB1Transform, panelLadoB1Transform, -Math.PI, [1,1 , 0]);
-            }
           //////////////////////////////////////////////////////////
             transformar.nucleoDelPanelSolar()
 
@@ -1482,7 +1479,7 @@ function initControls() {
                 camera.setType(v);
             }
         },
-/*
+
         'Bloques': {
             value: bloque.type,
             options: [Bloque.BLOQUES_4,Bloque.BLOQUES_5,Bloque.BLOQUES_6, Bloque.BLOQUES_7 ,Bloque.BLOQUES_8],
@@ -1492,7 +1489,7 @@ function initControls() {
         },
 
 
- */
+
         'Paneles Solares Filas': {
             value: filasDeTubosSecundarios,
             min: 1, max: 10, step: 1,

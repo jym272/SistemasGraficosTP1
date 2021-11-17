@@ -1,7 +1,7 @@
 'use strict';
-//import './style.css'
+import './style.css'
 import {utils} from './js/utils';
-import {mat4} from "gl-matrix";
+import {mat4, vec3} from "gl-matrix";
 import {Program} from "./js/Program";
 import {Scene} from "./js/Scene";
 import {Floor} from "./js/Floor";
@@ -22,10 +22,11 @@ import {
     SuperficieParametrica,
 } from "./js/SuperficiesDeBarrido";
 import {CurvaCubicaDeBezier} from "./js/CurvasDeBezier";
+import {DroneCameraControl} from "./js/droneCamara";
 
 
 let
-    gl, scene, program, camera, transforms, transformar, bloque, panelSolar, controles,
+    gl, scene, program, camera, transforms, transformar, bloque, panelSolar, controles, droneCam,
     elapsedTime, initialTime,
     fixedLight = false,
     triangleStrip = true,
@@ -33,7 +34,6 @@ let
     ajuste = 8,  //para ajustar posiciones de los objetos, se usa en el diseño
     dxAnillo = 0.01,
     posicionAnillo = 0, //anima la rotacion del anillo
-    posicionNave = 0, //anima la rotacion de la nave
     lightPosition = [0, 5, 12],
     animationRate; //ms
 
@@ -218,6 +218,8 @@ function load() {
     moduloVioleta()
     cargarEsfera()
     cargarCapsula()
+    droneCam = new DroneCameraControl([0,0,-10]);
+
 
 }
 class PanelSolar{
@@ -935,10 +937,27 @@ class TransformacionesAfin{
 
     capsula(){
         if(this.alias === 'capsula'){
-            Capsula.capsulaTransform = transforms.modelViewMatrix;
-            const posicionRespectoLaNave=[0,0,-14] //por ahora es respecto el mundo, cuanda la nave se mueva se cambia
-            mat4.translate(Capsula.capsulaTransform, Capsula.capsulaTransform, posicionRespectoLaNave);
-            mat4.rotate(Capsula.capsulaTransform, Capsula.capsulaTransform, Math.PI, [1, 0, 0]);
+
+            Capsula.capsulaTransform = transforms.modelViewMatrix
+
+            const {
+                rotationMatrix,
+                position,
+            } = droneCam.update()
+
+            if(controles.focusCamera.Capsula === true){
+                camera.setFocus(position)
+                // camera.goHome([0, 4, -37], [0,0,-34])
+            }
+            console.log(position)
+            // console.log(rotationMatrix, position)
+            mat4.translate(Capsula.capsulaTransform,Capsula.capsulaTransform,position);
+            mat4.multiply(Capsula.capsulaTransform,Capsula.capsulaTransform,rotationMatrix);
+            //mat4.translate(Capsula.capsulaTransform, Capsula.capsulaTransform, posicionRespectoLaNave);
+           mat4.rotate(Capsula.capsulaTransform, Capsula.capsulaTransform, Math.PI, [1, 0, 0]);
+
+
+
         }else if(this.alias === 'capsulaCuerpoCilindroA') {
             const capsulaCuerpoCilindroATransform = transforms.modelViewMatrix;
 
@@ -1373,6 +1392,9 @@ function draw() {
             }
             // Ubico las partes de la nave en la escena
             transformar.setAlias(object.alias)
+
+            //Testeando la camara para la capsula
+
 
             //Dependiendo del objeto se aplica la transformacion
             if(object.alias === 'nave'){

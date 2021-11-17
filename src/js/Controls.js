@@ -27,6 +27,7 @@ export class Controls {
     this.focusCamera = {
       Nave: false,
       PanelesSolares: false,
+      Capsula: false,
     }
     canvas.onmousedown = event => this.onMouseDown(event);
     canvas.onmouseup = event => this.onMouseUp(event);
@@ -125,6 +126,7 @@ export class Controls {
 
     if (this.ctrl) return;
     switch (this.key) {
+      /*
       case 37:
         return this.camera.changeAzimuth(-this.keyIncrement);
       case 38:
@@ -133,16 +135,26 @@ export class Controls {
         return this.camera.changeAzimuth(this.keyIncrement);
       case 40:
         return this.camera.changeElevation(-this.keyIncrement);
+
+       */
       case 49:
         this.focusCamera.PanelesSolares = false;
+        this.focusCamera.Capsula = false;
         return this.focusCamera.Nave = true;
       case 50:
         this.focusCamera.Nave = false;
+        this.focusCamera.Capsula = false;
         return this.focusCamera.PanelesSolares = true;
       case 51:
         this.focusCamera.Nave = false;
         this.focusCamera.PanelesSolares = false;
-        return this.camera.goHome();
+        this.focusCamera.Capsula = false;
+        return this.camera.goHome([0, 0, 40], [0,0,0]);
+      case 52:
+        this.focusCamera.Nave = false;
+        this.focusCamera.PanelesSolares = false;
+        //this.camera.goHome([0, 4, -37], [0,0,-34])
+        return this.focusCamera.Capsula = true;
     }
   }
 

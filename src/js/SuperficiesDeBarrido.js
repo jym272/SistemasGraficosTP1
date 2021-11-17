@@ -219,6 +219,8 @@ export class SuperficieParametrica extends  Superficie{
                     normalesFormaY,0, 1)
                 vec4.transformMat4(normalTransformada, normalTransformada, matrizDeNivelInversa)
 
+                //tanto el punto w de normalTransformada como el de verticesTransformados son 1
+                //es decir, no es necessario dividir por w para regresar a coordenadas cartesianas
                 return [verticesTransformados[0],verticesTransformados[1],verticesTransformados[2]]
             },
             getNormal(u,v){

@@ -43,15 +43,21 @@ export class Camera {
       : console.error(`Camera type (${type}) not supported`);
   }
 
+  goTo(position = [0,0,0], azimuth = 0, elevation = 0) {
+    this.setPosition(position);
+    this.setAzimuth(azimuth);
+    this.setElevation(elevation);
+  }
   // Position the camera back home
-  goHome(home) {
-    if (home) {
-      this.home = home;
+  goHome(home, focus=[0,0,0]) { //focus is optional, sino es el origen
+    if (home) { //si enviaron un home
+      this.home = home; //lo seteo
     }
 
     this.setPosition(this.home);
     this.setAzimuth(0);
     this.setElevation(0);
+    this.setFocus(focus);
   }
 
   // Dolly the camera
@@ -68,8 +74,11 @@ export class Camera {
       newPosition[2] = this.position[2] - step * normal[2];
     }
     else {
-      newPosition[0] = this.position[0];
-      newPosition[1] = this.position[1];
+      // cool track --> probar luego
+      //newPosition[0] = this.position[0] - step * this.right[0];
+      //newPosition[1] = this.position[1] - step * this.right[1];
+      newPosition[0] = this.position[0] ;
+      newPosition[1] = this.position[1] ;
       newPosition[2] = this.position[2] - step;
     }
 
@@ -121,6 +130,41 @@ export class Camera {
     this.update();
   }
 
+
+  lookAt(){
+    //first get the position from this.matrix
+    const position = vec4.create();
+    vec4.set(position, 0, 0, 0, 1);
+    vec4.transformMat4(position, position, this.matrix);
+    //tengo en position[0,1,2] la posicion de la camara
+
+    //calculate position - this.focus in a new vector zAxis
+    const zAxis = vec3.create();
+    vec3.subtract(zAxis, position, this.focus);
+    vec3.normalize(zAxis, zAxis);
+
+    //calculate the cross product of the zAxis and the up vector
+    const xAxis = vec3.create();
+    vec3.cross(xAxis, this.up, zAxis);
+    vec3.normalize(xAxis, xAxis);
+
+    //calculate the cross product of the xAxis and the zAxis
+    const yAxis = vec3.create();
+    vec3.cross(yAxis, zAxis, xAxis);
+    vec3.normalize(yAxis, yAxis);
+    //set the matrix to the identity matrix
+    mat4.identity(this.matrix);
+
+    //set the matrix
+    mat4.set(this.matrix,
+        xAxis[0], xAxis[1], xAxis[2], 0,
+        yAxis[0], yAxis[1], yAxis[2], 0,
+        zAxis[0], zAxis[1], zAxis[2], 0,
+        position[0], position[1], position[2], 1);
+
+
+
+  }
   // Update the camera orientation
   calculateOrientation() {
     const right = vec4.create();
@@ -149,6 +193,8 @@ export class Camera {
       mat4.rotateX(this.matrix, this.matrix, this.elevation * Math.PI / 180);
     }
     else {
+      //rotate with center focus
+      mat4.translate(this.matrix, this.matrix, this.focus);
       mat4.rotateY(this.matrix, this.matrix, this.azimuth * Math.PI / 180);
       mat4.rotateX(this.matrix, this.matrix, this.elevation * Math.PI / 180);
       mat4.translate(this.matrix, this.matrix, this.position);
@@ -165,6 +211,10 @@ export class Camera {
     }
 
     this.calculateOrientation();
+
+    if(this.isOrbiting()){
+      this.lookAt(); //para la camara orbital
+    }
   }
 
   // Returns the view transform

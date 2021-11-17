@@ -24,9 +24,14 @@ export class Controls {
     this.motionFactor = 10;
     this.keyIncrement = 5;
 
+    this.focusCamera = {
+      Nave: false,
+      PanelesSolares: false,
+    }
     canvas.onmousedown = event => this.onMouseDown(event);
     canvas.onmouseup = event => this.onMouseUp(event);
     canvas.onmousemove = event => this.onMouseMove(event);
+    canvas.onwheel = event => this.onMouseWheel(event);
     window.onkeydown = event => this.onKeyDown(event);
     window.onkeyup = event => this.onKeyUp(event);
   }
@@ -83,6 +88,11 @@ export class Controls {
     if (!this.picking) this.picker.stop();
   }
 
+  onMouseWheel(event) {
+    const delta = Math.max(-1, Math.min(1, (event.wheelDelta || -event.detail)));
+    this.dolly(-delta)
+  }
+
   onMouseMove(event) {
     this.lastX = this.x;
     this.lastY = this.y;
@@ -123,6 +133,16 @@ export class Controls {
         return this.camera.changeAzimuth(this.keyIncrement);
       case 40:
         return this.camera.changeElevation(-this.keyIncrement);
+      case 49:
+        this.focusCamera.PanelesSolares = false;
+        return this.focusCamera.Nave = true;
+      case 50:
+        this.focusCamera.Nave = false;
+        return this.focusCamera.PanelesSolares = true;
+      case 51:
+        this.focusCamera.Nave = false;
+        this.focusCamera.PanelesSolares = false;
+        return this.camera.goHome();
     }
   }
 

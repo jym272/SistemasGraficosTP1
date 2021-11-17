@@ -1,18 +1,25 @@
 # Se desarrola en WebPack
 
 ## Setup
-Download [Node.js](https://nodejs.org/en/download/).
-Run this followed commands:
+Descargar [Node.js](https://nodejs.org/en/download/).
+Correr los siguientes comandos:
 
 ``` bash
-# Install dependencies (only the first time)
+# Instala dependencias (por única vez)
 npm install
 
-# Run the local server at localhost:8080
+# Local server at localhost:8080
 npm run dev
 
-# Build for production in the docs/ directory
+# Build para producción en el directorio de docs/
 npm run build
 ```
-Las cámaras se encuentran en desarrollo, se implementan
-cámaras básicas, combinar movimientos del mouse con la tecla "Alt"
+'1' -> Camara centrada en la estación espacial.
+
+'2' -> Camara centrada en los paneles solares.
+
+'3' -> Home.
+
+Combinar movimientos del mouse con la tecla "Alt" o en su defecto la rueda del mouse.
+
+Módulos del código que abstraen varios como "Scene" fueron tomados como referencia  de [Real-Time 3D Graphics with WebGL 2](https://github.com/PacktPublishing/Real-Time-3D-Graphics-with-WebGL-2)

@@ -21,18 +21,19 @@ import {
     TapaSuperficieParametrica,
     SuperficieParametrica,
 } from "./js/SuperficiesDeBarrido";
-
 import {CurvaCubicaDeBezier} from "./js/CurvasDeBezier";
 
+
 let
-    gl, scene, program, camera, transforms, transformar, bloque, panelSolar,
+    gl, scene, program, camera, transforms, transformar, bloque, panelSolar, controles,
     elapsedTime, initialTime,
     fixedLight = false,
     triangleStrip = true,
     wireframe = false,
     ajuste = 8,  //para ajustar posiciones de los objetos, se usa en el diseño
     dxAnillo = 0.01,
-    posicionAnillo = 0,
+    posicionAnillo = 0, //anima la rotacion del anillo
+    posicionNave = 0, //anima la rotacion de la nave
     lightPosition = [0, 5, 12],
     animationRate; //ms
 
@@ -81,9 +82,8 @@ function configure() {
 
     // Configure `camera` and `controls`
     camera = new Camera(Camera.ORBITING_TYPE, 70,0);
-    camera.goHome([0, 0, 40]);
-    camera.setFocus([0, 0, 0]);
-    new Controls(camera, canvas);
+    camera.goHome([0, 0, 40], [0,0,0]);  //defino el hogar
+    controles = new Controls(camera, canvas);
 
     // Configure `transforms`
     transforms = new Transforms(gl, program, camera, canvas);
@@ -102,7 +102,7 @@ function configure() {
  * COLORES
  */
 const colorPastilla = [169/255, 183/255, 43/255, 1];
-const colorPanelSolar = [86/255, 16/255, 248/255, 1]; //colorPastilla;
+const colorPanelSolar = [0,40/255,166/255,1];
 const colorGenerico = [0.71875,0.0,0.1796,1.0];
 const colorVioleta = [255/255,0/255,138/255,1.0];
 /*
@@ -208,6 +208,8 @@ function load() {
     scene.add(new Floor(80, 2));
     scene.add(new Axis(82));
 
+    const nave = new Superficie(null, 'nave')
+    scene.add(nave)
     cargarNucleo()
     panelSolar = new PanelSolar()
     cargarPanelesSolares()
@@ -220,17 +222,23 @@ function load() {
 }
 class PanelSolar{
     constructor() {
-        this.construirComponentes()
         this.panelesEnEscena = []
+        this.construirComponentes()
     }
     construirComponentes(){
         this.componentes = []
         /*
          * Construccion del panelSolar
          */
-        this.componentes.push(new Plano('panelTapaSuperior', dimensionesPanelSolar, dimensionesTriangulosPlano))
 
-        this.componentes.push(new Plano('panelTapaInferior', dimensionesPanelSolar, dimensionesTriangulosPlano))
+        const tapaSuperior = new Plano('panelTapaSuperior', dimensionesPanelSolar, dimensionesTriangulosPlano)
+        tapaSuperior.diffuse = colorPanelSolar;
+        this.componentes.push(tapaSuperior)
+
+        const tapaInferior = new Plano('panelTapaInferior', dimensionesPanelSolar, dimensionesTriangulosPlano)
+        tapaInferior.diffuse = colorPanelSolar;
+
+        this.componentes.push(tapaInferior)
 
         this.componentes.push(new Plano('panelLadoA', dimensionesPanelSolarLado, dimensionesTriangulosPlano))
 
@@ -636,12 +644,15 @@ class Bloque{
             ? this.type = type
             : console.error(`Bloque type (${type}) not supported`);
 
-            if(this.bloqueActual != null)
-                this.bloqueActual.forEach(item => {
-                    scene.remove(item.alias)
-                });
+            this.removerBloqueActualDeLaEscena();
 
             this.actualizarEscena()
+    }
+    removerBloqueActualDeLaEscena(){
+        if(this.bloqueActual != null)
+            this.bloqueActual.forEach(item => {
+                scene.remove(item.alias)
+            });
     }
     actualizarEscena(){
         this.dictionary[this.type].forEach(item => {
@@ -925,7 +936,7 @@ class TransformacionesAfin{
     capsula(){
         if(this.alias === 'capsula'){
             Capsula.capsulaTransform = transforms.modelViewMatrix;
-            const posicionRespectoLaNave=[0,0,-10] //por ahora es respecto el mundo, cuanda la nave se mueva se cambia
+            const posicionRespectoLaNave=[0,0,-14] //por ahora es respecto el mundo, cuanda la nave se mueva se cambia
             mat4.translate(Capsula.capsulaTransform, Capsula.capsulaTransform, posicionRespectoLaNave);
             mat4.rotate(Capsula.capsulaTransform, Capsula.capsulaTransform, Math.PI, [1, 0, 0]);
         }else if(this.alias === 'capsulaCuerpoCilindroA') {
@@ -983,9 +994,7 @@ class TransformacionesAfin{
 
     esfera(){
         if(this.alias === 'esfera'){
-            Nave.naveTransform = transforms.modelViewMatrix
             Esfera.esferaTransform = transforms.modelViewMatrix;
-            //colocar nave transform
             mat4.translate(Esfera.esferaTransform, Nave.naveTransform, [0, 0,-Esfera.posRelativaALaNave]);
         }else if (this.alias ===  'esferaTapaAtras'){
             const esferaTapaAtrasTransform = transforms.modelViewMatrix;
@@ -1124,12 +1133,10 @@ class TransformacionesAfin{
 
     modulosVioleta(){
         if (this.alias === 'moduloVioletaPS') {
-            Nave.naveTransform = transforms.modelViewMatrix
             const moduloVioletaPSTransform = transforms.modelViewMatrix
             mat4.translate(moduloVioletaPSTransform, Nave.naveTransform, [0, 0, 0])
 
         } else if (this.alias === 'moduloVioletaAnillo') {
-            Nave.naveTransform = transforms.modelViewMatrix
             const moduloVioletaAnilloTransform = transforms.modelViewMatrix
             mat4.translate(moduloVioletaAnilloTransform, Nave.naveTransform, [0, 0,
                 -Bloques.distanciaModuloVioletaYNave ])
@@ -1152,7 +1159,6 @@ class TransformacionesAfin{
     nucleoDelPanelSolar(){
         const distanciaModuloVioleta = profundidadModuloVioleta + dimensionesCilindroNucleoPS.altura
         if (this.alias === 'nucleoPS') {
-            Nave.naveTransform = transforms.modelViewMatrix
             Nucleo.nucleoPSTransform = transforms.modelViewMatrix
             mat4.translate(Nucleo.nucleoPSTransform, Nave.naveTransform, [0, 0, distanciaModuloVioleta])
             mat4.rotate(Nucleo.nucleoPSTransform,Nucleo.nucleoPSTransform , Math.PI/2, [1, 0, 0])
@@ -1254,7 +1260,6 @@ class TransformacionesAfin{
 
     nucleoDelAnillo(){
         if (this.alias === 'nucleoAnillo') {
-            Nave.naveTransform = transforms.modelViewMatrix
             Nucleo.nucleoAnilloTransform = transforms.modelViewMatrix
             mat4.translate(Nucleo.nucleoAnilloTransform, Nave.naveTransform, [0, 0, -Bloques.distanciaNucleoDelAnilloYNave])
             mat4.rotate(Nucleo.nucleoAnilloTransform,Nucleo.nucleoAnilloTransform , Math.PI/2, [1, 0, 0])
@@ -1370,7 +1375,48 @@ function draw() {
             transformar.setAlias(object.alias)
 
             //Dependiendo del objeto se aplica la transformacion
+            if(object.alias === 'nave'){
+                Nave.naveTransform = transforms.modelViewMatrix;
+                /*
+                const radio = 45
+                const factorVelocidad = 60;
+                const phi = 2*Math.PI * posicionAnillo/factorVelocidad
+                const x = radio * Math.sin(phi)
+                const z = radio * Math.cos(phi)
+                const target = [x, 0, z]
+                mat4.translate(Nave.naveTransform, Nave.naveTransform,  target);
 
+                //que la nave gire conforme la tangente del recorrido target
+                mat4.rotate(Nave.naveTransform, Nave.naveTransform, phi + Math.PI/2, [0,1,0]);
+
+
+                 */
+                const target = [0,0,0]
+
+                if(controles.focusCamera.Nave === true){
+                    camera.setFocus(target)
+                }else
+                if(controles.focusCamera.PanelesSolares === true){
+                    camera.setFocus([0,0,dimensionesTuboPrincipal.altura])
+                }
+
+
+/*
+
+                //obtener la posicion de Nave.naveTransform respecto al mundo
+                const posicionNave = vec3.create();
+                vec3.transformMat4(posicionNave, [0,0,0], Nave.naveTransform);
+                //log posicionNave con 2 decimales en x, y z
+                console.log(`posNave: ${posicionNave[0].toFixed(2)}, ${posicionNave[1].toFixed(2)}, ${posicionNave[2].toFixed(2)}`);
+
+                //obtener la posiciones de la transformacion de la camara respecto al mundo
+                const posicionCamara = vec3.create();
+                vec3.transformMat4(posicionCamara, [0,0,0], camera.getViewTransform());
+                //log posicionCamara con 2 decimales en x, y z
+                console.log(`posCamara: ${posicionCamara[0].toFixed(2)}, ${posicionCamara[1].toFixed(2)}, ${posicionCamara[2].toFixed(2)}`);
+
+ */
+            }
           //////////////////////////////////////////////////////////
             transformar.nucleoDelPanelSolar()
 
@@ -1471,6 +1517,7 @@ window.onload = init;
 
 function initControls() {
     utils.configureControls({
+        /*
         'Camera Type': {
             value: camera.type,
             options: [Camera.ORBITING_TYPE, Camera.TRACKING_TYPE],
@@ -1480,6 +1527,8 @@ function initControls() {
             }
         },
 
+         */
+
         'Bloques': {
             value: bloque.type,
             options: [Bloque.BLOQUES_4,Bloque.BLOQUES_5,Bloque.BLOQUES_6, Bloque.BLOQUES_7 ,Bloque.BLOQUES_8],
@@ -1488,31 +1537,33 @@ function initControls() {
             }
         },
 
-
-
-        'Paneles Solares Filas': {
-            value: filasDeTubosSecundarios,
-            min: 1, max: 10, step: 1,
-            onChange: v => {
-                removerPanelesSolares();
-                filasDeTubosSecundarios = v;
-                dimensionesTuboPrincipal.altura = filasDeTubosSecundarios * distanciaEntreTubosSecundarios + fc;
-                cargarPanelesSolares();
-            }
+        PanelesSolares: {
+            Filas: {
+                value: filasDeTubosSecundarios,
+                min: 1, max: 10, step: 1,
+                onChange: v => {
+                    removerPanelesSolares();
+                    filasDeTubosSecundarios = v;
+                    dimensionesTuboPrincipal.altura = filasDeTubosSecundarios * distanciaEntreTubosSecundarios + fc;
+                    cargarPanelesSolares();
+                }
+            },
+            Angulo: {
+                value: anguloRotacionPanelSolar,
+                min: 0, max: 360, step: 1,
+                onChange: v => anguloRotacionPanelSolar = v,
+            },
         },
-        'Paneles Solares Angulo': {
-            value: anguloRotacionPanelSolar,
-            min: 0, max: 360, step: 1,
-            onChange: v => anguloRotacionPanelSolar = v,
-        },
-        /*
+/*
         'Ajuste' : {
             value: ajuste,
-            min: 8, max: 9, step: 0.1,
+            min: 0, max: 3, step: 0.1,
             onChange: v => ajuste = v,
         },
 
-         */
+
+ */
+
 /*
         'Static Light Position': {
             value: fixedLight,

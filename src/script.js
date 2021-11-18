@@ -96,6 +96,9 @@ function configure() {
 
     //Transformaciones afines
     transformar = new TransformacionesAfin();
+    //Drone Cam
+    droneCam = new DroneCameraControl([0,0,-10], canvas);
+
 
 }
 /*
@@ -218,7 +221,6 @@ function load() {
     moduloVioleta()
     cargarEsfera()
     cargarCapsula()
-    droneCam = new DroneCameraControl([0,0,-10]);
 
 
 }
@@ -945,12 +947,52 @@ class TransformacionesAfin{
                 position,
             } = droneCam.update()
 
+            controles.setFocusCapsula(position) //evita un parpadeo en la camara
             if(controles.focusCamera.Capsula === true){
+                droneCam.escuchar(true) //funciona, ahora solo se debe ejecutar una vez
                 camera.setFocus(position)
-                // camera.goHome([0, 4, -37], [0,0,-34])
+
+            }else{
+             //   console.log("asd")
+                droneCam.escuchar(false)
             }
-            console.log(position)
-            // console.log(rotationMatrix, position)
+         //console.log(position)
+
+           // camera.rotationMatrix = rotationMatrix
+
+            /*
+            if(rotationMatrix[8] > 0.7){
+                const rotation = mat4.create()
+                mat4.copy(rotation, rotationMatrix)
+                camera.rotationMatrix = rotation
+
+            }else{
+                camera.setRotationMatrixAsIdentity()
+            }
+
+             */
+
+
+            /*
+
+            console.log(`rotMatrix:
+            ${rotationMatrix[0].toFixed(2)}, ${rotationMatrix[1].toFixed(2)}, ${rotationMatrix[2].toFixed(2)}, ${rotationMatrix[3].toFixed(2)}, '\n'
+            ${rotationMatrix[4].toFixed(2)}, ${rotationMatrix[5].toFixed(2)}, ${rotationMatrix[6].toFixed(2)}, ${rotationMatrix[7].toFixed(2)}, '\n'
+            ${rotationMatrix[8].toFixed(2)}, ${rotationMatrix[9].toFixed(2)}, ${rotationMatrix[10].toFixed(2)}, ${rotationMatrix[11].toFixed(2)}, '\n'
+            ${rotationMatrix[12].toFixed(2)}, ${rotationMatrix[13].toFixed(2)}, ${rotationMatrix[14].toFixed(2)}, ${rotationMatrix[15].toFixed(2)}
+            `);
+
+            console.log(`camMatrix:
+            ${camera.matrix[0].toFixed(2)}, ${camera.matrix[1].toFixed(2)}, ${camera.matrix[2].toFixed(2)}, ${camera.matrix[3].toFixed(2)}, '\n'
+            ${camera.matrix[4].toFixed(2)}, ${camera.matrix[5].toFixed(2)}, ${camera.matrix[6].toFixed(2)}, ${camera.matrix[7].toFixed(2)}, '\n'
+            ${camera.matrix[8].toFixed(2)}, ${camera.matrix[9].toFixed(2)}, ${camera.matrix[10].toFixed(2)}, ${camera.matrix[11].toFixed(2)}, '\n'
+            ${camera.matrix[12].toFixed(2)}, ${camera.matrix[13].toFixed(2)}, ${camera.matrix[14].toFixed(2)}, ${camera.matrix[15].toFixed(2)}
+            `);
+
+
+             */
+
+
             mat4.translate(Capsula.capsulaTransform,Capsula.capsulaTransform,position);
             mat4.multiply(Capsula.capsulaTransform,Capsula.capsulaTransform,rotationMatrix);
             //mat4.translate(Capsula.capsulaTransform, Capsula.capsulaTransform, posicionRespectoLaNave);
@@ -1413,13 +1455,20 @@ function draw() {
 
 
                  */
-                const target = [0,0,0]
 
+                const targetNave = [0,0,0] //es el vector de posicion de la nave resultante de una futura matriz de transformacion
+
+                //los ponales solares son relativos a la nave
+                const targetPanelesSolares = vec3.create()
+                vec3.add(targetPanelesSolares, targetNave, [0,0,dimensionesTuboPrincipal.altura])
+
+                //actualizo el foco de la camara en los controles, evita un parpadeo en la camara
+                controles.setFocus(targetNave, targetPanelesSolares)
                 if(controles.focusCamera.Nave === true){
-                    camera.setFocus(target)
+                    camera.setFocus(targetNave)
                 }else
                 if(controles.focusCamera.PanelesSolares === true){
-                    camera.setFocus([0,0,dimensionesTuboPrincipal.altura])
+                    camera.setFocus(targetPanelesSolares)
                 }
 
 

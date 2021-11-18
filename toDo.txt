@@ -1,2 +1,4 @@
 -> giros random para los paneles solares
-->construir la nace con curvas de bezier
+
+->camera.rotationMatrix se debe activar cuando la nave gira mucho en una direccion y queda de lado
+

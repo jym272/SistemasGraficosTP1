@@ -23,7 +23,13 @@ export class Camera {
     this.minZ = 0.1;
     this.maxZ = 10000;
 
+    //creando una matrix de rotacion que rota a la camara seguno la rotacion de la capsula
+    this.rotationMatrix = mat4.create();
+    this.setRotationMatrixAsIdentity()
     this.setType(type);
+  }
+  setRotationMatrixAsIdentity(){
+    mat4.identity(this.rotationMatrix);
   }
 
   // Return whether the camera is in orbiting mode
@@ -43,10 +49,11 @@ export class Camera {
       : console.error(`Camera type (${type}) not supported`);
   }
 
-  goTo(position = [0,0,0], azimuth = 0, elevation = 0) {
+  goTo(position = [0,0,0], azimuth = 0, elevation = 0, focus = [0,0,0]) {
     this.setPosition(position);
     this.setAzimuth(azimuth);
     this.setElevation(elevation);
+    this.setFocus(focus);
   }
   // Position the camera back home
   goHome(home, focus=[0,0,0]) { //focus is optional, sino es el origen
@@ -195,8 +202,11 @@ export class Camera {
     else {
       //rotate with center focus
       mat4.translate(this.matrix, this.matrix, this.focus);
+      mat4.multiply(this.matrix,this.matrix,this.rotationMatrix);
+
       mat4.rotateY(this.matrix, this.matrix, this.azimuth * Math.PI / 180);
       mat4.rotateX(this.matrix, this.matrix, this.elevation * Math.PI / 180);
+
       mat4.translate(this.matrix, this.matrix, this.position);
     }
 
@@ -215,6 +225,20 @@ export class Camera {
     if(this.isOrbiting()){
       this.lookAt(); //para la camara orbital
     }
+
+/*
+    //console.log this.position in a vector
+    console.log(`posCamara: ${this.position[0].toFixed(2)}, ${this.position[1].toFixed(2)}, ${this.position[2].toFixed(2)}`);
+    // log this.azimuth
+    console.log(`azimuth: ${this.azimuth.toFixed(2)}`);
+    // log this.elevation
+    console.log(`elevation: ${this.elevation.toFixed(2)}`);
+
+
+
+ */
+
+
   }
 
   // Returns the view transform

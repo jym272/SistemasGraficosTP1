@@ -1,6 +1,8 @@
 'use strict';
 
 // Abstraction over common controls for user interaction with a 3D scene
+import {mat4, vec3} from "gl-matrix";
+
 export class Controls {
 
   constructor(camera, canvas) {
@@ -35,6 +37,28 @@ export class Controls {
     canvas.onwheel = event => this.onMouseWheel(event);
     window.onkeydown = event => this.onKeyDown(event);
     window.onkeyup = event => this.onKeyUp(event);
+
+    this.dondeEstoy = "Nave" //el programa arranca en la camara de la nave
+    this.Camara = {
+      Nave: [],
+      PanelesSolares: [],
+      Capsula: [],
+    }
+    this.Camara.Nave.push(vec3.create())
+    this.Camara.PanelesSolares.push(vec3.create())
+    this.Camara.Capsula.push(vec3.create())
+    vec3.set(this.Camara.PanelesSolares[0], 0, 0, 40 -10.15)
+
+  }
+  setFocusCapsula(focusCapsula) {
+    this.Camara.Capsula[3] = focusCapsula
+
+  }
+
+  setFocus(focusNave, focusPanelesSolares){
+    this.Camara.Nave[3] = focusNave  //el focus de la nave por ahora es el origen
+    this.Camara.PanelesSolares[3] = focusPanelesSolares  //dimensionesTuboPrincipal.altura, el focus de los paneles solares
+
   }
 
   // Sets picker for picking objects
@@ -120,9 +144,12 @@ export class Controls {
     }
   }
 
+
+
   onKeyDown(event) {
     this.key = event.keyCode;
     this.ctrl = event.ctrlKey;
+
 
     if (this.ctrl) return;
     switch (this.key) {
@@ -138,23 +165,65 @@ export class Controls {
 
        */
       case 49:
+
+        vec3.copy(this.Camara[this.dondeEstoy][0], this.camera.position)
+        this.Camara[this.dondeEstoy][1] = this.camera.azimuth
+        this.Camara[this.dondeEstoy][2] = this.camera.elevation
+
+        this.camera.goTo(
+            this.Camara["Nave"][0],
+            this.Camara["Nave"][1],
+            this.Camara["Nave"][2],
+            this.Camara["Nave"][3],)
+
+        this.dondeEstoy = "Nave";
+
         this.focusCamera.PanelesSolares = false;
         this.focusCamera.Capsula = false;
         return this.focusCamera.Nave = true;
       case 50:
+
+        vec3.copy(this.Camara[this.dondeEstoy][0], this.camera.position)
+        this.Camara[this.dondeEstoy][1] = this.camera.azimuth
+        this.Camara[this.dondeEstoy][2] = this.camera.elevation
+
+        this.camera.goTo(
+            this.Camara["PanelesSolares"][0],
+            this.Camara["PanelesSolares"][1],
+            this.Camara["PanelesSolares"][2],
+            this.Camara["PanelesSolares"][3],)
+
+
+        this.dondeEstoy = "PanelesSolares";
+
         this.focusCamera.Nave = false;
         this.focusCamera.Capsula = false;
         return this.focusCamera.PanelesSolares = true;
       case 51:
+
+        vec3.copy(this.Camara[this.dondeEstoy][0], this.camera.position)
+        this.Camara[this.dondeEstoy][1] = this.camera.azimuth
+        this.Camara[this.dondeEstoy][2] = this.camera.elevation
+
+          this.camera.goTo(
+              [0,0,20],
+              0,
+              -36.0,
+              this.Camara["Capsula"][3],
+          )
+
+        this.dondeEstoy = "Capsula";
+
+
+        this.focusCamera.Nave = false;
+        this.focusCamera.PanelesSolares = false;
+        return this.focusCamera.Capsula = true;
+
+      case 52:
         this.focusCamera.Nave = false;
         this.focusCamera.PanelesSolares = false;
         this.focusCamera.Capsula = false;
         return this.camera.goHome([0, 0, 40], [0,0,0]);
-      case 52:
-        this.focusCamera.Nave = false;
-        this.focusCamera.PanelesSolares = false;
-        //this.camera.goHome([0, 4, -37], [0,0,-34])
-        return this.focusCamera.Capsula = true;
     }
   }
 

@@ -2,7 +2,8 @@
 
 import { vec3, mat4 } from 'gl-matrix';
 
-export function DroneCameraControl(initialPos){
+//tiene que ser una clase
+export function DroneCameraControl(initialPos, canvas){
 
     let MIN_Y=1;
 
@@ -10,6 +11,7 @@ export function DroneCameraControl(initialPos){
     let DELTA_ROTACION=0.02;         // velocidad de rotacion
     let FACTOR_INERCIA=0.05;
 
+    this.canvas=canvas;
 
     if (!initialPos) initialPos=[0,0,0];
 
@@ -47,9 +49,7 @@ export function DroneCameraControl(initialPos){
     let camState=Object.assign({},camInitialState);
 
 
-    // Eventos de teclado **********************************************
-
-    document.addEventListener("keydown",function(e){
+    this.listener1 = function(e){
         //console.log(e.key);
 
         /*
@@ -61,37 +61,37 @@ export function DroneCameraControl(initialPos){
 
         switch ( e.key ) {
 
-            case "ArrowUp":  case "u": // up
+            case "ArrowUp":  case "w": // up
                 camState.zVelTarget=DELTA_TRASLACION; break;
-            case "ArrowDown": case "j": // down
+            case "ArrowDown": case "s": // down
                 camState.zVelTarget=-DELTA_TRASLACION; break;
 
-            case "ArrowLeft": case "h": // left
+            case "ArrowLeft": case "a": // left
                 camState.xVelTarget=DELTA_TRASLACION;break;
-            case "ArrowRight": case "k": // right
+            case "ArrowRight": case "d": // right
                 camState.xVelTarget=-DELTA_TRASLACION; break;
 
-            case "o": case "PageUp": // PgUp
+            case "q": case "PageUp": // PgUp
                 camState.yVelTarget=DELTA_TRASLACION;break;
-            case "l": case "PageDown":// PgDw
+            case "e": case "PageDown":// PgDw
                 camState.yVelTarget=-DELTA_TRASLACION; break;
 
 
-            case "s":
+            case "k":
                 camState.xRotVelTarget=DELTA_ROTACION;break;
-            case "w":
+            case "i":
                 camState.xRotVelTarget=-DELTA_ROTACION;break;
 
 
-            case "a":
+            case "j":
                 camState.yRotVelTarget=DELTA_ROTACION; break;
-            case "d":
+            case "l":
                 camState.yRotVelTarget=-DELTA_ROTACION; break;
 
 
-            case "q":
+            case "u":
                 camState.zRotVelTarget=DELTA_ROTACION;break;
-            case "e":
+            case "o":
                 camState.zRotVelTarget=-DELTA_ROTACION;break;
 
 
@@ -110,45 +110,61 @@ export function DroneCameraControl(initialPos){
 
         }
 
-    })
+    }
 
-    document.addEventListener("keyup",function(e){
+    this.escuchar=function(boolean = true) {
 
-        switch ( e.key )
-        {
-            case "ArrowUp":  case "u": case "ArrowDown": case "j":
-            camState.zVelTarget=0; break;
+        if(boolean){
+            // Eventos de teclado **********************************************
 
-            case "ArrowLeft": case "h": case "ArrowRight": case "k":
-            camState.xVelTarget=0; break;
+            document.addEventListener("keydown", this.listener1);
 
-            case "o": case "l":
-            case "PageDown": case "PageUp":
-            camState.yVelTarget=0;break;
+            document.addEventListener("keyup",function(e){
+
+                switch ( e.key )
+                {
+                    case "ArrowUp":  case "w": case "ArrowDown": case "s":
+                    camState.zVelTarget=0; break;
+
+                    case "ArrowLeft": case "a": case "ArrowRight": case "d":
+                    camState.xVelTarget=0; break;
+
+                    case "q": case "e":
+                    case "PageDown": case "PageUp":
+                    camState.yVelTarget=0;break;
 
 
-            case "a":
-                camState.yRotVelTarget=0; break;
-            case "d":
-                camState.yRotVelTarget=0; break;
+                    case "j":
+                        camState.yRotVelTarget=0; break;
+                    case "l":
+                        camState.yRotVelTarget=0; break;
 
-            case "w":
-                camState.xRotVelTarget=0;break;
-            case "s":
-                camState.xRotVelTarget=0;break;
+                    case "i":
+                        camState.xRotVelTarget=0;break;
+                    case "k":
+                        camState.xRotVelTarget=0;break;
 
-            case "q":
-                camState.zRotVelTarget=0;break;
-            case "e":
-                camState.zRotVelTarget=0;break;
+                    case "u":
+                        camState.zRotVelTarget=0;break;
+                    case "o":
+                        camState.zRotVelTarget=0;break;
 
+
+                }
+
+            })
+
+        }else{
+           //remover los eventos de teclado
+            document.removeEventListener("keydown", this.listener1);
 
         }
 
-    })
 
+    }
 
     this.update=function(){
+       // this.escuchar()
 
         camState.xVel+=(camState.xVelTarget-camState.xVel)*FACTOR_INERCIA;
         camState.yVel+=(camState.yVelTarget-camState.yVel)*FACTOR_INERCIA;

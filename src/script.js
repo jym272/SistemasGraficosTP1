@@ -27,6 +27,7 @@ import {DroneCameraControl} from "./js/droneCamara";
 
 let
     gl, scene, program, camera, transforms, transformar, bloque, panelSolar, controles, droneCam,
+    targetNave, targetPanelesSolares, //focus de la nave y los paneles en el cual se enfoca la camara
     elapsedTime, initialTime,
     fixedLight = false,
     triangleStrip = true,
@@ -82,7 +83,7 @@ function configure() {
 
     // Configure `camera` and `controls`
     camera = new Camera(Camera.ORBITING_TYPE, 70,0);
-    camera.goHome([0, 0, 40], [0,0,0]);  //defino el hogar
+    camera.goTo( [0,0,40],  0,  0, [0,0,0])
     controles = new Controls(camera, canvas);
 
     // Configure `transforms`
@@ -97,7 +98,7 @@ function configure() {
     //Transformaciones afines
     transformar = new TransformacionesAfin();
     //Drone Cam
-    droneCam = new DroneCameraControl([0,0,-10], canvas);
+    droneCam = new DroneCameraControl([0,0,-10], camera);
 
 
 }
@@ -951,6 +952,8 @@ class TransformacionesAfin{
             if(controles.focusCamera.Capsula === true){
                 droneCam.escuchar(true) //funciona, ahora solo se debe ejecutar una vez
                 camera.setFocus(position)
+                //camera.returnToCapsulaHome()
+
 
             }else{
              //   console.log("asd")
@@ -958,7 +961,10 @@ class TransformacionesAfin{
             }
          //console.log(position)
 
-           // camera.rotationMatrix = rotationMatrix
+            //se envia el mismo objeto rotatioMatrix, talves sea mejor enviar una copia,
+            //por ahora todo bien
+            camera.rotationMatrix = rotationMatrix //la camara sigue todas las rotaciones de la capsula
+
 
             /*
             if(rotationMatrix[8] > 0.7){
@@ -1456,14 +1462,15 @@ function draw() {
 
                  */
 
-                const targetNave = [0,0,0] //es el vector de posicion de la nave resultante de una futura matriz de transformacion
+                targetNave = [0,0,0] //es el vector de posicion de la nave resultante de una futura matriz de transformacion
 
                 //los ponales solares son relativos a la nave
-                const targetPanelesSolares = vec3.create()
-                vec3.add(targetPanelesSolares, targetNave, [0,0,dimensionesTuboPrincipal.altura])
+                targetPanelesSolares =  [0,0,dimensionesTuboPrincipal.altura]                    //10.15
 
-                //actualizo el foco de la camara en los controles, evita un parpadeo en la camara
+                //actualizo el foco de la camara en los controles, evita un parpadeo
+                //cunado cambio las camaras
                 controles.setFocus(targetNave, targetPanelesSolares)
+
                 if(controles.focusCamera.Nave === true){
                     camera.setFocus(targetNave)
                 }else
@@ -1616,6 +1623,11 @@ function initControls() {
                     removerPanelesSolares();
                     filasDeTubosSecundarios = v;
                     dimensionesTuboPrincipal.altura = filasDeTubosSecundarios * distanciaEntreTubosSecundarios + fc;
+                    //evita el parpadeo de la camara
+                    targetPanelesSolares =  [0,0,dimensionesTuboPrincipal.altura]
+                    if(controles.focusCamera.PanelesSolares === true){
+                        camera.setFocus(targetPanelesSolares)
+                    }
                     cargarPanelesSolares();
                 }
             },
@@ -1642,7 +1654,8 @@ function initControls() {
         },
 
  */
-        'Go Home': () => camera.goHome(),
+
+        //'Go Home': () => camera.goHome(),
         'Wireframe': () => {
             wireframe = !wireframe;
         },

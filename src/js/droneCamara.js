@@ -3,7 +3,7 @@
 import { vec3, mat4 } from 'gl-matrix';
 
 //tiene que ser una clase
-export function DroneCameraControl(initialPos, canvas){
+export function DroneCameraControl(initialPos, camera){
 
     let MIN_Y=1;
 
@@ -11,7 +11,7 @@ export function DroneCameraControl(initialPos, canvas){
     let DELTA_ROTACION=0.02;         // velocidad de rotacion
     let FACTOR_INERCIA=0.05;
 
-    this.canvas=canvas;
+    this.camera=camera;
 
     if (!initialPos) initialPos=[0,0,0];
 
@@ -62,18 +62,25 @@ export function DroneCameraControl(initialPos, canvas){
         switch ( e.key ) {
 
             case "ArrowUp":  case "w": // up
+                camera.returnToCapsulaHome(-30,0)
                 camState.zVelTarget=DELTA_TRASLACION; break;
             case "ArrowDown": case "s": // down
+                camera.returnToCapsulaHome(-30,180)
                 camState.zVelTarget=-DELTA_TRASLACION; break;
 
             case "ArrowLeft": case "a": // left
+                camera.returnToCapsulaHome(-30,90)
+
                 camState.xVelTarget=DELTA_TRASLACION;break;
             case "ArrowRight": case "d": // right
+                camera.returnToCapsulaHome(-30,-90)
                 camState.xVelTarget=-DELTA_TRASLACION; break;
 
-            case "q": case "PageUp": // PgUp
+            case "q": case "PageUp": case " ":// PgUp
+                camera.returnToCapsulaHome(90,0)
                 camState.yVelTarget=DELTA_TRASLACION;break;
             case "e": case "PageDown":// PgDw
+                camera.returnToCapsulaHome(-90,0)
                 camState.yVelTarget=-DELTA_TRASLACION; break;
 
 
@@ -130,7 +137,7 @@ export function DroneCameraControl(initialPos, canvas){
                     camState.xVelTarget=0; break;
 
                     case "q": case "e":
-                    case "PageDown": case "PageUp":
+                    case "PageDown": case "PageUp": case " ":
                     camState.yVelTarget=0;break;
 
 

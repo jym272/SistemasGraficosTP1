@@ -6,7 +6,7 @@ export class Camera {
   constructor(type = Camera.ORBITING_TYPE) {
     this.position = vec3.create();
     this.focus = vec3.create();
-    this.home = vec3.create();
+   // this.home = vec3.create();
 
     this.up = vec3.create();
     this.right = vec3.create();
@@ -14,15 +14,18 @@ export class Camera {
 
     this.matrix = mat4.create();
 
-    // You could have these options be passed in via the constructor
-    // or allow the consumer to change them directly
+
     this.steps = 0;
     this.azimuth = 0;
     this.elevation = 0;
     this.fov = 45;
     this.minZ = 0.1;
     this.maxZ = 10000;
-
+    //Auxilares para camaras de la capsula
+    this.factorVelocidad = 500;
+    this.azimuthActual = 0; //el inicio de la camara
+    this.elevationActual = -30
+    this.timeOutId = null;
     //creando una matrix de rotacion que rota a la camara seguno la rotacion de la capsula
     this.rotationMatrix = mat4.create();
     this.setRotationMatrixAsIdentity()
@@ -55,6 +58,8 @@ export class Camera {
     this.setElevation(elevation);
     this.setFocus(focus);
   }
+
+  /*  Deprecated
   // Position the camera back home
   goHome(home, focus=[0,0,0]) { //focus is optional, sino es el origen
     if (home) { //si enviaron un home
@@ -66,6 +71,8 @@ export class Camera {
     this.setElevation(0);
     this.setFocus(focus);
   }
+
+   */
 
   // Dolly the camera
   dolly(stepIncrement) {
@@ -103,6 +110,43 @@ export class Camera {
   setFocus(focus) {
     vec3.copy(this.focus, focus);
     this.update();
+  }
+
+//cuando se llame a este metodo necesito que se regrese paulatinamente a
+  // azimuth :0 y elevation: -36.0
+//si diff es chico disminuyo factor velocidad
+  //si diff es grande aumento factor de velocidad
+  returnToCapsulaHome(elevation, azimuth){
+
+    const azimuthActual = this.azimuthActual;
+    const elevationActual = this.elevationActual;
+
+    const distanciaElevation = this.elevation - elevation;
+    const diffElevation = distanciaElevation / this.factorVelocidad;
+
+    const distanciaAzimuth = this.azimuth - azimuth;
+    const diffAzimuth = distanciaAzimuth / this.factorVelocidad;
+
+    //console.log(diffAzimuth.toFixed(4), diffElevation.toFixed(4));
+
+    if(Math.abs(diffElevation)>0.001 || Math.abs(diffAzimuth)>0.001){
+      //console.log("holla")
+      this.elevation -= diffElevation;
+      this.azimuth -= diffAzimuth;
+      this.update();
+
+      if(azimuthActual === azimuth && elevationActual === elevation) {
+
+        this.timeOutId = setTimeout(() => {
+          this.returnToCapsulaHome(elevation, azimuth);
+        }, 10);
+
+      }else{
+        clearTimeout(this.timeOutId);
+        this.azimuthActual = azimuth;
+        this.elevationActual = elevation;
+      }
+    }
   }
 
   // Set camera azimuth
@@ -190,6 +234,13 @@ export class Camera {
     vec3.copy(this.normal, normal);
   }
 
+  dejarDeSeguirALaCapsula(){
+    this.seguirCapsula = false;
+  }
+  seguirALaCapsula(){
+    this.seguirCapsula = true;
+  }
+
   // Update camera values
   update() {
     mat4.identity(this.matrix);
@@ -202,7 +253,7 @@ export class Camera {
     else {
       //rotate with center focus
       mat4.translate(this.matrix, this.matrix, this.focus);
-      mat4.multiply(this.matrix,this.matrix,this.rotationMatrix);
+      (this.seguirCapsula)?mat4.multiply(this.matrix,this.matrix,this.rotationMatrix):null;
 
       mat4.rotateY(this.matrix, this.matrix, this.azimuth * Math.PI / 180);
       mat4.rotateX(this.matrix, this.matrix, this.elevation * Math.PI / 180);
@@ -235,8 +286,18 @@ export class Camera {
     console.log(`elevation: ${this.elevation.toFixed(2)}`);
 
 
-
  */
+
+
+
+
+
+
+
+
+
+
+
 
 
   }

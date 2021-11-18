@@ -2,3 +2,11 @@
 
 ->camera.rotationMatrix se debe activar cuando la nave gira mucho en una direccion y queda de lado
 
+
+
+Cada camara es independiente de la otra y mantiene el ultimo estado en el cual quedo
+la capsula solo se muenve cuando la camara de esta esta activada
+
+
+con "r" la capsula vuelve a su posicion inicial
+con "t" la capsula se detiene inmediatamente

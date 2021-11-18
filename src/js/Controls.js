@@ -39,25 +39,43 @@ export class Controls {
     window.onkeyup = event => this.onKeyUp(event);
 
     this.dondeEstoy = "Nave" //el programa arranca en la camara de la nave
+
     this.Camara = {
-      Nave: [],
-      PanelesSolares: [],
-      Capsula: [],
+      Nave : {
+        position : vec3.create(),
+        azimuth : 0,
+        elevation : 0,
+        focus : vec3.create()
+      },
+      PanelesSolares : {
+        //el programa arranca con la camara en (0,0,40) y el foco en (0,0,0), la cam de paneles tiene el foco en
+        //(0,0,10.15) asi que la distancia entre el foco y la camara de panel es de 10.15, por eso podria arrancar en
+        // (0,0,40-10.15)/az=0, el=0, para que las dos camaras de Nave y paneles tengan la misma distancia relativa con lo que se mira
+        //OJO-> las posiciones son estaticas, la nave no se mueve, ni los paneles. (es decir el foco siempre es el mismo)
+
+        //seteo una posicion particular de inicio para la camara de paneles
+        position : vec3.fromValues(0, 0,  18),
+        azimuth : -180,
+        elevation : -30,
+        focus : vec3.create()
+      },
+      Capsula : {
+        position : vec3.create(),
+        azimuth : 0,
+        elevation : 0,
+        focus : vec3.create()
+      },
     }
-    this.Camara.Nave.push(vec3.create())
-    this.Camara.PanelesSolares.push(vec3.create())
-    this.Camara.Capsula.push(vec3.create())
-    vec3.set(this.Camara.PanelesSolares[0], 0, 0, 40 -10.15)
 
   }
   setFocusCapsula(focusCapsula) {
-    this.Camara.Capsula[3] = focusCapsula
+    this.Camara.Capsula.focus = focusCapsula
 
   }
 
   setFocus(focusNave, focusPanelesSolares){
-    this.Camara.Nave[3] = focusNave  //el focus de la nave por ahora es el origen
-    this.Camara.PanelesSolares[3] = focusPanelesSolares  //dimensionesTuboPrincipal.altura, el focus de los paneles solares
+    this.Camara.Nave.focus = focusNave  //el focus de la nave por ahora es el origen
+    this.Camara.PanelesSolares.focus = focusPanelesSolares  //dimensionesTuboPrincipal.altura, el focus de los paneles solares
 
   }
 
@@ -144,8 +162,6 @@ export class Controls {
     }
   }
 
-
-
   onKeyDown(event) {
     this.key = event.keyCode;
     this.ctrl = event.ctrlKey;
@@ -166,34 +182,35 @@ export class Controls {
        */
       case 49:
 
-        vec3.copy(this.Camara[this.dondeEstoy][0], this.camera.position)
-        this.Camara[this.dondeEstoy][1] = this.camera.azimuth
-        this.Camara[this.dondeEstoy][2] = this.camera.elevation
+        this.camera.dejarDeSeguirALaCapsula();
+        vec3.copy(this.Camara[this.dondeEstoy].position, this.camera.position)
+        this.Camara[this.dondeEstoy].azimuth = this.camera.azimuth
+        this.Camara[this.dondeEstoy].elevation = this.camera.elevation
 
         this.camera.goTo(
-            this.Camara["Nave"][0],
-            this.Camara["Nave"][1],
-            this.Camara["Nave"][2],
-            this.Camara["Nave"][3],)
-
+            this.Camara["Nave"].position,
+            this.Camara["Nave"].azimuth,
+            this.Camara["Nave"].elevation,
+            this.Camara["Nave"].focus
+        )
         this.dondeEstoy = "Nave";
 
         this.focusCamera.PanelesSolares = false;
         this.focusCamera.Capsula = false;
         return this.focusCamera.Nave = true;
       case 50:
+        this.camera.dejarDeSeguirALaCapsula();
 
-        vec3.copy(this.Camara[this.dondeEstoy][0], this.camera.position)
-        this.Camara[this.dondeEstoy][1] = this.camera.azimuth
-        this.Camara[this.dondeEstoy][2] = this.camera.elevation
+        vec3.copy(this.Camara[this.dondeEstoy].position, this.camera.position)
+        this.Camara[this.dondeEstoy].azimuth = this.camera.azimuth
+        this.Camara[this.dondeEstoy].elevation = this.camera.elevation
 
         this.camera.goTo(
-            this.Camara["PanelesSolares"][0],
-            this.Camara["PanelesSolares"][1],
-            this.Camara["PanelesSolares"][2],
-            this.Camara["PanelesSolares"][3],)
-
-
+            this.Camara["PanelesSolares"].position,
+            this.Camara["PanelesSolares"].azimuth,
+            this.Camara["PanelesSolares"].elevation,
+            this.Camara["PanelesSolares"].focus
+        )
         this.dondeEstoy = "PanelesSolares";
 
         this.focusCamera.Nave = false;
@@ -201,15 +218,18 @@ export class Controls {
         return this.focusCamera.PanelesSolares = true;
       case 51:
 
-        vec3.copy(this.Camara[this.dondeEstoy][0], this.camera.position)
-        this.Camara[this.dondeEstoy][1] = this.camera.azimuth
-        this.Camara[this.dondeEstoy][2] = this.camera.elevation
+        this.camera.seguirALaCapsula()
+        vec3.copy(this.Camara[this.dondeEstoy].position, this.camera.position)
+        this.Camara[this.dondeEstoy].azimuth = this.camera.azimuth
+        this.Camara[this.dondeEstoy].elevation = this.camera.elevation
 
+          //la camara de la capsula es fija, lo unico que varia es el focus, de todas manera si se guarda la info de
+          //su ultima posicion
           this.camera.goTo(
               [0,0,20],
               0,
-              -36.0,
-              this.Camara["Capsula"][3],
+              -30.0,
+              this.Camara["Capsula"].focus,
           )
 
         this.dondeEstoy = "Capsula";
@@ -218,15 +238,8 @@ export class Controls {
         this.focusCamera.Nave = false;
         this.focusCamera.PanelesSolares = false;
         return this.focusCamera.Capsula = true;
-
-      case 52:
-        this.focusCamera.Nave = false;
-        this.focusCamera.PanelesSolares = false;
-        this.focusCamera.Capsula = false;
-        return this.camera.goHome([0, 0, 40], [0,0,0]);
     }
   }
-
   onKeyUp(event) {
     if (event.keyCode === 17) {
       this.ctrl = false;

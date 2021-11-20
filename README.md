@@ -21,19 +21,19 @@ npm run dev
 npm run build
 ```
 
-##Cámaras Orbitales
+## Cámaras Orbitales
 '1' -> Cámara centrada en la estación espacial.
 
 '2' -> Cámara centrada en los paneles solares.
 
 '3' -> Cámara de la cápsula espacial.
 
-###Mouse
+### Mouse
 Click izquierdo con movimientos del mouse para mover la cámara órbital.
 
 Combinar con la tecla "Alt" o en su defecto la rueda del mouse para zoom.
 
-##Controles Cápsula Espacial
+## Controles Cápsula Espacial
 
     ASDW para desplazarla en el plano XZ.
     QE   para desplazarla en el eje Y.
@@ -44,5 +44,5 @@ Combinar con la tecla "Alt" o en su defecto la rueda del mouse para zoom.
     T    La cápsula frena in situ.
 
 
-
-Módulos del código que abstraen conceptos del pipeline gráfico fueron tomados como referencia  de [Real-Time 3D Graphics with WebGL 2](https://github.com/PacktPublishing/Real-Time-3D-Graphics-with-WebGL-2).
+### Referencia
+Módulos del código que abstraen conceptos del pipeline gráfico fueron tomados de [Real-Time 3D Graphics with WebGL 2](https://github.com/PacktPublishing/Real-Time-3D-Graphics-with-WebGL-2).

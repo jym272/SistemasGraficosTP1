@@ -2,9 +2,6 @@
 -> giros random para los paneles solares
 -> planeta tierra, que el planeta gire, el centro del universo es la capsula espacial
    se da la ilusion que la ISS es la que avanza
--> mejor que la camara de los paneles solares sea fija frente a nuevos paneles
-   ya que de la ilusion que la ISS se mueve, deveria ser al reves
-
 
 //-> Recordar, las u,v de texturas en las superficies de barrido-revolucion salen gratis
  cada posicion del recorrido pueden corresponder a u =[0,1]

@@ -37,9 +37,7 @@ export function DroneCameraControl(initialPos, camera){
 
     let camState=Object.assign({},camInitialState);
 
-
     this.listener = function(e){
-        //console.log(e.key);
 
         /*
             ASDWQE para rotar en 3 ejes en el espacio del objeto

@@ -285,19 +285,19 @@ export class Camera {
     if(this.isOrbiting()){
       this.lookAt(); //para la camara orbital
     }
-/*
+
+    // this.logCamera()
+
+  }
+
+  logCamera(){
     //console.log this.position in a vector
     console.log(`posCamara: ${this.position[0].toFixed(2)}, ${this.position[1].toFixed(2)}, ${this.position[2].toFixed(2)}`);
     // log this.azimuth
     console.log(`azimuth: ${this.azimuth.toFixed(2)}`);
     // log this.elevation
     console.log(`elevation: ${this.elevation.toFixed(2)}`);
-
-
- */
-
   }
-
   // Returns the view transform
   getViewTransform() {
     const matrix = mat4.create();

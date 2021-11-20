@@ -1438,7 +1438,7 @@ function draw() {
                 targetNave = [0,0,0] //es el vector de posicion de la nave resultante de una futura matriz de transformacion
 
                 //los paneles solares son relativos a la nave, los configuro tambien ahora.
-                targetPanelesSolares =  [0,0,dimensionesTuboPrincipal.altura]                    //10.15
+                targetPanelesSolares =  [0,0,15.5];//[0,0,dimensionesTuboPrincipal.altura]                    //10.15
 
                 //actualizo el foco de la camara en los controles, evita un parpadeo
                 //cunado cambio las camaras, los target no se mueven pero en el futuro podrian hacerlo
@@ -1573,17 +1573,17 @@ window.onload = init;
 
 function initControls() {
     utils.configureControls({
-        /*
+/*
         'Camera Type': {
             value: camera.type,
             options: [Camera.ORBITING_TYPE, Camera.TRACKING_TYPE],
             onChange: v => {
-                camera.goHome();
+               camera.goHome();
                 camera.setType(v);
             }
         },
 
-         */
+ */
 
         'Bloques': {
             value: bloque.type,
@@ -1602,10 +1602,13 @@ function initControls() {
                     filasDeTubosSecundarios = v;
                     dimensionesTuboPrincipal.altura = filasDeTubosSecundarios * distanciaEntreTubosSecundarios + fc;
                     //evita el parpadeo de la camara
+                    /* ahora uso un foco estatico
                     targetPanelesSolares =  [0,0,dimensionesTuboPrincipal.altura]
                     if(controles.focusCamera.PanelesSolares === true){
                         camera.setFocus(targetPanelesSolares)
                     }
+
+                     */
                     cargarPanelesSolares();
                 }
             },

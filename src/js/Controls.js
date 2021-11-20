@@ -55,7 +55,7 @@ export class Controls {
         //OJO-> las posiciones son estaticas, la nave no se mueve, ni los paneles. (es decir el foco siempre es el mismo)
 
         //seteo una posicion particular de inicio para la camara de paneles
-        position : vec3.fromValues(0, 0,  18),
+        position : vec3.fromValues(0, 0,  29.5),
         azimuth : -180,
         elevation : -30,
         focus : vec3.create()
@@ -63,7 +63,7 @@ export class Controls {
       Capsula : {
         position : vec3.fromValues(0, 0,  20),
         azimuth : 0.00,
-        elevation : -30.00,
+        elevation : -30.8,
         focus : vec3.create()
       },
     }
@@ -134,6 +134,7 @@ export class Controls {
 
   onMouseWheel(event) {
     const delta = Math.max(-1, Math.min(1, (event.wheelDelta || -event.detail)));
+    this.dstep = Math.max(this.camera.position[0], this.camera.position[1], this.camera.position[2]) / 100;
     this.dolly(-delta)
   }
 

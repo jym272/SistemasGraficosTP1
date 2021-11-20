@@ -1,13 +1,14 @@
 'use strict';
 
 // Abstraction over common controls for user interaction with a 3D scene
-import {mat4, vec3} from "gl-matrix";
+import {vec3} from "gl-matrix";
 
 export class Controls {
 
-  constructor(camera, canvas) {
+  constructor(camera, canvas, droneCam) {
     this.camera = camera;
     this.canvas = canvas;
+    this.droneCam = droneCam;
     this.picker = null;
 
     this.dragging = false;
@@ -39,7 +40,7 @@ export class Controls {
     window.onkeyup = event => this.onKeyUp(event);
 
     this.dondeEstoy = "Nave" //el programa arranca en la camara de la nave
-
+    //no inicializo la pos en la nave, ya que comienzo en esta camara
     this.Camara = {
       Nave : {
         position : vec3.create(),
@@ -60,9 +61,9 @@ export class Controls {
         focus : vec3.create()
       },
       Capsula : {
-        position : vec3.create(),
-        azimuth : 0,
-        elevation : 0,
+        position : vec3.fromValues(0, 0,  20),
+        azimuth : 0.00,
+        elevation : -30.00,
         focus : vec3.create()
       },
     }
@@ -162,10 +163,37 @@ export class Controls {
     }
   }
 
+  configurarCamaraDe(objetivo){
+
+    vec3.copy(this.Camara[this.dondeEstoy].position, this.camera.position)
+    this.Camara[this.dondeEstoy].azimuth = this.camera.azimuth
+    this.Camara[this.dondeEstoy].elevation = this.camera.elevation
+
+    this.camera.goTo(
+        this.Camara[objetivo].position,
+        this.Camara[objetivo].azimuth,
+        this.Camara[objetivo].elevation,
+        this.Camara[objetivo].focus
+    )
+    this.dondeEstoy = objetivo;
+
+    if(objetivo === "Nave"){
+      this.focusCamera.PanelesSolares = false;
+      this.focusCamera.Capsula = false;
+      this.focusCamera.Nave = true;
+    }else if(objetivo === "PanelesSolares") {
+      this.focusCamera.Nave = false;
+      this.focusCamera.Capsula = false;
+      this.focusCamera.PanelesSolares = true;
+    }else if(objetivo === "Capsula") {
+      this.focusCamera.Nave = false;
+      this.focusCamera.PanelesSolares = false;
+      this.focusCamera.Capsula = true;
+    }
+  }
   onKeyDown(event) {
     this.key = event.keyCode;
     this.ctrl = event.ctrlKey;
-
 
     if (this.ctrl) return;
     switch (this.key) {
@@ -181,63 +209,19 @@ export class Controls {
 
        */
       case 49:
-
+        this.droneCam.activarControlesTeclado(false);
+        this.camera.borrarTimeOutIdPool(); //cualquier llamdo vigente que quede cuando la camara de la capsula se mueva se borra
         this.camera.dejarDeSeguirALaCapsula();
-        vec3.copy(this.Camara[this.dondeEstoy].position, this.camera.position)
-        this.Camara[this.dondeEstoy].azimuth = this.camera.azimuth
-        this.Camara[this.dondeEstoy].elevation = this.camera.elevation
-
-        this.camera.goTo(
-            this.Camara["Nave"].position,
-            this.Camara["Nave"].azimuth,
-            this.Camara["Nave"].elevation,
-            this.Camara["Nave"].focus
-        )
-        this.dondeEstoy = "Nave";
-
-        this.focusCamera.PanelesSolares = false;
-        this.focusCamera.Capsula = false;
-        return this.focusCamera.Nave = true;
+        return this.configurarCamaraDe("Nave");
       case 50:
+        this.droneCam.activarControlesTeclado(false);
+        this.camera.borrarTimeOutIdPool();
         this.camera.dejarDeSeguirALaCapsula();
-
-        vec3.copy(this.Camara[this.dondeEstoy].position, this.camera.position)
-        this.Camara[this.dondeEstoy].azimuth = this.camera.azimuth
-        this.Camara[this.dondeEstoy].elevation = this.camera.elevation
-
-        this.camera.goTo(
-            this.Camara["PanelesSolares"].position,
-            this.Camara["PanelesSolares"].azimuth,
-            this.Camara["PanelesSolares"].elevation,
-            this.Camara["PanelesSolares"].focus
-        )
-        this.dondeEstoy = "PanelesSolares";
-
-        this.focusCamera.Nave = false;
-        this.focusCamera.Capsula = false;
-        return this.focusCamera.PanelesSolares = true;
+        return this.configurarCamaraDe("PanelesSolares");
       case 51:
-
-        this.camera.seguirALaCapsula()
-        vec3.copy(this.Camara[this.dondeEstoy].position, this.camera.position)
-        this.Camara[this.dondeEstoy].azimuth = this.camera.azimuth
-        this.Camara[this.dondeEstoy].elevation = this.camera.elevation
-
-          //la camara de la capsula es fija, lo unico que varia es el focus, de todas manera si se guarda la info de
-          //su ultima posicion
-          this.camera.goTo(
-              [0,0,20],
-              0,
-              -30.0,
-              this.Camara["Capsula"].focus,
-          )
-
-        this.dondeEstoy = "Capsula";
-
-
-        this.focusCamera.Nave = false;
-        this.focusCamera.PanelesSolares = false;
-        return this.focusCamera.Capsula = true;
+        this.droneCam.activarControlesTeclado();
+        this.camera.seguirALaCapsula() //activa la matrix de rotacion que se calcula con los controles de la capsula
+        return this.configurarCamaraDe("Capsula");
     }
   }
   onKeyUp(event) {

@@ -1,7 +1,7 @@
 'use strict';
 import './style.css'
 import {utils} from './js/utils';
-import {mat4, vec3} from "gl-matrix";
+import {mat4} from "gl-matrix";
 import {Program} from "./js/Program";
 import {Scene} from "./js/Scene";
 import {Floor} from "./js/Floor";
@@ -84,7 +84,8 @@ function configure() {
     // Configure `camera` and `controls`
     camera = new Camera(Camera.ORBITING_TYPE, 70,0);
     camera.goTo( [0,0,40],  0,  0, [0,0,0])
-    controles = new Controls(camera, canvas);
+    droneCam = new DroneCameraControl([0,0,-10], camera);
+    controles = new Controls(camera, canvas, droneCam);
 
     // Configure `transforms`
     transforms = new Transforms(gl, program, camera, canvas);
@@ -97,10 +98,6 @@ function configure() {
 
     //Transformaciones afines
     transformar = new TransformacionesAfin();
-    //Drone Cam
-    droneCam = new DroneCameraControl([0,0,-10], camera);
-
-
 }
 /*
  * COLORES
@@ -950,33 +947,13 @@ class TransformacionesAfin{
 
             controles.setFocusCapsula(position) //evita un parpadeo en la camara
             if(controles.focusCamera.Capsula === true){
-                droneCam.escuchar(true) //funciona, ahora solo se debe ejecutar una vez
                 camera.setFocus(position)
-                //camera.returnToCapsulaHome()
-
-
-            }else{
-             //   console.log("asd")
-                droneCam.escuchar(false)
             }
-         //console.log(position)
 
             //se envia el mismo objeto rotatioMatrix, talves sea mejor enviar una copia,
-            //por ahora todo bien
-            camera.rotationMatrix = rotationMatrix //la camara sigue todas las rotaciones de la capsula
+            //por ahora todo bien, si se envia una copia se tendria que hacer una copia de la matriz en cada draw
+            camera.setRotationMatrix(rotationMatrix)
 
-
-            /*
-            if(rotationMatrix[8] > 0.7){
-                const rotation = mat4.create()
-                mat4.copy(rotation, rotationMatrix)
-                camera.rotationMatrix = rotation
-
-            }else{
-                camera.setRotationMatrixAsIdentity()
-            }
-
-             */
 
 
             /*
@@ -1003,7 +980,6 @@ class TransformacionesAfin{
             mat4.multiply(Capsula.capsulaTransform,Capsula.capsulaTransform,rotationMatrix);
             //mat4.translate(Capsula.capsulaTransform, Capsula.capsulaTransform, posicionRespectoLaNave);
            mat4.rotate(Capsula.capsulaTransform, Capsula.capsulaTransform, Math.PI, [1, 0, 0]);
-
 
 
         }else if(this.alias === 'capsulaCuerpoCilindroA') {
@@ -1441,9 +1417,6 @@ function draw() {
             // Ubico las partes de la nave en la escena
             transformar.setAlias(object.alias)
 
-            //Testeando la camara para la capsula
-
-
             //Dependiendo del objeto se aplica la transformacion
             if(object.alias === 'nave'){
                 Nave.naveTransform = transforms.modelViewMatrix;
@@ -1464,11 +1437,11 @@ function draw() {
 
                 targetNave = [0,0,0] //es el vector de posicion de la nave resultante de una futura matriz de transformacion
 
-                //los ponales solares son relativos a la nave
+                //los paneles solares son relativos a la nave, los configuro tambien ahora.
                 targetPanelesSolares =  [0,0,dimensionesTuboPrincipal.altura]                    //10.15
 
                 //actualizo el foco de la camara en los controles, evita un parpadeo
-                //cunado cambio las camaras
+                //cunado cambio las camaras, los target no se mueven pero en el futuro podrian hacerlo
                 controles.setFocus(targetNave, targetPanelesSolares)
 
                 if(controles.focusCamera.Nave === true){
@@ -1557,18 +1530,23 @@ function dibujarMallaDeObjeto(object){
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
 
 }
-// Update object positions
+
+function giroPanelSolarRandom(){
+    const numeroRandom = Math.random().toFixed(3)
+    if(numeroRandom === "0.001"){
+        console.log("hola")
+    }
+        //para implementar
+}
 function animate() {
     posicionAnillo += dxAnillo;
-
+    //giroPanelSolarRandom()
     draw();
 }
 animationRate = 30
 function onFrame() {
     elapsedTime = (new Date).getTime() - initialTime;
     if (elapsedTime < animationRate) return; //no me sirve, intente de nuevo
-
-    // console.log(elapsedTime)
 
     let steps = Math.floor(elapsedTime / animationRate);
     while (steps > 0) {

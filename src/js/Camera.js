@@ -14,25 +14,30 @@ export class Camera {
 
     this.matrix = mat4.create();
 
-
+    //Caracteristicas de la camara
     this.steps = 0;
     this.azimuth = 0;
     this.elevation = 0;
     this.fov = 45;
     this.minZ = 0.1;
     this.maxZ = 10000;
-    //Auxilares para camaras de la capsula
-    this.factorVelocidad = 500;
-    this.azimuthActual = 0; //el inicio de la camara
+    /*
+     * Auxilares para la camara de la capsula
+     */
+    this.factorVelocidad = 500; //con la cual la camara regresa a su posicion por default
+    //el inicio de la camara de la capsula por default
+    this.azimuthActual = 0;
     this.elevationActual = -30
-    this.timeOutId = null;
-    //creando una matrix de rotacion que rota a la camara seguno la rotacion de la capsula
-    this.rotationMatrix = mat4.create();
-    this.setRotationMatrixAsIdentity()
+    this.timeOutIdPool = [];
+
+    //Matrix de rotacion que rota a la camara según la rotación de la capsula
+    this.rotationMatrix = null;
+
     this.setType(type);
   }
-  setRotationMatrixAsIdentity(){
-    mat4.identity(this.rotationMatrix);
+  //Se usa el mismo objeto tanto en la transformacion de la geoemtria de la capsula, como en la de la camara
+  setRotationMatrix(matrix){
+    this.rotationMatrix = matrix;
   }
 
   // Return whether the camera is in orbiting mode
@@ -112,11 +117,7 @@ export class Camera {
     this.update();
   }
 
-//cuando se llame a este metodo necesito que se regrese paulatinamente a
-  // azimuth :0 y elevation: -36.0
-//si diff es chico disminuyo factor velocidad
-  //si diff es grande aumento factor de velocidad
-  returnToCapsulaHome(elevation, azimuth){
+  colocarPaulatinamenteLaCamaraEn(elevation, azimuth){
 
     const azimuthActual = this.azimuthActual;
     const elevationActual = this.elevationActual;
@@ -130,23 +131,31 @@ export class Camera {
     //console.log(diffAzimuth.toFixed(4), diffElevation.toFixed(4));
 
     if(Math.abs(diffElevation)>0.001 || Math.abs(diffAzimuth)>0.001){
-      //console.log("holla")
+
       this.elevation -= diffElevation;
       this.azimuth -= diffAzimuth;
       this.update();
 
       if(azimuthActual === azimuth && elevationActual === elevation) {
 
-        this.timeOutId = setTimeout(() => {
-          this.returnToCapsulaHome(elevation, azimuth);
-        }, 10);
-
+        this.timeOutIdPool.push(setTimeout(() => {
+          this.colocarPaulatinamenteLaCamaraEn(elevation, azimuth);
+        }, 10));
       }else{
-        clearTimeout(this.timeOutId);
+        //clear timeout every item in the pool
+        this.borrarTimeOutIdPool();
+
         this.azimuthActual = azimuth;
         this.elevationActual = elevation;
       }
     }
+  }
+
+  borrarTimeOutIdPool(){
+    this.timeOutIdPool.forEach(id => {
+      clearTimeout(id);
+    });
+    this.timeOutIdPool = []; //reseteo el pool
   }
 
   // Set camera azimuth
@@ -276,7 +285,6 @@ export class Camera {
     if(this.isOrbiting()){
       this.lookAt(); //para la camara orbital
     }
-
 /*
     //console.log this.position in a vector
     console.log(`posCamara: ${this.position[0].toFixed(2)}, ${this.position[1].toFixed(2)}, ${this.position[2].toFixed(2)}`);
@@ -287,18 +295,6 @@ export class Camera {
 
 
  */
-
-
-
-
-
-
-
-
-
-
-
-
 
   }
 

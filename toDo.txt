@@ -1,12 +1,18 @@
+// Hacer
 -> giros random para los paneles solares
-
-->camera.rotationMatrix se debe activar cuando la nave gira mucho en una direccion y queda de lado
-
-
-
-Cada camara es independiente de la otra y mantiene el ultimo estado en el cual quedo
-la capsula solo se muenve cuando la camara de esta esta activada
+-> planeta tierra, que el planeta gire, el centro del universo es la capsula espacial
+   se da la ilusion que la ISS es la que avanza
+-> mejor que la camara de los paneles solares sea fija frente a nuevos paneles
+   ya que de la ilusion que la ISS se mueve, deveria ser al reves
 
 
-con "r" la capsula vuelve a su posicion inicial
-con "t" la capsula se detiene inmediatamente
+//-> Recordar, las u,v de texturas en las superficies de barrido-revolucion salen gratis
+ cada posicion del recorrido pueden corresponder a u =[0,1]
+ cada posicion de la forma pueden corresponder a v =[0,1]
+
+
+
+
+
+// Opcional
+-> Corregir los giros, el menor camino para rotar la camara, Ej: de atras hacia la derecha.

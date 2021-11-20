@@ -119,7 +119,6 @@ export class TapaSuperficieParametrica extends Superficie{
         this.puntosDeLaForma = puntosDeLaForma;
         this.construir();
 
-
     }
     superficie(){
         const puntos = this.puntosDeLaForma
@@ -211,7 +210,7 @@ export class SuperficieParametrica extends  Superficie{
                     vectorNormal[2], vectorBinormal[2], vectorTangente[2], 0,
                     0, 0, 0, 1
                 )
-                mat4.transpose(matrizDeNivelInversa, matrizDeNivelInversa)
+                mat4.transpose(matrizDeNivelInversa, matrizDeNivelInversa) //en lugar de calcular la inversa, mejor transpongo la matriz
                 normalTransformada = vec4.create()
                 vec4.set(
                     normalTransformada,

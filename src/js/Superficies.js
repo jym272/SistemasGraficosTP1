@@ -214,14 +214,5 @@ export class Torus extends Superficie{
          }
 
      }
-    construir(){
-        const constructor = new ConstruirBuffers(this.dimensionesTriangulos)
-
-        const mallaPlano = constructor.construir(this.superficie())
-        this.vertices = mallaPlano.positionBuffer;
-        this.indices = mallaPlano.indexBuffer;
-        this.normales = mallaPlano.normalBuffer;
-        this.textureCoords = mallaPlano.uvBuffer
-    }
 }
 

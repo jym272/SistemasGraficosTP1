@@ -2,16 +2,11 @@
 
 import { vec3, mat4 } from 'gl-matrix';
 
-//tiene que ser una clase
 export function DroneCameraControl(initialPos, camera){
 
-    let MIN_Y=1;
-
-    let DELTA_TRASLACION=0.5;        // velocidad de traslacion
-    let DELTA_ROTACION=0.02;         // velocidad de rotacion
+    let DELTA_TRASLACION=0.7;        // velocidad de traslacion
+    let DELTA_ROTACION=0.05;         // velocidad de rotacion
     let FACTOR_INERCIA=0.05;
-
-    this.camera=camera;
 
     if (!initialPos) initialPos=[0,0,0];
 
@@ -20,13 +15,7 @@ export function DroneCameraControl(initialPos, camera){
 
     let rotationMatrix=mat4.create();
 
-    let worldMatrix=mat4.create();
-    //create a setter for the world matrix
-    Object.defineProperty(this, 'worldMatrix', {
-        set: function(value){
-            worldMatrix=value;
-        }
-    });
+    //let worldMatrix=mat4.create();
 
     let camInitialState={
         xVel:0,
@@ -49,7 +38,7 @@ export function DroneCameraControl(initialPos, camera){
     let camState=Object.assign({},camInitialState);
 
 
-    this.listener1 = function(e){
+    this.listener = function(e){
         //console.log(e.key);
 
         /*
@@ -58,29 +47,27 @@ export function DroneCameraControl(initialPos, camera){
             Flechas + PgUp/PgDw o HJKUOL para trasladar en el espacio del objeto
 
         */
-
         switch ( e.key ) {
-
             case "ArrowUp":  case "w": // up
-                camera.returnToCapsulaHome(-30,0)
+                camera.colocarPaulatinamenteLaCamaraEn(-30,0)
                 camState.zVelTarget=DELTA_TRASLACION; break;
             case "ArrowDown": case "s": // down
-                camera.returnToCapsulaHome(-30,180)
+                camera.colocarPaulatinamenteLaCamaraEn(-30,180)
                 camState.zVelTarget=-DELTA_TRASLACION; break;
 
             case "ArrowLeft": case "a": // left
-                camera.returnToCapsulaHome(-30,90)
+                camera.colocarPaulatinamenteLaCamaraEn(-30,90)
 
                 camState.xVelTarget=DELTA_TRASLACION;break;
             case "ArrowRight": case "d": // right
-                camera.returnToCapsulaHome(-30,-90)
+                camera.colocarPaulatinamenteLaCamaraEn(-30,-90)
                 camState.xVelTarget=-DELTA_TRASLACION; break;
 
             case "q": case "PageUp": case " ":// PgUp
-                camera.returnToCapsulaHome(90,0)
+                camera.colocarPaulatinamenteLaCamaraEn(90,0)
                 camState.yVelTarget=DELTA_TRASLACION;break;
             case "e": case "PageDown":// PgDw
-                camera.returnToCapsulaHome(-90,0)
+                camera.colocarPaulatinamenteLaCamaraEn(-90,0)
                 camState.yVelTarget=-DELTA_TRASLACION; break;
 
 
@@ -119,12 +106,12 @@ export function DroneCameraControl(initialPos, camera){
 
     }
 
-    this.escuchar=function(boolean = true) {
+    this.activarControlesTeclado = function(boolean = true) {
 
         if(boolean){
             // Eventos de teclado **********************************************
 
-            document.addEventListener("keydown", this.listener1);
+            document.addEventListener("keydown", this.listener);
 
             document.addEventListener("keyup",function(e){
 
@@ -163,7 +150,7 @@ export function DroneCameraControl(initialPos, camera){
 
         }else{
            //remover los eventos de teclado
-            document.removeEventListener("keydown", this.listener1);
+            document.removeEventListener("keydown", this.listener);
 
         }
 
@@ -171,7 +158,6 @@ export function DroneCameraControl(initialPos, camera){
     }
 
     this.update=function(){
-       // this.escuchar()
 
         camState.xVel+=(camState.xVelTarget-camState.xVel)*FACTOR_INERCIA;
         camState.yVel+=(camState.yVelTarget-camState.yVel)*FACTOR_INERCIA;
@@ -201,9 +187,11 @@ export function DroneCameraControl(initialPos, camera){
         vec3.transformMat4(translation,translation,rotationMatrix);
         vec3.add(position,position,translation);
 
+        /*
         worldMatrix=mat4.create();
         mat4.translate(worldMatrix,worldMatrix,position);
         mat4.multiply(worldMatrix,worldMatrix,rotationMatrix);
+         */
 
         return {
             rotationMatrix,
@@ -212,7 +200,7 @@ export function DroneCameraControl(initialPos, camera){
 
     }
 
-
+/*
     this.getViewMatrix=function(){
 
         let m=mat4.clone(worldMatrix);
@@ -225,7 +213,5 @@ export function DroneCameraControl(initialPos, camera){
         return worldMatrix;
 
     }
-
-
-
+ */
 }

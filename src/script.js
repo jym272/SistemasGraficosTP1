@@ -35,6 +35,8 @@ let
     ajuste = 8,  //para ajustar posiciones de los objetos, se usa en el diseño
     dxAnillo = 0.01,
     posicionAnillo = 0, //anima la rotacion del anillo
+    intervaloEnGradosAnimacionesPanelSolar = 30,
+    animarPaneles = true,
     lightPosition = [0, 5, 12],
     animationRate; //ms
 
@@ -97,7 +99,7 @@ function configure() {
     gl.uniform1f(program.uShininess, 230);
 
     //Transformaciones afines
-    transformar = new TransformacionesAfin();
+    transformar = new TransformacionesAfin(new AnimacionPanelesSolares(300));
 }
 /*
  * COLORES
@@ -928,8 +930,117 @@ const Esfera = {
 const Capsula = {
     capsulaTransform : null,
 }
+
+class AnimacionPanelesSolares{
+    constructor(velocidadMediaDeGiro = 300) {
+        this.velocidadMediaDeGiro = velocidadMediaDeGiro;
+        this.anguloEnProceso = -5; //valor imposible para el comienzo
+        this.anguloActual = 0;
+        this.timeOutIdPool = [];
+        this._GIRO = {
+            LINEAL: 1,
+            LOG: 0,
+        };
+        this.MODO_GIRO = this._GIRO.LINEAL;
+    }
+    animar(anguloRad, intervaloEnGrados){
+
+        if(animarPaneles) {
+            const anguloEntero = utils.deRadianesAGrados(anguloRad);
+
+            const anguloActual = anguloEntero % intervaloEnGrados;
+            //debido a que el angulo se repite varias veces solo animo la primera vez que aparece
+            if (anguloActual === 0 && anguloEntero !== this.anguloEnProceso) {
+                this.anguloEnProceso = anguloEntero;
+                this.calcularParamYAnimar();
+            }
+        }
+    }
+    dameUnaVelocidadDeGiroRandom(){
+        return Math.floor(this.velocidadMediaDeGiro*(0.5 + Math.random()))
+    }
+    dameUnNuevoAngulo(){
+        //intervalo random en el cual se movera el angulo
+        const INTERVALO_RANDOM_A = Math.random()
+        const INTERVALO_RANDOM_B = Math.random()
+
+        //seleccionar uno de los dos intervalos al azar
+        let nuevoAngulo = (Math.random() < 0.5) ?
+            anguloRotacionPanelSolar * (1 - INTERVALO_RANDOM_A) :
+            anguloRotacionPanelSolar * (1 + INTERVALO_RANDOM_B)
+
+        //quedarme solo con la parte entera de intervaloFinal
+        nuevoAngulo = Math.floor( (nuevoAngulo > 360) ?
+            nuevoAngulo % 360 :
+            nuevoAngulo )
+
+        //si el nuevo angulo es pequenio -> signifa un giro muy corto, lo alargo
+        if(nuevoAngulo < 30){
+            nuevoAngulo = nuevoAngulo * 10 + 1
+        }
+        return nuevoAngulo
+    }
+    calcularParamYAnimar(){
+
+        const velocidadDeGiro = this.dameUnaVelocidadDeGiroRandom()
+        const nuevoAngulo = this.dameUnNuevoAngulo()
+        this.anguloActual = nuevoAngulo;
+
+        if(Math.random() < 0.6)
+            this.MODO_GIRO = this._GIRO.LINEAL;
+            else
+                this.MODO_GIRO = this._GIRO.LOG;
+
+        this.cambiarElAnguloRotacionPanelSolar(nuevoAngulo, velocidadDeGiro)
+        //para girar a velocidad constante le resto la velocidad en cada llamado-> se acerca mas al angulo final
+        //para velocidad logaritminca es otro caso, no se acerca nunca al nuevo angulo por definicion de logaritmo
+        //creo un tipo de velocidad, lineal o logaritmico
+
+    }
+    cambiarElAnguloRotacionPanelSolar(nuevoAngulo, velocidadDeGiro){
+
+        // console.log(velocidadDeGiro)
+        const anguloEnProceso = this.anguloActual
+        const intervalo= anguloRotacionPanelSolar - nuevoAngulo;
+
+        const diffAngular = (velocidadDeGiro !== 0 )? intervalo / velocidadDeGiro:0;
+
+        // console.log(diffAngular)
+
+        if(Math.abs(diffAngular) > 0.02) {
+
+            anguloRotacionPanelSolar -= diffAngular;
+            if (anguloEnProceso === nuevoAngulo) {
+
+                this.timeOutIdPool.push(setTimeout(() => {
+                   // console.log("nuevo", nuevoAngulo, anguloRotacionPanelSolar)
+                    this.cambiarElAnguloRotacionPanelSolar(nuevoAngulo, velocidadDeGiro - this.MODO_GIRO);
+
+                }, 10));
+            }
+            else {
+                //Me llego un nuevo angulo, y no he terminado todos los calls
+                //util especialmente en modo logaritmico
+                // console.log(this.timeOutIdPool)
+                this.limpiarElPool();
+                this.anguloActual = nuevoAngulo
+            }
+        }
+    }
+    limpiarElPool(){
+        this.timeOutIdPool.forEach(id => clearTimeout(id));
+        this.timeOutIdPool= [];
+    }
+
+}
+
 class TransformacionesAfin{
-    constructor() {
+    constructor(animacionPanelesSolares) {
+        this.paramAnillo = {
+            pastillaEnElMedio : 2 - 0.45,
+            factorDeVelocidad: 5,
+        };
+        this.animacionPanelesSolares = animacionPanelesSolares;
     }
     setAlias(alias){
         this.alias = alias;
@@ -1331,15 +1442,17 @@ class TransformacionesAfin{
         }
     }
 
+
     anillo(){
         if (this.alias === 'pastillaCuerpo') {
 
-
-            const pastillaEnElMedio = 2-0.45;
             Anillo.pastillaTransform = transforms.modelViewMatrix;
-            //cuando se descomente la linea de abajo, revisar las matrices de los transforms
-             mat4.rotate(Anillo.pastillaTransform, Nucleo.nucleoAnilloTransform,  posicionAnillo/5, [0, 1, 0]);
-            mat4.translate(Anillo.pastillaTransform, Anillo.pastillaTransform, [0, pastillaEnElMedio, 0]);
+            const anguloRad = posicionAnillo/this.paramAnillo.factorDeVelocidad
+
+            mat4.rotate(Anillo.pastillaTransform, Nucleo.nucleoAnilloTransform,  anguloRad, [0, 1, 0]);
+            mat4.translate(Anillo.pastillaTransform, Anillo.pastillaTransform, [0, this.paramAnillo.pastillaEnElMedio, 0]);
+
+            this.animacionPanelesSolares.animar(anguloRad, intervaloEnGradosAnimacionesPanelSolar)
 
         } else if (this.alias === 'pastillaCilindroSup') {
             const pastillaCilindroSupTransform = transforms.modelViewMatrix;
@@ -1531,16 +1644,8 @@ function dibujarMallaDeObjeto(object){
 
 }
 
-function giroPanelSolarRandom(){
-    const numeroRandom = Math.random().toFixed(3)
-    if(numeroRandom === "0.001"){
-        console.log("hola")
-    }
-        //para implementar
-}
 function animate() {
     posicionAnillo += dxAnillo;
-    //giroPanelSolarRandom()
     draw();
 }
 animationRate = 30
@@ -1593,8 +1698,8 @@ function initControls() {
             }
         },
 
-        PanelesSolares: {
-            Filas: {
+        'PanelesSolares': {
+            'Filas': {
                 value: filasDeTubosSecundarios,
                 min: 1, max: 10, step: 1,
                 onChange: v => {
@@ -1612,10 +1717,19 @@ function initControls() {
                     cargarPanelesSolares();
                 }
             },
-            Angulo: {
+            'Angulo': {
                 value: anguloRotacionPanelSolar,
                 min: 0, max: 360, step: 1,
                 onChange: v => anguloRotacionPanelSolar = v,
+            },
+            'AnimarPaneles': {
+                value: animarPaneles,
+                onChange: v => animarPaneles = v
+            },
+            'IntervaloAnimacion': {
+                value: intervaloEnGradosAnimacionesPanelSolar,
+                min: 15, max: 45, step: 15,
+                onChange: v => intervaloEnGradosAnimacionesPanelSolar = v,
             },
         },
 /*

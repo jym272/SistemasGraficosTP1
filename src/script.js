@@ -99,7 +99,7 @@ function configure() {
     gl.uniform1f(program.uShininess, 230);
 
     //Transformaciones afines
-    transformar = new TransformacionesAfin(new AnimacionPanelesSolares(300));
+    transformar = new TransformacionesAfin(new AnimacionPanelesSolares(300, intervaloEnGradosAnimacionesPanelSolar));
 }
 /*
  * COLORES
@@ -932,10 +932,11 @@ const Capsula = {
 }
 
 class AnimacionPanelesSolares{
-    constructor(velocidadMediaDeGiro = 300) {
+    constructor(velocidadMediaDeGiro = 300, intervaloEnGrados) {
         this.velocidadMediaDeGiro = velocidadMediaDeGiro;
         this.anguloEnProceso = -5; //valor imposible para el comienzo
         this.anguloActual = 0;
+        this.intervaloEnGrados = intervaloEnGrados;
         this.timeOutIdPool = [];
         this._GIRO = {
             LINEAL: 1,
@@ -943,18 +944,15 @@ class AnimacionPanelesSolares{
         };
         this.MODO_GIRO = this._GIRO.LINEAL;
     }
-    animar(anguloRad, intervaloEnGrados){
+    animar(anguloRad){
+        const anguloEntero = utils.deRadianesAGrados(anguloRad);
 
-        if(animarPaneles) {
-            const anguloEntero = utils.deRadianesAGrados(anguloRad);
-
-            const anguloActual = anguloEntero % intervaloEnGrados;
-            //debido a que el angulo se repite varias veces solo animo la primera vez que aparece
-            if (anguloActual === 0 && anguloEntero !== this.anguloEnProceso) {
+        //debido a que el angulo se repite varias veces solo animo la primera vez que aparece
+        if (anguloEntero % this.intervaloEnGrados === 0 && anguloEntero !== this.anguloEnProceso) {
                 this.anguloEnProceso = anguloEntero;
-                this.calcularParamYAnimar();
+                this.calcularParametrosYAnimar();
             }
-        }
+
     }
     dameUnaVelocidadDeGiroRandom(){
         return Math.floor(this.velocidadMediaDeGiro*(0.5 + Math.random()))
@@ -974,22 +972,26 @@ class AnimacionPanelesSolares{
             nuevoAngulo % 360 :
             nuevoAngulo )
 
-        //si el nuevo angulo es pequenio -> signifa un giro muy corto, lo alargo
-        if(nuevoAngulo < 30){
+        //si el nuevo angulo es pequenio -> signifa un giro alrededor de un angulo
+        //muy pequeño, y la tendencia es rodear la media -> alargo el angulo
+        if(nuevoAngulo < 18){
             nuevoAngulo = nuevoAngulo * 10 + 1
         }
         return nuevoAngulo
     }
-    calcularParamYAnimar(){
+    elegirUnGiro(probabilidadGiroLineal){
+        if(Math.random() < probabilidadGiroLineal)
+            this.MODO_GIRO = this._GIRO.LINEAL;
+        else
+            this.MODO_GIRO = this._GIRO.LOG;
+    }
+    calcularParametrosYAnimar(){
 
         const velocidadDeGiro = this.dameUnaVelocidadDeGiroRandom()
         const nuevoAngulo = this.dameUnNuevoAngulo()
         this.anguloActual = nuevoAngulo;
 
-        if(Math.random() < 0.6)
-            this.MODO_GIRO = this._GIRO.LINEAL;
-            else
-                this.MODO_GIRO = this._GIRO.LOG;
+        this.elegirUnGiro(0.6)
 
         this.cambiarElAnguloRotacionPanelSolar(nuevoAngulo, velocidadDeGiro)
         //para girar a velocidad constante le resto la velocidad en cada llamado-> se acerca mas al angulo final
@@ -1010,6 +1012,7 @@ class AnimacionPanelesSolares{
         if(Math.abs(diffAngular) > 0.02) {
 
             anguloRotacionPanelSolar -= diffAngular;
+
             if (anguloEnProceso === nuevoAngulo) {
 
                 this.timeOutIdPool.push(setTimeout(() => {
@@ -1451,8 +1454,8 @@ class TransformacionesAfin{
 
             mat4.rotate(Anillo.pastillaTransform, Nucleo.nucleoAnilloTransform,  anguloRad, [0, 1, 0]);
             mat4.translate(Anillo.pastillaTransform, Anillo.pastillaTransform, [0, this.paramAnillo.pastillaEnElMedio, 0]);
-
-            this.animacionPanelesSolares.animar(anguloRad, intervaloEnGradosAnimacionesPanelSolar)
+            if(animarPaneles)
+                this.animacionPanelesSolares.animar(anguloRad)
 
         } else if (this.alias === 'pastillaCilindroSup') {
             const pastillaCilindroSupTransform = transforms.modelViewMatrix;

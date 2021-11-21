@@ -1005,30 +1005,41 @@ class AnimacionPanelesSolares{
         const anguloEnProceso = this.anguloActual
         const intervalo= anguloRotacionPanelSolar - nuevoAngulo;
 
-        const diffAngular = (velocidadDeGiro !== 0 )? intervalo / velocidadDeGiro:0;
+        let diffAngular;
+
+        if(velocidadDeGiro !== 0 ){
+            diffAngular = intervalo / velocidadDeGiro
+            // console.log("la diff angular:", diffAngular)
+            if(Math.abs(diffAngular) > 0.02) {
+                anguloRotacionPanelSolar -= diffAngular;
+
+                if (anguloEnProceso === nuevoAngulo) {
+
+                    this.timeOutIdPool.push(setTimeout(() => {
+                         // console.log("nuevo", nuevoAngulo, anguloRotacionPanelSolar)
+                        this.cambiarElAnguloRotacionPanelSolar(nuevoAngulo, velocidadDeGiro - this.MODO_GIRO);
+
+                    }, 10));
+                }
+                else {
+                    //Me llego un nuevo angulo, y no he terminado todos los calls
+                    //util especialmente en modo logaritmico y en intervalos muy pequeños
+                    this.limpiarElPool();
+                    this.anguloActual = nuevoAngulo
+                    this.cambiarElAnguloRotacionPanelSolar(nuevoAngulo, velocidadDeGiro - this.MODO_GIRO);
+                }
+            }else{
+                //me acerque lo suficiente en modo logaritmico
+                this.limpiarElPool();
+            }
+        }else{
+            // Solo en modo lineal, me acero exactamente al nuevo angulo
+            this.limpiarElPool();
+        }
 
         // console.log(diffAngular)
 
-        if(Math.abs(diffAngular) > 0.02) {
 
-            anguloRotacionPanelSolar -= diffAngular;
-
-            if (anguloEnProceso === nuevoAngulo) {
-
-                this.timeOutIdPool.push(setTimeout(() => {
-                   // console.log("nuevo", nuevoAngulo, anguloRotacionPanelSolar)
-                    this.cambiarElAnguloRotacionPanelSolar(nuevoAngulo, velocidadDeGiro - this.MODO_GIRO);
-
-                }, 10));
-            }
-            else {
-                //Me llego un nuevo angulo, y no he terminado todos los calls
-                //util especialmente en modo logaritmico
-                // console.log(this.timeOutIdPool)
-                this.limpiarElPool();
-                this.anguloActual = nuevoAngulo
-            }
-        }
     }
     limpiarElPool(){
         this.timeOutIdPool.forEach(id => clearTimeout(id));

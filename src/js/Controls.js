@@ -132,10 +132,16 @@ export class Controls {
     if (!this.picking) this.picker.stop();
   }
 
+  dollyHelper(delta, rapidez = 3){
+
+    this.dstep = Math.max(this.camera.position[0], this.camera.position[1], this.camera.position[2]) / 100;
+    while(rapidez--)
+      this.dolly(delta)
+
+  }
   onMouseWheel(event) {
     const delta = Math.max(-1, Math.min(1, (event.wheelDelta || -event.detail)));
-    this.dstep = Math.max(this.camera.position[0], this.camera.position[1], this.camera.position[2]) / 100;
-    this.dolly(-delta)
+    this.dollyHelper(delta)
   }
 
   onMouseMove(event) {
@@ -223,6 +229,10 @@ export class Controls {
         this.droneCam.activarControlesTeclado();
         this.camera.seguirALaCapsula() //activa la matrix de rotacion que se calcula con los controles de la capsula
         return this.configurarCamaraDe("Capsula");
+      case 78: //n
+        return this.dollyHelper(-1);
+      case 77: //m
+        return this.dollyHelper(1);
     }
   }
   onKeyUp(event) {

@@ -1,5 +1,5 @@
 // Hacer
--> giros random para los paneles solares
+-> Haciendo denuevo los bloques del anillo.
 -> planeta tierra, que el planeta gire, el centro del universo es la capsula espacial
    se da la ilusion que la ISS es la que avanza
 

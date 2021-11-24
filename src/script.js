@@ -98,8 +98,18 @@ function configure() {
     gl.uniform4fv(program.uLightSpecular, [1, 1, 1, 1]);
     gl.uniform1f(program.uShininess, 230);
 
+    //Bloques del anillo
+    bloque = new Bloque()
+
     //Transformaciones afines
-    transformar = new TransformacionesAfin(new AnimacionPanelesSolares(300, intervaloEnGradosAnimacionesPanelSolar));
+    transformar = new TransformacionesAfin(
+        new AnimacionPanelesSolares(
+            300,
+            intervaloEnGradosAnimacionesPanelSolar,
+            ),
+        );
+
+
 }
 /*
  * COLORES
@@ -151,7 +161,7 @@ let arc =  Math.PI * 2;
 
 const dimensionesTriangulosTorus = {
     filas: 20, //segmentosTubulares   //para el deploy 30
-    columnas: 70, //segmentosRadiales  //para el deploy 80
+    columnas: 80, //segmentosRadiales  //para el deploy 80
 }
 const radioDelAnillo = 15.20,
       radioInteriorDelAnillo = 0.8,
@@ -217,7 +227,7 @@ function load() {
     panelSolar = new PanelSolar()
     cargarPanelesSolares()
     cargarAnillo()
-    bloque = new Bloque(Bloque.BLOQUES_4)
+    bloque.setType(Bloque.BLOQUES_4);
     moduloVioleta()
     cargarEsfera()
     cargarCapsula()
@@ -518,7 +528,7 @@ function crearRecorridoCircular(radio,porcion, divisiones){
 }
 
 class Bloque{
-    constructor(type = Bloque.BLOQUES_8, pasoDiscretoRecorrido = 30, divisionesForma = 8) {
+    constructor(type = Bloque.BLOQUES_8, pasoDiscretoRecorrido = 16, divisionesForma = 8) {
 
         this.bloqueActual = null
         this.pasoDiscretoRecorrido = pasoDiscretoRecorrido
@@ -528,7 +538,6 @@ class Bloque{
             this.dictionary[item] = []
         });
         this.construirBloques()
-        this.setType(type)
     }
     construirBloques(){
 
@@ -556,91 +565,71 @@ class Bloque{
             columnas: pasoDiscretoForma, //divisiones de la forma
         }
 
-        //Bloque8
-        const fullBloque = 1.0
-        dimensiones["filas"] = 2*pasoDiscretoRecorrido +10 //se ajusta las dimensiones para grandes recorridos
-        const datosDelRecorridoFull = crearRecorridoCircular(radioDelAnillo, fullBloque, dimensiones["filas"])
-        this.dictionary[Bloque.BLOQUES_8].push(new SuperficieParametrica("bloque8", datosDeLaForma, datosDelRecorridoFull, dimensiones, true))
-
-        dimensiones["filas"] = pasoDiscretoRecorrido
-        //Bloque7
-        const Bloque7 = 7/8
-        dimensiones["filas"] = 2*pasoDiscretoRecorrido
-        const datosDelRecorridoBloque7 = crearRecorridoCircular(radioDelAnillo, Bloque7, dimensiones["filas"])
-        this.dictionary[Bloque.BLOQUES_7].push( new SuperficieParametrica("bloque7", datosDeLaForma, datosDelRecorridoBloque7, dimensiones, true))
-        dimensiones["filas"] = pasoDiscretoRecorrido
-
-        this.dictionary[Bloque.BLOQUES_7].push(new TapaSuperficieParametrica(
-            "bloque7TapaAdelante", datosDeLaForma.puntos, {filas: 1, columnas: pasoDiscretoForma}))
-
-        this.dictionary[Bloque.BLOQUES_7].push(new TapaSuperficieParametrica(
-            "bloque7TapaAtras", datosDeLaForma.puntos,  {filas: 1, columnas: pasoDiscretoForma}))
-
-        //BLoque6
-        const Bloque6 = 5/8
-        dimensiones["filas"] = pasoDiscretoRecorrido + 20
-
-        const datosDelRecorridoBloque6= crearRecorridoCircular(radioDelAnillo, Bloque6, dimensiones["filas"])
-        this.dictionary[Bloque.BLOQUES_6].push( new SuperficieParametrica("bloque6", datosDeLaForma, datosDelRecorridoBloque6, dimensiones, true))
-        dimensiones["filas"] = pasoDiscretoRecorrido
-
-        const Bloque1 = 1/8
-        dimensiones["filas"] = pasoDiscretoRecorrido -20
-        const datosDelRecorridoBloque1= crearRecorridoCircular(radioDelAnillo, Bloque1, dimensiones["filas"])
-        //dimensiones["filas"] = pasoDiscretoRecorrido
-        //reutilizo las transformaciones de esta tapa para el bloque 6
-        this.dictionary[Bloque.BLOQUES_6].push(new TapaSuperficieParametrica(
-            "bloque7TapaAdelante", datosDeLaForma.puntos,  {filas: 1, columnas: pasoDiscretoForma}))
-        this.dictionary[Bloque.BLOQUES_6].push(new TapaSuperficieParametrica(
-            "bloque6TapaAtras", datosDeLaForma.puntos,  {filas: 1, columnas: pasoDiscretoForma}))
-        this.dictionary[Bloque.BLOQUES_6].push( new SuperficieParametrica("bloque61", datosDeLaForma, datosDelRecorridoBloque1, dimensiones, true))
-        this.dictionary[Bloque.BLOQUES_6].push(new TapaSuperficieParametrica(
-            "bloque61TapaAdelante", datosDeLaForma.puntos,  {filas: 1, columnas: pasoDiscretoForma}))
-        this.dictionary[Bloque.BLOQUES_6].push(new TapaSuperficieParametrica(
-            "bloque61TapaAtras", datosDeLaForma.puntos,  {filas: 1, columnas: pasoDiscretoForma}))
-        //Bloque5
-        const Bloque5 = 3/8
-        dimensiones["filas"] = pasoDiscretoRecorrido -10
-        const datosDelRecorridoBloque5= crearRecorridoCircular(radioDelAnillo, Bloque5, dimensiones["filas"])
-        this.dictionary[Bloque.BLOQUES_5].push( new SuperficieParametrica("bloque5", datosDeLaForma, datosDelRecorridoBloque5, dimensiones, true))
-
-        dimensiones["filas"] = pasoDiscretoRecorrido -20
-        //reutilizo las transformaciones de esta tapa para el bloque 5
-        this.dictionary[Bloque.BLOQUES_5].push(new TapaSuperficieParametrica(
-            "bloque7TapaAdelante", datosDeLaForma.puntos,  {filas: 1, columnas: pasoDiscretoForma}))
-        this.dictionary[Bloque.BLOQUES_5].push(new TapaSuperficieParametrica(
-            "bloque5TapaAtras", datosDeLaForma.puntos,  {filas: 1, columnas: pasoDiscretoForma}))
-        this.dictionary[Bloque.BLOQUES_5].push( new SuperficieParametrica("bloque61", datosDeLaForma, datosDelRecorridoBloque1, dimensiones, true))
-        this.dictionary[Bloque.BLOQUES_5].push(new TapaSuperficieParametrica(
-            "bloque61TapaAdelante", datosDeLaForma.puntos,  {filas: 1, columnas: pasoDiscretoForma}))
-        this.dictionary[Bloque.BLOQUES_5].push(new TapaSuperficieParametrica(
-            "bloque61TapaAtras", datosDeLaForma.puntos,  {filas: 1, columnas: pasoDiscretoForma}))
-        this.dictionary[Bloque.BLOQUES_5].push( new SuperficieParametrica("bloque51", datosDeLaForma, datosDelRecorridoBloque1, dimensiones, true))
-        this.dictionary[Bloque.BLOQUES_5].push(new TapaSuperficieParametrica(
-            "bloque51TapaAdelante", datosDeLaForma.puntos,  {filas: 1, columnas: pasoDiscretoForma}))
-        this.dictionary[Bloque.BLOQUES_5].push(new TapaSuperficieParametrica(
-            "bloque51TapaAtras", datosDeLaForma.puntos,  {filas: 1, columnas: pasoDiscretoForma}))
         //Bloque4
-        this.dictionary[Bloque.BLOQUES_4].push( new SuperficieParametrica("bloque4", datosDeLaForma, datosDelRecorridoBloque1, dimensiones, true))
-        this.dictionary[Bloque.BLOQUES_4].push(new TapaSuperficieParametrica(
-            "bloque4TapaAdelante", datosDeLaForma.puntos,  {filas: 1, columnas: pasoDiscretoForma}))
-        this.dictionary[Bloque.BLOQUES_4].push(new TapaSuperficieParametrica(
-            "bloque4TapaAtras", datosDeLaForma.puntos,  {filas: 1, columnas: pasoDiscretoForma}))
-        this.dictionary[Bloque.BLOQUES_4].push( new SuperficieParametrica("bloque4", datosDeLaForma, datosDelRecorridoBloque1, dimensiones, true))
-        this.dictionary[Bloque.BLOQUES_4].push(new TapaSuperficieParametrica(
-            "bloque4TapaAdelante", datosDeLaForma.puntos,  {filas: 1, columnas: pasoDiscretoForma}))
-        this.dictionary[Bloque.BLOQUES_4].push(new TapaSuperficieParametrica(
-            "bloque4TapaAtras", datosDeLaForma.puntos,  {filas: 1, columnas: pasoDiscretoForma}))
-        this.dictionary[Bloque.BLOQUES_4].push( new SuperficieParametrica("bloque4", datosDeLaForma, datosDelRecorridoBloque1, dimensiones, true))
-        this.dictionary[Bloque.BLOQUES_4].push(new TapaSuperficieParametrica(
-            "bloque4TapaAdelante", datosDeLaForma.puntos,  {filas: 1, columnas: pasoDiscretoForma}))
-        this.dictionary[Bloque.BLOQUES_4].push(new TapaSuperficieParametrica(
-            "bloque4TapaAtras", datosDeLaForma.puntos,  {filas: 1, columnas: pasoDiscretoForma}))
-        this.dictionary[Bloque.BLOQUES_4].push( new SuperficieParametrica("bloque4", datosDeLaForma, datosDelRecorridoBloque1, dimensiones, true))
-        this.dictionary[Bloque.BLOQUES_4].push(new TapaSuperficieParametrica(
-            "bloque4TapaAdelante", datosDeLaForma.puntos,  {filas: 1, columnas: pasoDiscretoForma}))
-        this.dictionary[Bloque.BLOQUES_4].push(new TapaSuperficieParametrica(
-            "bloque4TapaAtras", datosDeLaForma.puntos,  {filas: 1, columnas: pasoDiscretoForma}))
+        let porcionCircular = 1/8
+       // dimensiones["filas"] = pasoDiscretoRecorrido -20
+        const datosDelRecorridoBloque_4= crearRecorridoCircular(radioDelAnillo, porcionCircular, dimensiones["filas"])
+
+        let i = 4;
+        while(i--){
+            this.dictionary[Bloque.BLOQUES_4].push( new SuperficieParametrica("bloque", datosDeLaForma, datosDelRecorridoBloque_4, dimensiones, true))
+            this.dictionary[Bloque.BLOQUES_4].push(new TapaSuperficieParametrica(
+                "bloqueTapaAdelante", datosDeLaForma.puntos,  {filas: 1, columnas: pasoDiscretoForma}))
+            this.dictionary[Bloque.BLOQUES_4].push(new TapaSuperficieParametrica(
+                "bloqueTapaAtras", datosDeLaForma.puntos,  {filas: 1, columnas: pasoDiscretoForma}))
+        }
+
+        //Bloque5
+        porcionCircular = 1/10
+        dimensiones.filas -= 2 //le voy restando filas de triangulos, piezas mas pequeñas
+        const datosDelRecorridoBloque_5= crearRecorridoCircular(radioDelAnillo, porcionCircular, dimensiones["filas"])
+
+        i = 5;
+        while(i--){
+            this.dictionary[Bloque.BLOQUES_5].push( new SuperficieParametrica("bloque", datosDeLaForma, datosDelRecorridoBloque_5, dimensiones, true))
+            this.dictionary[Bloque.BLOQUES_5].push(new TapaSuperficieParametrica(
+                "bloqueTapaAdelante", datosDeLaForma.puntos,  {filas: 1, columnas: pasoDiscretoForma}))
+            this.dictionary[Bloque.BLOQUES_5].push(new TapaSuperficieParametrica(
+                "bloqueTapaAtras", datosDeLaForma.puntos,  {filas: 1, columnas: pasoDiscretoForma}))
+        }
+        //Bloque6
+        porcionCircular = 1/12
+        dimensiones.filas -= 2
+        const datosDelRecorridoBloque_6 =  crearRecorridoCircular(radioDelAnillo, porcionCircular, dimensiones["filas"])
+
+        i = 6;
+        while(i--){
+            this.dictionary[Bloque.BLOQUES_6].push( new SuperficieParametrica("bloque", datosDeLaForma, datosDelRecorridoBloque_6, dimensiones, true))
+            this.dictionary[Bloque.BLOQUES_6].push(new TapaSuperficieParametrica(
+                "bloqueTapaAdelante", datosDeLaForma.puntos,  {filas: 1, columnas: pasoDiscretoForma}))
+            this.dictionary[Bloque.BLOQUES_6].push(new TapaSuperficieParametrica(
+                "bloqueTapaAtras", datosDeLaForma.puntos,  {filas: 1, columnas: pasoDiscretoForma}))
+        }
+        //Bloque7
+        porcionCircular = 1/14
+        dimensiones.filas -= 2
+        const datosDelRecorridoBloque_7 =  crearRecorridoCircular(radioDelAnillo, porcionCircular, dimensiones["filas"])
+        i = 7;
+        while(i--){
+            this.dictionary[Bloque.BLOQUES_7].push( new SuperficieParametrica("bloque", datosDeLaForma, datosDelRecorridoBloque_7, dimensiones, true))
+            this.dictionary[Bloque.BLOQUES_7].push(new TapaSuperficieParametrica(
+                "bloqueTapaAdelante", datosDeLaForma.puntos,  {filas: 1, columnas: pasoDiscretoForma}))
+            this.dictionary[Bloque.BLOQUES_7].push(new TapaSuperficieParametrica(
+                "bloqueTapaAtras", datosDeLaForma.puntos,  {filas: 1, columnas: pasoDiscretoForma}))
+        }
+        //Bloque8
+        porcionCircular = 1/16
+        dimensiones.filas -= 2
+        const datosDelRecorridoBloque_8 =  crearRecorridoCircular(radioDelAnillo, porcionCircular, dimensiones["filas"])
+        i = 8;
+        while(i--){
+            this.dictionary[Bloque.BLOQUES_8].push( new SuperficieParametrica("bloque", datosDeLaForma, datosDelRecorridoBloque_8, dimensiones, true))
+            this.dictionary[Bloque.BLOQUES_8].push(new TapaSuperficieParametrica(
+                "bloqueTapaAdelante", datosDeLaForma.puntos,  {filas: 1, columnas: pasoDiscretoForma}))
+            this.dictionary[Bloque.BLOQUES_8].push(new TapaSuperficieParametrica(
+                "bloqueTapaAtras", datosDeLaForma.puntos,  {filas: 1, columnas: pasoDiscretoForma}))
+        }
+
     }
 
     setType(type) {
@@ -649,7 +638,7 @@ class Bloque{
             : console.error(`Bloque type (${type}) not supported`);
 
             this.removerBloqueActualDeLaEscena();
-
+            transformar.elBloqueATransformarEs(type)
             this.actualizarEscena()
     }
     removerBloqueActualDeLaEscena(){
@@ -945,7 +934,7 @@ class AnimacionPanelesSolares{
         this.MODO_GIRO = this._GIRO.LINEAL;
     }
     animar(anguloRad){
-        const anguloEntero = utils.deRadianesAGrados(anguloRad);
+        const anguloEntero = Math.floor(utils.deRadianesAGrados(anguloRad))
 
         //debido a que el angulo se repite varias veces solo animo la primera vez que aparece
         if (anguloEntero % this.intervaloEnGrados === 0 && anguloEntero !== this.anguloEnProceso) {
@@ -1055,6 +1044,23 @@ class TransformacionesAfin{
             factorDeVelocidad: 5,
         };
         this.animacionPanelesSolares = animacionPanelesSolares;
+        this.cargarParametrosBloques();
+
+    }
+    cargarParametrosBloques(){
+        let anguloPos = 360;
+        let cantBloques = 8;
+        this.parametrosBloques = {}
+        Bloque.BLOQUES_4
+        Bloque.TYPES.forEach(item => {
+            this.parametrosBloques[item] = {
+                anguloPosicion : anguloPos,
+                anguloTapaAtras : 180/cantBloques--
+            }
+                anguloPos-=45;
+
+            }
+        );
     }
     setAlias(alias){
         this.alias = alias;
@@ -1175,130 +1181,35 @@ class TransformacionesAfin{
         }
     }
 
-    bloques() {
-        if(this.alias === 'bloque7'){
+    elBloqueATransformarEs(tipoDeBloque){
+        this.parametroBloqueActual = this.parametrosBloques[tipoDeBloque]
+    }
+    bloques(){
+        //Bloque4
+        const p = this.parametroBloqueActual;
+
+        if(this.alias === 'bloque') {
             Bloques.bloqueTransform = transforms.modelViewMatrix
-
-            mat4.rotate(Bloques.bloqueTransform, Anillo.pastillaTransform, -3*Math.PI/8, [0,1, 0])
-            mat4.translate(Bloques.bloqueTransform, Bloques.bloqueTransform, [0, Bloques.centrarElBloque, 0])
-            mat4.rotate(Bloques.bloqueTransform, Bloques.bloqueTransform, Math.PI/2, [1,0, 0])
-
-        }else if(this.alias === 'bloque7TapaAdelante'){
-            const bloque7TapaAdelanteTransform = transforms.modelViewMatrix
-            mat4.translate(bloque7TapaAdelanteTransform, Bloques.bloqueTransform, [radioDelAnillo, 0, 0])
-            mat4.rotate(bloque7TapaAdelanteTransform, bloque7TapaAdelanteTransform,Math.PI, [1, 0, 1])
-        }else if(this.alias === 'bloque7TapaAtras'){
-            const bloque7TapaAtrasTransform = transforms.modelViewMatrix
-
-            mat4.translate(bloque7TapaAtrasTransform, Bloques.bloqueTransform, [radioDelAnillo/Math.sqrt(2), -radioDelAnillo/Math.sqrt(2), 0])
-            mat4.rotate(bloque7TapaAtrasTransform, bloque7TapaAtrasTransform,Math.PI, [1, 0, 1])
-            mat4.rotate(bloque7TapaAtrasTransform, bloque7TapaAtrasTransform,3*Math.PI/4, [1, 0, 0])
-        }
-        else if(this.alias === 'bloque8'){
-            Bloques.bloqueTransform = transforms.modelViewMatrix
-            mat4.translate(Bloques.bloqueTransform, Anillo.pastillaTransform, [0, Bloques.centrarElBloque, 0])
-            mat4.rotate(Bloques.bloqueTransform, Bloques.bloqueTransform, Math.PI/2, [1,0, 0])
-        }else if(this.alias === 'bloque6') {
-            Bloques.bloqueTransform = transforms.modelViewMatrix
-            const angulo = -(135+22.5) * Math.PI / 180
-            mat4.rotate(Bloques.bloqueTransform, Anillo.pastillaTransform, angulo, [0,1, 0])
-            mat4.translate(Bloques.bloqueTransform, Bloques.bloqueTransform, [0, Bloques.centrarElBloque, 0])
-            mat4.rotate(Bloques.bloqueTransform, Bloques.bloqueTransform, Math.PI/2, [1,0, 0])
-        }else if(this.alias === 'bloque6TapaAtras'){
-            const bloque6TapaAtrasTransform = transforms.modelViewMatrix
-            const angulo = 45
-            const y = radioDelAnillo*Math.sin((angulo) * Math.PI / 180)
-            const x = radioDelAnillo*Math.cos((angulo) * Math.PI / 180)
-            mat4.translate(bloque6TapaAtrasTransform, Bloques.bloqueTransform, [-x, -y, 0])
-            mat4.rotate(bloque6TapaAtrasTransform, bloque6TapaAtrasTransform,Math.PI, [1, 0, 1])
-            mat4.rotate(bloque6TapaAtrasTransform, bloque6TapaAtrasTransform,angulo* Math.PI / 180, [1, 0, 0])
-
-        }else if (this.alias === 'bloque61'){
-            const bloque61Transform = transforms.modelViewMatrix
-            const angulo = -(90) * Math.PI / 180
-            mat4.rotate(bloque61Transform, Bloques.bloqueTransform, angulo, [0,0, 1])
-        }else if( this.alias === 'bloque61TapaAdelante'){
-            const bloque61TapaAdelanteTransform = transforms.modelViewMatrix
-            const angulo = 135
-
-            const y = radioDelAnillo*Math.sin((angulo) * Math.PI / 180)
-            const x = radioDelAnillo*Math.cos((angulo) * Math.PI / 180)
-            mat4.translate(bloque61TapaAdelanteTransform, Bloques.bloqueTransform, [-x, -y, 0])
-            mat4.rotate(bloque61TapaAdelanteTransform, bloque61TapaAdelanteTransform,Math.PI, [1, 0, 1])
-            mat4.rotate(bloque61TapaAdelanteTransform, bloque61TapaAdelanteTransform,angulo* Math.PI / 180, [1, 0, 0])
-
-        }else if( this.alias === 'bloque61TapaAtras'){
-            const bloque61TapaAtrasTransform = transforms.modelViewMatrix
-            const angulo = 90
-
-            const y = radioDelAnillo*Math.sin((angulo) * Math.PI / 180)
-            const x = radioDelAnillo*Math.cos((angulo) * Math.PI / 180)
-            mat4.translate(bloque61TapaAtrasTransform, Bloques.bloqueTransform, [-x, -y, 0])
-            mat4.rotate(bloque61TapaAtrasTransform, bloque61TapaAtrasTransform,Math.PI, [1, 0, -1])
-            mat4.rotate(bloque61TapaAtrasTransform, bloque61TapaAtrasTransform,angulo* Math.PI / 180, [1, 0, 0])
-
-        }else if(this.alias === 'bloque5') {
-            Bloques.bloqueTransform = transforms.modelViewMatrix
-            const angulo = (90 +22.5) * Math.PI / 180
-            mat4.rotate(Bloques.bloqueTransform, Anillo.pastillaTransform, angulo, [0,1, 0])
-            mat4.translate(Bloques.bloqueTransform, Bloques.bloqueTransform, [0, Bloques.centrarElBloque, 0])
-            mat4.rotate(Bloques.bloqueTransform, Bloques.bloqueTransform, Math.PI/2, [1,0, 0])
-        }else if(this.alias === 'bloque5TapaAtras'){
-            const bloque5TapaAtrasTransform = transforms.modelViewMatrix
-            const angulo = -45
-            const y = radioDelAnillo*Math.sin((angulo) * Math.PI / 180)
-            const x = radioDelAnillo*Math.cos((angulo) * Math.PI / 180)
-            mat4.translate(bloque5TapaAtrasTransform, Bloques.bloqueTransform, [-x, -y, 0])
-            mat4.rotate(bloque5TapaAtrasTransform, bloque5TapaAtrasTransform,Math.PI, [1, 0, 1])
-            mat4.rotate(bloque5TapaAtrasTransform, bloque5TapaAtrasTransform,angulo* Math.PI / 180, [1, 0, 0])
-        }else if (this.alias === 'bloque51'){
-            const bloque51Transform = transforms.modelViewMatrix
-            const angulo = -(90*2) * Math.PI / 180
-            mat4.rotate(bloque51Transform, Bloques.bloqueTransform, angulo, [0,0, 1])
-        }else if( this.alias === 'bloque51TapaAdelante'){
-            const bloque51TapaAdelanteTransform = transforms.modelViewMatrix
-            const angulo = 135-90
-
-            const y = radioDelAnillo*Math.sin((angulo) * Math.PI / 180)
-            const x = radioDelAnillo*Math.cos((angulo) * Math.PI / 180)
-            mat4.translate(bloque51TapaAdelanteTransform, Bloques.bloqueTransform, [-x, -y, 0])
-            mat4.rotate(bloque51TapaAdelanteTransform, bloque51TapaAdelanteTransform,Math.PI, [1, 0, 1])
-            mat4.rotate(bloque51TapaAdelanteTransform, bloque51TapaAdelanteTransform,angulo* Math.PI / 180, [1, 0, 0])
-
-        }else if( this.alias === 'bloque51TapaAtras'){
-            const bloque51TapaAtrasTransform = transforms.modelViewMatrix
-            const angulo = 0
-            const y = radioDelAnillo*Math.sin((angulo) * Math.PI / 180)
-            const x = radioDelAnillo*Math.cos((angulo) * Math.PI / 180)
-            mat4.translate(bloque51TapaAtrasTransform, Bloques.bloqueTransform, [-x, -y, 0])
-            mat4.rotate(bloque51TapaAtrasTransform, bloque51TapaAtrasTransform,Math.PI/2, [0, 1, 0])
-        }else if(this.alias === 'bloque4') {
-            Bloques.bloqueTransform = transforms.modelViewMatrix
-            const angulo = (22.5 + 90*Bloques.posicionBloque) * Math.PI / 180
+            const angulo = (22.5 + 90*Bloques.posicionBloque) * Math.PI / p.anguloPosicion
             mat4.rotate(Bloques.bloqueTransform, Anillo.pastillaTransform, angulo, [0,1, 0])
             mat4.translate(Bloques.bloqueTransform, Bloques.bloqueTransform, [0, Bloques.centrarElBloque, 0])
             mat4.rotate(Bloques.bloqueTransform, Bloques.bloqueTransform, Math.PI/2, [1,0, 0])
             Bloques.posicionBloque++
-        }else if( this.alias === 'bloque4TapaAdelante'){
-            const bloque4TapaAdelanteTransform = transforms.modelViewMatrix
-            const angulo = 0
-            const y = radioDelAnillo*Math.sin((angulo) * Math.PI / 180)
-            const x = radioDelAnillo*Math.cos((angulo) * Math.PI / 180)
-            mat4.translate(bloque4TapaAdelanteTransform, Bloques.bloqueTransform, [x, y, 0])
-            mat4.rotate(bloque4TapaAdelanteTransform, bloque4TapaAdelanteTransform,Math.PI, [1, 0, 1])
+        }else if( this.alias === 'bloqueTapaAdelante'){
+            const bloqueTapaAdelanteTransform = transforms.modelViewMatrix
+            mat4.translate(bloqueTapaAdelanteTransform, Bloques.bloqueTransform, [radioDelAnillo, 0, 0])
+            mat4.rotate(bloqueTapaAdelanteTransform, bloqueTapaAdelanteTransform,Math.PI, [1, 0, 1])
 
-        }else if( this.alias === 'bloque4TapaAtras'){
-            const bloque4TapaAtrasTransform = transforms.modelViewMatrix
-            const angulo = 45
-            const y = radioDelAnillo*Math.sin((angulo) * Math.PI / 180)
-            const x = radioDelAnillo*Math.cos((angulo) * Math.PI / 180)
-            mat4.translate(bloque4TapaAtrasTransform, Bloques.bloqueTransform, [x, y, 0])
-            mat4.rotate(bloque4TapaAtrasTransform, bloque4TapaAtrasTransform,Math.PI, [1, 0, -1])
-            mat4.rotate(bloque4TapaAtrasTransform, bloque4TapaAtrasTransform,135* Math.PI / 180, [1, 0, 0])
-
+        }else if( this.alias === 'bloqueTapaAtras'){
+            const bloqueTapaAtrasTransform = transforms.modelViewMatrix
+            const y = radioDelAnillo*Math.sin((p.anguloTapaAtras) * Math.PI / 180)
+            const x = radioDelAnillo*Math.cos((p.anguloTapaAtras) * Math.PI / 180)
+            mat4.translate(bloqueTapaAtrasTransform, Bloques.bloqueTransform, [x, y, 0])
+            mat4.rotate(bloqueTapaAtrasTransform, bloqueTapaAtrasTransform,Math.PI, [1, 0, -1])
+            mat4.rotate(bloqueTapaAtrasTransform, bloqueTapaAtrasTransform,(180 - p.anguloTapaAtras)* Math.PI / 180, [1, 0, 0])
         }
-    }
 
+    }
     modulosVioleta(){
         if (this.alias === 'moduloVioletaPS') {
             const moduloVioletaPSTransform = transforms.modelViewMatrix
@@ -1659,8 +1570,8 @@ function dibujarMallaDeObjeto(object){
 }
 
 function animate() {
-    posicionAnillo += dxAnillo;
-    draw();
+   posicionAnillo += dxAnillo;
+   draw();
 }
 animationRate = 30
 function onFrame() {
@@ -1746,15 +1657,13 @@ function initControls() {
                 onChange: v => intervaloEnGradosAnimacionesPanelSolar = v,
             },
         },
-/*
         'Ajuste' : {
             value: ajuste,
-            min: 0, max: 3, step: 0.1,
+            min: 140, max: 160, step: 1,
             onChange: v => ajuste = v,
         },
 
 
- */
 
 /*
         'Static Light Position': {

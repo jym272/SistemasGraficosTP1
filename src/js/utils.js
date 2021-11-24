@@ -197,8 +197,8 @@ export const utils = {
     return vectorBinormal
   },
   deRadianesAGrados(anguloRad){
-    const angulo = (anguloRad*180/Math.PI > 360) ? anguloRad*180/Math.PI - 360 : anguloRad*180/Math.PI;
-    return Math.floor(angulo);
+    return (anguloRad*180/Math.PI > 360) ? anguloRad*180/Math.PI - 360 : anguloRad*180/Math.PI;
+
   }
 
 };

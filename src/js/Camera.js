@@ -128,7 +128,7 @@ export class Camera {
     const distanciaAzimuth = this.azimuth - azimuth;
     const diffAzimuth = distanciaAzimuth / this.factorVelocidad;
 
-    console.log(diffAzimuth.toFixed(4), diffElevation.toFixed(4));
+    // console.log(diffAzimuth.toFixed(4), diffElevation.toFixed(4));
 
     if(Math.abs(diffElevation)>0.001 || Math.abs(diffAzimuth)>0.001){
 
@@ -148,7 +148,7 @@ export class Camera {
         //borro el pool de la anterior y voy por la nueva
         this.azimuthActual = azimuth;
         this.elevationActual = elevation;
-        this.colocarPaulatinamenteLaCamaraEn(elevation, azimuth);
+        //this.colocarPaulatinamenteLaCamaraEn(elevation, azimuth);
       }
     }else{
       //estoy en la direccion que deseo.

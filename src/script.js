@@ -1657,12 +1657,13 @@ function initControls() {
                 onChange: v => intervaloEnGradosAnimacionesPanelSolar = v,
             },
         },
+        /*
         'Ajuste' : {
             value: ajuste,
             min: 140, max: 160, step: 1,
             onChange: v => ajuste = v,
         },
-
+*/
 
 
 /*

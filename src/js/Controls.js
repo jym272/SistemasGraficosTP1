@@ -229,9 +229,9 @@ export class Controls {
         this.droneCam.activarControlesTeclado();
         this.camera.seguirALaCapsula() //activa la matrix de rotacion que se calcula con los controles de la capsula
         return this.configurarCamaraDe("Capsula");
-      case 78: //n
+      case 88: //z zoom out
         return this.dollyHelper(-1);
-      case 77: //m
+      case 90: //x zoom in
         return this.dollyHelper(1);
     }
   }

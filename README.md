@@ -28,7 +28,7 @@ npm run build
 
 '3' -> Cámara de la cápsula espacial.
 
-'n' 'm' -> Zoom por teclado
+'z' 'x' -> Zoom por teclado
 
 ### Mouse
 Click izquierdo con movimientos del mouse para mover la cámara órbital.

@@ -2,6 +2,8 @@ const CopyWebpackPlugin = require('copy-webpack-plugin')
 const HtmlWebpackPlugin = require('html-webpack-plugin')
 const MiniCSSExtractPlugin = require('mini-css-extract-plugin')
 const path = require('path')
+const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
+
 
 module.exports = {
     entry: path.resolve(__dirname, '../src/script.js'),
@@ -24,7 +26,12 @@ module.exports = {
             minify: true,
             favicon: "./src/favicon.png"
         }),
-        new MiniCSSExtractPlugin()
+        new MiniCSSExtractPlugin(),
+        new BundleAnalyzerPlugin(
+            {
+                analyzerMode: process.env.STATS || 'disabled',
+            }
+        )
     ],
     module:
     {

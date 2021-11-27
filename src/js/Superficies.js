@@ -1,6 +1,7 @@
 'use strict';
 import {ConstruirBuffers} from "./ConstruirBuffers";
 import {utils} from "./utils";
+import {colores} from "./colores";
 
 export class Superficie {
 
@@ -11,7 +12,7 @@ export class Superficie {
         this.indices = [];
         this.textureCoords = [];
         this.normales = [];
-        this.diffuse = [0.71875,0.0,0.1796,1.0] //rojo metalico
+        this.diffuse = colores.RojoMetalico;
         this.visible = true;
         this.dimensionesTriangulos = dimensionesTriangulos;
         this.wireframe = false;

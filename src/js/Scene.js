@@ -119,10 +119,14 @@ export class Scene {
 
       // Tangents
       if (program.aVertexTangent >= 0) {
+       //console.log("Calculating tangents...", object);
         const tangentBufferObject = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, tangentBufferObject);
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(
-          utils.calculateTangents(object.vertices, object.textureCoords, object.indices)),
+          
+          object.tangentes)
+          //utils.calculateTangents(object.vertices, object.textureCoords, object.indices))
+          ,
           gl.STATIC_DRAW
         );
         gl.enableVertexAttribArray(program.aVertexTangent);

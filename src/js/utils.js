@@ -264,8 +264,6 @@ export const utils = {
             vectorNormal: normal
         };
     },
-
-
 };
 
 

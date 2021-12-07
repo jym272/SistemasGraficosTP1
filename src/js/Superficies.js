@@ -12,6 +12,7 @@ export class Superficie {
         this.indices = [];
         this.textureCoords = [];
         this.normales = [];
+        this.tangentes = [];
         this.diffuse = colores.RojoMetalico;
         this.visible = true;
         this.dimensionesTriangulos = dimensionesTriangulos;
@@ -23,12 +24,13 @@ export class Superficie {
     }
     construir(){
         const constructor = new ConstruirBuffers(this.dimensionesTriangulos)
-        const mallaTapa = constructor.construir(this.superficie())
+        const malla = constructor.construir(this.superficie())
 
-        this.vertices = mallaTapa.positionBuffer;
-        this.indices = mallaTapa.indexBuffer;
-        this.normales = mallaTapa.normalBuffer;
-        this.textureCoords = mallaTapa.uvBuffer;
+        this.vertices = malla.positionBuffer;
+        this.indices = malla.indexBuffer;
+        this.normales = malla.normalBuffer;
+        this.textureCoords = malla.uvBuffer;
+        this.tangentes = malla.tangenteBuffer;
     }
 }
 
@@ -68,8 +70,22 @@ export class Cilindro extends Superficie {
                     return normal;
             },
             getCoordenadasTextura: function (u, v) {
-                return [u, 1-v];
+                return [u, v];
             },
+            getTangente: function (u, v) {
+                const phi = 2 * Math.PI * u;
+                const radioActual = v * (radioSuperior - radioInferior) + radioInferior;
+                const alfa = 2 * Math.PI * radioActual;
+                const Ru = [alfa * Math.cos(phi), 0, - alfa * Math.sin(phi)];
+                const R = radioSuperior - radioInferior
+                const Rv = [R*Math.sin(phi), altura, R*Math.cos(phi)];
+                const suma = Ru.map((x, i) => x + Rv[i]);
+                const tangente = utils.normalizarVector(suma);
+                if (invertirNormales === true)
+                    return tangente.map(x => -x);
+                else
+                    return tangente;
+            }
         }
     }
 }
@@ -99,7 +115,12 @@ export class Tubo extends Superficie{
                     return [Math.cos(phi), 0, Math.sin(phi)];
                 },
                 getCoordenadasTextura: function (u, v) {
-                    return [u, 1-v];
+                    return [u, v];
+                },
+                getTangente: function (u, v) {
+                    const phi = 2 * Math.PI * u;
+                    const R = 2 * Math.PI * radio;
+                    return utils.normalizarVector([-R * Math.sin(phi), altura, R * Math.cos(phi)]);
                 },
             }
     }
@@ -116,10 +137,10 @@ export class Tapa extends Superficie{
         const radio = this.radio
         return {
             getPosicion: function (u, v) {
-                let phi = 2 * Math.PI * u;
-                let x = radio * v * Math.cos(phi);
-                let z = radio * v * Math.sin(phi);
-                let y = 0
+                const phi = 2 * Math.PI * u;
+                const x = radio * v * Math.cos(phi);
+                const z = radio * v * Math.sin(phi);
+                const y = 0
                 return [x, y, z];
             },
             getNormal: function (u, v) {
@@ -128,6 +149,14 @@ export class Tapa extends Superficie{
             getCoordenadasTextura: function (u, v) {
                 return [u, v];
             },
+            getTangente: function (u, v) {
+                const alfa = 2 * Math.PI * radio * v;
+                const phi = 2 * Math.PI * u;
+                const Ru = [- alfa * Math.sin(phi), 0 , alfa * Math.cos(phi)];
+                const Rv = [radio * Math.cos(phi), 0,  radio * Math.sin(phi)];
+                const vectorTangente = Ru.map((x, i) => x + Rv[i]);
+                return utils.normalizarVector(vectorTangente);
+            }
         }
     }
 }
@@ -154,6 +183,9 @@ export class Plano extends Superficie{
             getCoordenadasTextura: function (u, v) {
                 return [u, v];
             },
+            getTangente: function (u, v) {
+                return [0,0,0]
+            }
         }
     }
 }
@@ -212,6 +244,9 @@ export class Torus extends Superficie{
              getCoordenadasTextura: function (u, v) {
                  return [u, v];
              },
+             getTangente: function (u, v) {
+                 return [0,0,0]
+             }
          }
 
      }

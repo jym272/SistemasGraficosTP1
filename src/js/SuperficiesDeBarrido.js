@@ -141,6 +141,9 @@ export class TapaSuperficieParametrica extends Superficie{
             getCoordenadasTextura: function (u, v) {
                 return [u, 1-v];
             },
+            getTangente(u,v){
+                return [u,v];
+            },
         }
     }
 
@@ -233,6 +236,118 @@ export class SuperficieParametrica extends  Superficie{
             },
             getCoordenadasTextura: function (u, v) {
                 return [u, 1-v];
+            },
+            getTangente(u,v){
+                return [u,v];
+            },
+        }
+    }
+}
+
+// columnas son las divisiones, filas -> v, columnas -> u
+// filas-> el paso discreto del camino / columnas -> el paso discreto de la forma
+export class SuperficieParametrica1 extends  Superficie{
+    constructor(alias,datosDeLaForma, datosDelRecorrido,dimensionesTriangulos, recorridoXY = false)
+    {
+        super(dimensionesTriangulos, alias)
+        this.datosDelRecorrido = datosDelRecorrido
+        this.datosDeLaForma = datosDeLaForma
+        this.recorridoXY = recorridoXY
+        this.construir();
+    }
+    superficie() {
+        let i = 0
+        let j = 0
+        const recorrido = this.datosDelRecorrido
+        const recorridoXY = this.recorridoXY
+        const forma = this.datosDeLaForma
+        let normalTransformada
+        let tangenteTransformada
+        return {
+            // columnas son las divisiones, filas -> v, columnas -> u
+            // filas-> el paso discreto del camino / columnas -> el paso discreto de la form
+            getPosicion: function (u, v) {
+                //recorre todos los puntos de u respecto a v (0...1,0)
+                //luego (0...1, 1) ..etc
+
+                const[verticeFormaX, verticeFormaY] = forma.puntos[i]
+                const[normalesFormaX, normalesFormaY] = forma.normales[i]
+                const[tangentesFormaX, tangentesFormaY] = forma.tangentes[i]
+
+
+                const vectorBinormal = recorrido.binormales[j]
+                const vectorTangente = recorrido.tangentes[j]
+                const puntoRecorrido = recorrido.puntos[j]
+                const vectorNormal = recorrido.vectorNormal
+
+
+                const matrizDeNivel = mat4.create();
+                (recorridoXY)?
+                mat4.set(
+                    matrizDeNivel,
+                    vectorNormal[0], vectorBinormal[0], vectorTangente[0], puntoRecorrido[0],
+                    vectorNormal[1], vectorBinormal[1], vectorTangente[1], puntoRecorrido[1],
+                    vectorNormal[2], vectorBinormal[2], vectorTangente[2], 0,
+                    0, 0, 0, 1
+                ):mat4.set(
+                        matrizDeNivel,
+                        vectorNormal[0], vectorBinormal[0], vectorTangente[0], 0,
+                        vectorNormal[1], vectorBinormal[1], vectorTangente[1], puntoRecorrido[1],
+                        vectorNormal[2], vectorBinormal[2], vectorTangente[2], puntoRecorrido[0],
+                        0, 0, 0, 1
+                    );
+                mat4.transpose(matrizDeNivel, matrizDeNivel) //debido al ingreso(poco intuitivo) de la matriz en forma de columnas
+                const verticesTransformados = vec4.create()
+                vec4.set(
+                    verticesTransformados,
+                    verticeFormaX, verticeFormaY, 0, 1)
+                vec4.transformMat4(verticesTransformados, verticesTransformados, matrizDeNivel )
+
+                const matrizDeNivelInversa = mat4.create()
+                mat4.set(
+                    matrizDeNivelInversa,
+                    vectorNormal[0], vectorBinormal[0], vectorTangente[0], 0,
+                    vectorNormal[1], vectorBinormal[1], vectorTangente[1], 0,
+                    vectorNormal[2], vectorBinormal[2], vectorTangente[2], 0,
+                    0, 0, 0, 1
+                )
+                mat4.transpose(matrizDeNivelInversa, matrizDeNivelInversa) //en lugar de calcular la inversa, mejor transpongo la matriz
+                normalTransformada = vec4.create()
+                vec4.set(
+                    normalTransformada,
+                    normalesFormaX,
+                    normalesFormaY,0, 1)
+                vec4.transformMat4(normalTransformada, normalTransformada, matrizDeNivelInversa)
+
+                tangenteTransformada = vec4.create()
+                vec4.set(
+                    tangenteTransformada,
+                    tangentesFormaX,
+                    tangentesFormaY,0, 1)
+                vec4.transformMat4(tangenteTransformada, tangenteTransformada, matrizDeNivelInversa)
+
+
+                //tanto el punto w de normalTransformada como el de verticesTransformados son 1
+                //es decir, no es necessario dividir por w para regresar a coordenadas cartesianas
+                return [verticesTransformados[0],verticesTransformados[1],verticesTransformados[2]]
+            },
+
+            getTangente(u,v){
+                const tangente = utils.normalizarVector([tangenteTransformada[0],tangenteTransformada[1],tangenteTransformada[2]])
+                return [tangente[0],tangente[1],tangente[2]]
+            },
+            getNormal(u,v){
+                i++ //voy al sig punto
+                if(u===1){
+                    i=0 //me di una vuelta de la forma, termine un nivel, vuelvo al inicio para el sig nivel
+                    j++ //avanzo al sig nivel
+                }
+                const normal = utils.normalizarVector([normalTransformada[0],normalTransformada[1],normalTransformada[2]])
+                return [normal[0],normal[1],normal[2]]
+            },
+            getCoordenadasTextura: function (u, v) {
+            
+                return [v, u ];
             },
         }
     }

@@ -267,7 +267,7 @@ export class Camera {
     else {
       //rotate with center focus
       mat4.translate(this.matrix, this.matrix, this.focus);
-      (this.seguirCapsula)?mat4.multiply(this.matrix,this.matrix,this.rotationMatrix):null;
+      (this.seguirCapsula) ? mat4.multiply(this.matrix, this.matrix, this.rotationMatrix) : null;
 
       mat4.rotateY(this.matrix, this.matrix, this.azimuth * Math.PI / 180);
       mat4.rotateX(this.matrix, this.matrix, this.elevation * Math.PI / 180);
@@ -291,7 +291,7 @@ export class Camera {
       this.lookAt(); //para la camara orbital
     }
 
-     // this.logCamera()
+    // this.logCamera()
 
   }
 

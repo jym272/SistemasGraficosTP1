@@ -10,6 +10,7 @@ export class ConstruirBuffers{
        const positionBuffer = [];
        const normalBuffer = [];
        const uvBuffer = [];
+       const tangenteBuffer = [];
        for (let i = 0; i <= this.dimensionesTriangulos.filas; i++) {
            for (let j = 0; j <=  this.dimensionesTriangulos.columnas; j++) {
                let u = j /  this.dimensionesTriangulos.columnas;
@@ -20,6 +21,17 @@ export class ConstruirBuffers{
                positionBuffer.push(pos[0]);
                positionBuffer.push(pos[1]);
                positionBuffer.push(pos[2]);
+               
+               let uvs = superficie.getCoordenadasTextura(u, v);
+
+               uvBuffer.push(uvs[0]);
+               uvBuffer.push(uvs[1]);
+
+               let tan = superficie.getTangente(u, v);
+
+                tangenteBuffer.push(tan[0]);
+                tangenteBuffer.push(tan[1]);
+                tangenteBuffer.push(tan[2]);
 
 
                let nrm = superficie.getNormal(u, v);
@@ -29,10 +41,7 @@ export class ConstruirBuffers{
                normalBuffer.push(nrm[1]);
                normalBuffer.push(nrm[2]);
 
-               let uvs = superficie.getCoordenadasTextura(u, v);
-
-               uvBuffer.push(uvs[0]);
-               uvBuffer.push(uvs[1]);
+              
 
            }
        }
@@ -68,6 +77,7 @@ export class ConstruirBuffers{
            normalBuffer,
            uvBuffer,
            indexBuffer,
+           tangenteBuffer,
        };
    }
 }

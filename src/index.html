@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
     <title>Estación Espacial</title>
 
 
@@ -17,15 +17,23 @@
         uniform vec4 uMaterialDiffuse;
         uniform bool uWireframe;
         uniform bool uUpdateLight;
+        uniform bool uInvertLightDirection;
 
         in vec3 aVertexPosition;
         in vec3 aVertexNormal;
+        in vec3 aVertexTangent;
         in vec4 aVertexColor;
+        in vec2 aVertexTextureCoords;
+
 
         out vec3 vNormal;
         out vec3 vLightRay;
         out vec3 vEyeVector;
         out vec4 vFinalColor;
+        out vec2 vTextureCoords;
+        out vec3 vTangentLightDirection;
+        out vec3 vTangentEyeDirection;
+
 
         void main(void) {
             // If wireframe is enabled, set color to the diffuse property exclusing lights
@@ -34,18 +42,53 @@
             }
 
             vec4 vertex = uModelViewMatrix * vec4(aVertexPosition, 1.0);
-            vec4 light = vec4(uLightPosition,1.0);
+            vec4 light = vec4(uLightPosition, 1.0);
 
             // If true, then ensure that light position
             // is appropruately updated
             if (uUpdateLight) {
-                light = uModelViewMatrix * vec4(uLightPosition,1.0);
+                light = uModelViewMatrix * vec4(uLightPosition, 1.0);
             }
 
             vNormal = vec3(uNormalMatrix * vec4(aVertexNormal, 1.0));
+
+            vec3 normal = vec3(uNormalMatrix * vec4(aVertexNormal, 1.0));
+            vec3 auxVertexTangent = aVertexTangent;
+            if (uInvertLightDirection){
+                auxVertexTangent = auxVertexTangent;
+            }
+            vec3 tangent = vec3(uNormalMatrix * vec4(auxVertexTangent, 1.0));
+            vec3 bitangent = cross(normal, tangent);
+
             vLightRay = vertex.xyz-light.xyz;
             vEyeVector = -vec3(vertex.xyz);
+
+            //tangent
+            mat3 tbnMatrix = mat3(
+            tangent.x, bitangent.x, normal.x,
+            tangent.y, bitangent.y, normal.y,
+            tangent.z, bitangent.z, normal.z
+            );
+
+            // Light direction, from light position to vertex
+            vec3 lightDirection = light.xyz - vertex.xyz;
+            /*
+        if(uInvertLightDirection){
+            lightDirection = vertex.xyz - light.xyz ;//uLightPosition - vertex.xyz;
+        }else{
+            lightDirection = light.xyz - vertex.xyz;
+        }
+        */
+
+            // Eye direction, from camera position to vertex
+            vec3 eyeDirection = -vertex.xyz;
+
+            vTextureCoords = aVertexTextureCoords;
             gl_Position = uProjectionMatrix * uModelViewMatrix * vec4(aVertexPosition, 1.0);
+
+            vTangentEyeDirection = eyeDirection * tbnMatrix;
+            vTangentLightDirection = lightDirection * tbnMatrix;
+
         }
     </script>
 
@@ -61,11 +104,20 @@
         uniform vec4 uMaterialDiffuse;
         uniform vec4 uMaterialSpecular;
         uniform float uShininess;
+        uniform sampler2D uSampler;
+        uniform sampler2D uSpecularSampler;
+        uniform sampler2D uNormalSampler;
+        uniform float uAjuste;
+        uniform bool uHasTexture;
 
         in vec3 vNormal;
         in vec3 vLightRay;
         in vec3 vEyeVector;
         in vec4 vFinalColor;
+        in vec2 vTextureCoords;
+        in vec3 vTangentLightDirection;
+        in vec3 vTangentEyeDirection;
+
 
         out vec4 fragColor;
 
@@ -74,35 +126,61 @@
                 fragColor = vFinalColor;
             }
             else {
-                vec3 L = normalize(vLightRay);
-                vec3 N = normalize(vNormal);
 
-                float lambertTerm = dot(N, -L);
+                if (uHasTexture){
+                    // Unpack tangent-space normal from texture
+                    vec3 normal = normalize((texture(uNormalSampler, vTextureCoords).rgb  - 0.5) * 2.0);
 
-                // Ambient
-                vec4 Ia = uLightAmbient * uMaterialAmbient;
-                // Diffuse
-                vec4 Id = vec4(0.0, 0.0, 0.0, 1.0);
-                // Specular
-                vec4 Is = vec4(0.0, 0.0, 0.0, 1.0);
+                    // Normalize the light direction and determine how much light is hitting this point
+                    vec3 lightDirection = normalize(vTangentLightDirection);
+                    float lambertTerm = max(dot(normal, lightDirection), 0.20);
 
-                if (lambertTerm > 0.0) {
-                    Id = uLightDiffuse * uMaterialDiffuse * lambertTerm;
-                    vec3 E = normalize(vEyeVector);
-                    vec3 R = reflect(L, N);
-                    float specular = pow( max(dot(R, E), 0.0), uShininess);
-                    Is = uLightSpecular * uMaterialSpecular * specular;
+                    //Si tengo un mapa especular se agregar el termino al calculo final
+                    float specularFactor = texture(uSpecularSampler, vTextureCoords).r;
+                    // Calculate Specular level
+                    vec3 eyeDirection = normalize(vTangentEyeDirection);
+                    vec3 reflectDir = reflect(-lightDirection, normal);
+                    float Is = pow(clamp(dot(reflectDir, eyeDirection), 0.0, 1.0), 8.0);// * specularFactor;
+
+                    vec4 Id = uLightDiffuse * uMaterialDiffuse * texture(uSampler, vTextureCoords) * lambertTerm;
+
+                    vec4 Ia = uLightAmbient * uMaterialAmbient;
+
+                    fragColor = Ia + Id + Is;
+
+                } else {
+                    vec3 L = normalize(vLightRay);
+                    vec3 N = normalize(vNormal);
+                    float lambertTerm = dot(N, -L);
+
+
+                    // Ambient
+                    vec4 Ia = uLightAmbient * uMaterialAmbient;
+                    // Diffuse
+                    vec4 Id = vec4(0.0, 0.0, 0.0, 1.0);
+                    // Specular
+                    vec4 Is = vec4(0.0, 0.0, 0.0, 1.0);
+
+
+                    if (lambertTerm > 0.0) {
+                        Id = uLightDiffuse * uMaterialDiffuse * lambertTerm;
+                        vec3 E = normalize(vEyeVector);
+                        vec3 R = reflect(L, N);
+                        float specular = pow(max(dot(R, E), 0.0), uShininess);
+                        Is = uLightSpecular * uMaterialSpecular * specular;//*specularFactor;
+                    }
+                    vec4 vColor = vec4(vec3(Ia + Id + Is), 1.0);
+                    fragColor = vColor;
+
                 }
-
-                fragColor = vec4(vec3(Ia + Id + Is), 1.0);
             }
         }
     </script>
 </head>
 <body>
-    <canvas id="webgl-canvas" width="800" height="600">
-      Your browser does not support the HTML5 canvas element.
-    </canvas>
+<canvas height="600" id="webgl-canvas" width="800">
+    Your browser does not support the HTML5 canvas element.
+</canvas>
 
 </body>
 

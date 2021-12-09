@@ -1,5 +1,6 @@
 'use strict';
 import * as dat from 'dat.gui';
+import {vec3} from "gl-matrix";
 
 // A set of utility functions for /common operations across our application
 export const utils = {
@@ -206,7 +207,8 @@ export const utils = {
         }
         return {
             puntos,
-            normales
+            normales,
+            tangentes: puntosTangentes,
         };
     },
     crearRecorrido(pasoDiscreto, curvaRecorrido, normalDelCamino = [1, 0, 0]) {
@@ -263,6 +265,71 @@ export const utils = {
             binormales: arrayNormales,
             vectorNormal: normal
         };
+    },
+
+    nuevasCoordenadas(matrizDeTransformacion, superficie, unshift = false) {
+
+        const vertices = superficie.vertices
+        const normales = superficie.normales
+        const tangentes = superficie.tangentes
+        const newVertices = []
+        const newNormales = []
+        const newTangentes = []
+        let i = 0, f = 3;
+
+        (vertices.length !== normales.length) ? console.log('Vertices y normales distinta longitud') : null;
+        while (f <= vertices.length) {
+
+            const new_vertex = vec3.fromValues(...vertices.slice(i, f));
+            const new_normal = vec3.fromValues(...normales.slice(i, f));
+            const new_tangente = vec3.fromValues(...tangentes.slice(i, f));
+
+            vec3.transformMat4(new_normal, new_normal, matrizDeTransformacion);
+            vec3.transformMat4(new_vertex, new_vertex, matrizDeTransformacion);
+            vec3.transformMat4(new_tangente, new_tangente, matrizDeTransformacion);
+
+            (unshift) ? newVertices.unshift(...new_vertex) : newVertices.push(...new_vertex);
+
+            vec3.normalize(new_normal, new_normal);
+            (unshift) ? newNormales.unshift(...new_normal) : newNormales.push(...new_normal);
+
+            vec3.normalize(new_tangente, new_tangente);
+            (unshift) ? newTangentes.unshift(...new_tangente) : newTangentes.push(...new_tangente);
+
+            i += 3
+            f += 3
+        }
+        (newVertices.length !== newNormales.length) ? console.log('Vertices y normales nuevas distinta longitud') : null;
+        (vertices.length !== newVertices.length) ? console.log('Vertices transformados no coinciden en longitud') : null;
+        (normales.length !== newNormales.length) ? console.log('Normales transformadas no coinciden en longitud') : null;
+        return {
+            vertices: newVertices,
+            normales: newNormales,
+            tangentes: newTangentes
+
+        }
+    },
+    I3(vector) {
+
+        //imprimir en pares
+        for (let i = 0; i < vector.length; i = i + 3) {
+            //print with fixed 2 decimals
+            console.log(vector[i].toFixed(4) + " " + vector[i + 1].toFixed(4)
+                + " " + vector[i + 2].toFixed(4)
+            );
+        }
+
+    },
+
+    I2(vector) {
+
+        //imprimir en pares
+        for (let i = 0; i < vector.length; i = i + 2) {
+            //print with fixed 2 decimals
+            console.log(vector[i].toFixed(4) + " " + vector[i + 1].toFixed(4)
+            );
+        }
+
     },
 };
 

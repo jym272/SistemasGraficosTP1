@@ -291,7 +291,7 @@ export class Camera {
       this.lookAt(); //para la camara orbital
     }
 
-    // this.logCamera()
+    this.logCamera()
 
   }
 

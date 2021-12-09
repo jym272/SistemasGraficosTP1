@@ -4,12 +4,10 @@ import {dimensiones} from "./js/dimensiones";
 import {utils} from './js/utils';
 import {Program} from "./js/Program";
 import {Scene} from "./js/Scene";
-import {Floor} from "./js/Floor";
-import {Axis} from "./js/Axis";
 import {Camera} from "./js/Camera";
 import {Controls} from "./js/Controls";
 import {Transforms} from "./js/Transforms";
-import {AnimacionPanelesSolares} from "./js/PanelSolar";
+import {AnimacionPanelesSolares, PanelSolar} from "./js/PanelSolar";
 import {Cilindro, Plano, Superficie, Tapa, Torus, Tubo,} from "./js/Superficies";
 import {Forma, SuperficieParametrica, SuperficieParametrica1} from "./js/SuperficiesDeBarrido";
 import {Bloque} from "./js/Bloque";
@@ -24,13 +22,13 @@ import {Texture} from "./js/Texture";
 let
     gl, scene, program, camera, transforms, transformar, bloque, panelSolar, controles, droneCam,
     targetNave, targetPanelesSolares, //focus de la nave y los paneles en el cual se enfoca la camara
-    elapsedTime, initialTime, texture, texture1, texture2,
+    elapsedTime, initialTime, texture, texture1, texture2, cubeTexture,
     fixedLight = true,
     triangleStrip = true,
     wireframe = false,
     ajuste = 8.0,  //para ajustar posiciones de los objetos, se usa en el diseño
     dxAnillo = 0.01,
-    lightPosition = [10, 10, 10],
+    lightPosition = [20, 20, 20],
     animationRate; //ms
 
 const colorGenerico = colores.RojoMetalico;
@@ -72,14 +70,14 @@ function configure() {
         'uShininess',
         'uUpdateLight',
         'uWireframe',
-        'uSampler',
-        'uSpecularSampler',
-        'uNormalSampler',
         'uAjuste',
         'uHasTexture',
-        'uInvertLightDirection'
+        'uIsTheCubeMapShader',
+        'uSampler',
+        /*'uSpecularSampler',*/
+        'uNormalSampler',
+        'uCubeSampler'
     ];
-
 
     // Load attributes and uniforms
     program.load(attributes, uniforms);
@@ -89,7 +87,7 @@ function configure() {
 
     // Configure `camera` and `controls`
     camera = new Camera(Camera.ORBITING_TYPE, 70, 0);
-    camera.goTo([0, 0, 30], 0, -65, [0, 0, 0])
+    camera.goTo([0, 0, 50], 0, -60, [0, 0, 0])
     droneCam = new DroneCameraControl([0, 0, -10], camera);
     controles = new Controls(camera, canvas, droneCam);
 
@@ -111,31 +109,84 @@ function configure() {
         new AnimacionPanelesSolares(300, intervaloEnGrados)
     );
 
+    // CubeMap
+    // Configure cube texture
+    const skyBoxFiles = [
+        "Left_1K_TEX.png",
+        "Right_1K_TEX.png",
+        "Up_1K_TEX.png",
+        "Down_1K_TEX.png",
+        "Front_1K_TEX.png",
+        "Back_1K_TEX.png"
+    ];
+    const skyBox_url = [[], [], []];
+    for (let i = 0; i < 3; i++) {
+        for (let j = 0; j < 6; j++) {
+            skyBox_url[i].push(`/skyBox/` + (i + 1).toString() + `/${skyBoxFiles[j]}`)
+        }
+    }
+
+    cubeTexture = gl.createTexture();
+
+    gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubeTexture);
+    gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+
+    //cada vez que empieza el programa, elige aleatoriamente un set de texturas para el cubemap
+    let random = Math.floor(Math.random() * 3);
+
+    loadCubemapFace(gl, gl.TEXTURE_CUBE_MAP_POSITIVE_X, cubeTexture, skyBox_url[random][0]);
+    loadCubemapFace(gl, gl.TEXTURE_CUBE_MAP_NEGATIVE_X, cubeTexture, skyBox_url[random][1]);
+    loadCubemapFace(gl, gl.TEXTURE_CUBE_MAP_POSITIVE_Y, cubeTexture, skyBox_url[random][2]);
+    loadCubemapFace(gl, gl.TEXTURE_CUBE_MAP_NEGATIVE_Y, cubeTexture, skyBox_url[random][3]);
+    loadCubemapFace(gl, gl.TEXTURE_CUBE_MAP_POSITIVE_Z, cubeTexture, skyBox_url[random][4]);
+    loadCubemapFace(gl, gl.TEXTURE_CUBE_MAP_NEGATIVE_Z, cubeTexture, skyBox_url[random][5]);
+
+    //textures
 
     texture = new Texture(gl, 'UV.jpg');
-    texture1 = new Texture(gl, 'earthSpecular.jpg');
+    // texture1 = new Texture(gl, 'earthSpecular.jpg');
     texture2 = new Texture(gl, 'UV_normal.jpg');
 
 }
 
+function loadCubemapFace(gl, target, texture, url) {
+    const image = new Image();
+    image.src = url;
+    image.onload = () => {
+        gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture);
+        gl.texImage2D(target, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+        gl.bindTexture(gl.TEXTURE_CUBE_MAP, null);
+    };
+}
+
+
 // Se carga todos los objetos a la escena
 function load() {
 
-    scene.add(new Floor(80, 1));
-    scene.add(new Axis(82));
+    scene.load('/geometries/cube-texture.json', 'cubeMap');
+    scene.load('/sphere.json', 'light');
+
+
+    // scene.add(new Floor(80, 1));
+    // scene.add(new Axis(82));
 
 
     const nave = new Superficie(null, 'nave')
     scene.add(nave)
+
+
     cargarNucleo()
-    // panelSolar = new PanelSolar(scene);
-    //panelSolar.cargarPanelesSolares()
-    //panelSolar.cargarPanelesSolares1()
-    // cargarAnillo()
-    //  bloque.setType(Bloque.BLOQUES_4);
-    // moduloVioleta()
-    // cargarEsfera()
-    // cargarCapsula()
+
+
+    panelSolar = new PanelSolar(scene);
+    panelSolar.cargarPanelesSolares()
+    panelSolar.cargarPanelesSolares1()
+    cargarAnillo()
+    bloque.setType(Bloque.BLOQUES_4);
+    moduloVioleta()
+    cargarEsfera()
+    cargarCapsula()
 
 
     // test()
@@ -143,13 +194,14 @@ function load() {
     // cargarPlanetaTierra()
 
     //cubo()
-    scene.load('/sphere.json', 'light');
+
 
     // scene.load('/geometries/cube-complex.json', 'complexCube', { hidden: true });
 
     //teatro()
     //superTest()
 }
+
 
 function nuevasCoordenadas(matrizDeTransformacion, superficie, unshift = false) {
 
@@ -723,7 +775,6 @@ function moduloVioleta() {
 }
 
 
-
 function calcularTangentes1(superficie) {
     // Calculate tangets for a given set of vertices
     const vs = superficie.vertices
@@ -744,7 +795,7 @@ function calcularTangentes1(superficie) {
         f = 1.0,
         triTangent = [0, 0, 0];
 
-    for (let i = 0; i < ind.length; i ++) {
+    for (let i = 0; i < ind.length; i++) {
         const i0 = ind[i];
         const i1 = ind[i + 1];
         const i2 = ind[i + 2];
@@ -776,19 +827,19 @@ function calcularTangentes1(superficie) {
             f * (deltaUV2[1] * a[2] - deltaUV1[1] * b[2])
         ];
 
-       // triTangent = [c3c1b * a[0] - c2c1b * b[0], c3c1b * a[1] - c2c1b * b[1], c3c1b * a[2] - c2c1b * b[2]];
+        // triTangent = [c3c1b * a[0] - c2c1b * b[0], c3c1b * a[1] - c2c1b * b[1], c3c1b * a[2] - c2c1b * b[2]];
         // console.log(triTangent)
 
         //recorrer triTanget si todos son cero return pass
-        if (triTangent[0] ===0 && triTangent[1] ===0 && triTangent[2] === 0)
+        if (triTangent[0] === 0 && triTangent[1] === 0 && triTangent[2] === 0)
             continue;
-        if (isNaN(triTangent[0]) || isNaN(triTangent[1]) || isNaN(triTangent[2]) )
+        if (isNaN(triTangent[0]) || isNaN(triTangent[1]) || isNaN(triTangent[2]))
             continue;
 
 
-        vec3.add( tangents[i0], tangents[i0], triTangent);
-        vec3.add( tangents[i1], tangents[i1], triTangent);
-        vec3.add( tangents[i2], tangents[i2],  triTangent);
+        vec3.add(tangents[i0], tangents[i0], triTangent);
+        vec3.add(tangents[i1], tangents[i1], triTangent);
+        vec3.add(tangents[i2], tangents[i2], triTangent);
     }
 
     // Normalize tangents
@@ -824,12 +875,12 @@ function calcularTangentes(superficie) {
         b = [0, 0, 0],
         triTangent = [0, 0, 0];
 
-    for (let i = 0; i < ind.length-2; i ++) {
+    for (let i = 0; i < ind.length - 2; i++) {
         const i0 = ind[i];
         const i1 = ind[i + 1];
         const i2 = ind[i + 2];
 
-        if(i0 === i1 || i0 === i2 || i1 === i2){
+        if (i0 === i1 || i0 === i2 || i1 === i2) {
             continue
         }
 
@@ -848,11 +899,11 @@ function calcularTangentes(superficie) {
         const c3c1b = tex2[0] - tex0[1];
 
         triTangent = [c3c1b * a[0] - c2c1b * b[0], c3c1b * a[1] - c2c1b * b[1], c3c1b * a[2] - c2c1b * b[2]];
-      // console.log(triTangent)
+        // console.log(triTangent)
 
-        vec3.add( tangents[i0], tangents[i0], triTangent);
-        vec3.add( tangents[i1], tangents[i1], triTangent);
-        vec3.add( tangents[i2], tangents[i2],  triTangent);
+        vec3.add(tangents[i0], tangents[i0], triTangent);
+        vec3.add(tangents[i1], tangents[i1], triTangent);
+        vec3.add(tangents[i2], tangents[i2], triTangent);
     }
 
     // Normalize tangents
@@ -875,7 +926,7 @@ function cargarNucleo() {
         filas: 1, //segmentosRadiales
         columnas: 30, //segmentosDeAltura
     };
-    const nucleoPS = new Superficie(null, "nucleoPS1");
+    const nucleoPS = new Superficie(null, "nucleoPS");
 
     //partes
     const tubo = new Tubo('nucleoPS_tubo', dimensiones.NucleoPS, dimensionesTriangulosNucleo)
@@ -967,7 +1018,6 @@ function cargarNucleo() {
     tapaInf_NEW.tangentes = tapaInf_NEW_normals_tangents.tangentes
 
 
-
     //indices
     const tapaSup_NEW_indices = []
     tapaSup.indices.forEach(indice => {
@@ -1032,9 +1082,9 @@ function cargarNucleo() {
     );
 
     const nuevasTan = calcularTangentes(nucleoPS);
-  nucleoPS.tangentes = nuevasTan
+    // nucleoPS.tangentes = nuevasTan
 
-    console.log(nucleoPS.tangentes, nuevasTan)
+    // console.log(nucleoPS.tangentes, nuevasTan)
 
     // printArray2D(nuevasUV)
     // printArray2D(cilindroSup.textureCoords)
@@ -1046,7 +1096,7 @@ function cargarNucleo() {
     nucleoAnillo.alias = "nucleoAnillo";
 
     scene.add(nucleoPS)
-    //scene.add(nucleoAnillo)
+    scene.add(nucleoAnillo)
 }
 
 function printArray2D(array) {
@@ -1126,7 +1176,24 @@ function draw() {
             if (object.hidden) return;
             // Calculate local transformations
             transforms.calculateModelView();
-            transforms.push();
+            const matrix = transforms.push();
+
+            //cubmaps
+            if (object.alias === "cubeMap") {
+                const cubeMapTransform = transforms.modelViewMatrix;
+                const factor = 2048;
+
+                const {
+                    rotationMatrix,
+                    position,
+                } = droneCam.update()
+
+                mat4.translate(cubeMapTransform, Capsula.capsulaTransform, position);
+                mat4.multiply(cubeMapTransform, cubeMapTransform, rotationMatrix);
+                // mat4.multiply(cubeMapTransform, cubeMapTransform, camera.getViewTransform());
+                mat4.scale(cubeMapTransform, cubeMapTransform, [factor, factor, factor]);
+                // return;
+            }
 
             //luz
             // If object is the light, we update its position
@@ -1236,14 +1303,10 @@ function draw() {
 }
 
 function dibujarMallaDeObjeto(object) {
-    // console.log(camera.elevation)
-    if (Math.abs(camera.elevation) >= 90) {
-        //cambio la direccion de la luz?
-        gl.uniform1i(program.uInvertLightDirection, true);
-        console.log("holñ")
-    } else {
-        gl.uniform1i(program.uInvertLightDirection, false);
-    }
+
+    // console.log("cubeSampler",program.getUniform(program.uCubeSampler))
+    // console.log("sampler",program.getUniform(program.uSampler))
+    // console.log("normal",program.getUniform(program.uNormalSampler))
 
 
     gl.uniform4fv(program.uMaterialDiffuse, object.diffuse);
@@ -1251,28 +1314,43 @@ function dibujarMallaDeObjeto(object) {
     gl.uniform4fv(program.uMaterialAmbient, object.ambient);
     gl.uniform1i(program.uWireframe, object.wireframe);
 
-    // Activate texture
-    if (object.hasTexture) {
-        // console.log("activo textura", object)
-        gl.uniform1i(program.uHasTexture, true);
-
-        gl.activeTexture(gl.TEXTURE0);
-        gl.bindTexture(gl.TEXTURE_2D, texture.glTexture);
-        gl.uniform1i(program.uSampler, 0)
-
-        gl.activeTexture(gl.TEXTURE1);
-        gl.bindTexture(gl.TEXTURE_2D, texture1.glTexture);
-        gl.uniform1i(program.uSpecularSampler, 1);
-
-        gl.activeTexture(gl.TEXTURE2);
-        gl.bindTexture(gl.TEXTURE_2D, texture2.glTexture);
-        gl.uniform1i(program.uNormalSampler, 2);
-    } else
-        gl.uniform1i(program.uHasTexture, false);
-
     // Bind
     gl.bindVertexArray(object.vao);
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, object.ibo);
+    //Cubemap
+    if (object.alias === 'cubeMap') {
+        //le indicamos al shader las acciones que tiene que tomar con la cubemap
+        gl.uniform1i(program.uHasTexture, false);
+        gl.uniform1i(program.uIsTheCubeMapShader, true);
+
+        // Activate cube map
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubeTexture);
+        gl.uniform1i(program.uCubeSampler, 0);
+
+    } else
+        // Activate texture
+    if (object.hasTexture) {
+
+        gl.uniform1i(program.uIsTheCubeMapShader, false);
+        gl.uniform1i(program.uHasTexture, true);
+
+        gl.activeTexture(gl.TEXTURE1);
+        gl.bindTexture(gl.TEXTURE_2D, texture.glTexture);
+        gl.uniform1i(program.uSampler, 1)
+        /*
+                gl.activeTexture(gl.TEXTURE1);
+                gl.bindTexture(gl.TEXTURE_2D, texture1.glTexture);
+                gl.uniform1i(program.uSpecularSampler, 1);
+        */
+        gl.activeTexture(gl.TEXTURE2);
+        gl.bindTexture(gl.TEXTURE_2D, texture2.glTexture);
+        gl.uniform1i(program.uNormalSampler, 2);
+    } else {
+
+        gl.uniform1i(program.uIsTheCubeMapShader, false);
+        gl.uniform1i(program.uHasTexture, false);
+    }
 
 
     // Draw
@@ -1287,7 +1365,10 @@ function dibujarMallaDeObjeto(object) {
 
     } else {
         const tipoDeDibujo = (triangleStrip) ? gl.TRIANGLE_STRIP : gl.TRIANGLES;
-        gl.drawElements(tipoDeDibujo, object.indices.length, gl.UNSIGNED_SHORT, 0);
+        if (object.alias === 'cubeMap') {
+            gl.drawElements(gl.TRIANGLES, object.indices.length, gl.UNSIGNED_SHORT, 0);
+        } else
+            gl.drawElements(tipoDeDibujo, object.indices.length, gl.UNSIGNED_SHORT, 0);
     }
     // Clean
     gl.bindVertexArray(null);
@@ -1346,14 +1427,17 @@ function initControls() {
 
 
 
-            'Bloques': {
-                value: bloque.type,
-                options: [Bloque.BLOQUES_4, Bloque.BLOQUES_5, Bloque.BLOQUES_6, Bloque.BLOQUES_7, Bloque.BLOQUES_8],
-                onChange: v => {
-                    bloque.setType(v);
-                }
-            },
 
+
+
+
+
+
+
+
+
+
+    */
             'PanelesSolares': {
                 'Filas': {
                     value: panelSolar.cantidadDeFilas,
@@ -1385,12 +1469,6 @@ function initControls() {
             },
 
 
-
-
-
-
-
-    */
             ...['Translate X', 'Translate Y', 'Translate Z'].reduce((result, name, i) => {
                 result[name] = {
                     value: lightPosition[i],
@@ -1408,6 +1486,14 @@ function initControls() {
 
             //'Go Home': () => camera.goHome(),
 
+
+            'Bloques': {
+                value: bloque.type,
+                options: [Bloque.BLOQUES_4, Bloque.BLOQUES_5, Bloque.BLOQUES_6, Bloque.BLOQUES_7, Bloque.BLOQUES_8],
+                onChange: v => {
+                    bloque.setType(v);
+                }
+            },
             'Static Light Position': {
                 value: fixedLight,
                 onChange: v => fixedLight = v

@@ -122,11 +122,17 @@ export class TapaSuperficieParametrica extends Superficie{
     }
     superficie(){
         const puntos = this.puntosDeLaForma
+        let tanX, tanZ;
         let i =0
         return {
             getPosicion: function (u, v) {
+                tanX = puntos[i][0]
+                tanZ = puntos[i][1]
+
                 const x = v * puntos[i][0]
                 const z = v * puntos[i][1]
+
+
                 const y = 0
                 i++
                 if (u === 1) {
@@ -139,10 +145,10 @@ export class TapaSuperficieParametrica extends Superficie{
                 return [0,1,0] //es una tapa
             },
             getCoordenadasTextura: function (u, v) {
-                return [u, 1-v];
+                return [u,1-v];
             },
             getTangente(u,v){
-                return [u,v];
+                return utils.normalizarVector([-tanZ,0,tanX])
             },
         }
     }
@@ -238,7 +244,7 @@ export class SuperficieParametrica extends  Superficie{
                 return [u, 1-v];
             },
             getTangente(u,v){
-                return [u,v];
+                return [u,v, u-1];
             },
         }
     }

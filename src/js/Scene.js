@@ -1,5 +1,6 @@
 'use strict';
 import {utils} from './utils';
+import {Texture} from "./Texture";
 // Manages objects in a 3D scene
 export class Scene {
 

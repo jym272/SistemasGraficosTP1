@@ -4,8 +4,8 @@ import { vec3, mat4 } from 'gl-matrix';
 
 export function DroneCameraControl(initialPos, camera){
 
-    let DELTA_TRASLACION=0.7;        // velocidad de traslacion
-    let DELTA_ROTACION=0.05;         // velocidad de rotacion
+    let DELTA_TRASLACION=0.3;        // velocidad de traslacion
+    let DELTA_ROTACION=0.01;         // velocidad de rotacion
     let FACTOR_INERCIA=0.05;
 
     if (!initialPos) initialPos=[0,0,0];

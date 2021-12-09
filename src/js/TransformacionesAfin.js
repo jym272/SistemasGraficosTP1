@@ -226,20 +226,7 @@ export class TransformacionesAfin {
             mat4.translate(Bloques.bloqueTransform, Bloques.bloqueTransform, [0, Bloques.centrarElBloque, 0])
             mat4.rotate(Bloques.bloqueTransform, Bloques.bloqueTransform, Math.PI / 2, [1, 0, 0])
             Bloques.posicionBloque++
-        } else if (this.alias === 'bloqueTapaAdelante') {
-            const bloqueTapaAdelanteTransform = transforms.modelViewMatrix
-            mat4.translate(bloqueTapaAdelanteTransform, Bloques.bloqueTransform, [dimensiones.anillo.radio, 0, 0])
-            mat4.rotate(bloqueTapaAdelanteTransform, bloqueTapaAdelanteTransform, Math.PI, [1, 0, 1])
-
-        } else if (this.alias === 'bloqueTapaAtras') {
-            const bloqueTapaAtrasTransform = transforms.modelViewMatrix
-            const y = dimensiones.anillo.radio * Math.sin((p.anguloTapaAtras) * Math.PI / 180)
-            const x = dimensiones.anillo.radio * Math.cos((p.anguloTapaAtras) * Math.PI / 180)
-            mat4.translate(bloqueTapaAtrasTransform, Bloques.bloqueTransform, [x, y, 0])
-            mat4.rotate(bloqueTapaAtrasTransform, bloqueTapaAtrasTransform, Math.PI, [1, 0, -1])
-            mat4.rotate(bloqueTapaAtrasTransform, bloqueTapaAtrasTransform, (180 - p.anguloTapaAtras) * Math.PI / 180, [1, 0, 0])
         }
-
     }
 
     modulosVioleta() {

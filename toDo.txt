@@ -8,6 +8,12 @@
  cada posicion de la forma pueden corresponder a v =[0,1]
 
 
+controles de la capsula, adaptarlos a el nuevo skybox
+        -> son muy responsivos, bajarle, simular el movimiento de la capsula lentamente
+        -> la capsulo no puede salir de los confines del skybox
+        -> el zoom no puede ser mayor a la distancia del skybox
+
+
 
 
 

@@ -102,6 +102,11 @@
         #version 300 es
         precision mediump float;
 
+        uniform samplerCube uCubeSampler;
+        uniform sampler2D uSampler;
+        //uniform sampler2D uSpecularSampler;
+        uniform sampler2D uNormalSampler;
+
         uniform bool uWireframe;
         uniform vec4 uLightAmbient;
         uniform vec4 uLightDiffuse;
@@ -110,12 +115,11 @@
         uniform vec4 uMaterialDiffuse;
         uniform vec4 uMaterialSpecular;
         uniform float uShininess;
-        uniform sampler2D uSampler;
-        //uniform sampler2D uSpecularSampler;
-        uniform sampler2D uNormalSampler;
+
+
+
         uniform float uAjuste;
         uniform bool uHasTexture;
-        uniform samplerCube uCubeSampler;
         uniform bool uIsTheCubeMapShader;
 
 

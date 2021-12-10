@@ -112,8 +112,9 @@ function configure() {
     );
 
 
-
-    // CubeMap
+    /*
+     * Texturas
+     */
     // Configure cube texture
     const skyBoxFiles = [
         "Left_1K_TEX.png",
@@ -146,11 +147,24 @@ function configure() {
     loadCubemapFace(gl, gl.TEXTURE_CUBE_MAP_POSITIVE_Z, cubeTexture, skyBox_url[random][4]);
     loadCubemapFace(gl, gl.TEXTURE_CUBE_MAP_NEGATIVE_Z, cubeTexture, skyBox_url[random][5]);
 
-    //textures
-
+    // Textures
     texture = new Texture(gl, 'UV.jpg');
     // texture1 = new Texture(gl, 'earthSpecular.jpg');
     texture2 = new Texture(gl, 'UV_normal.jpg');
+
+    //Asignando unidades de texturas
+    const cubeMapTextureUnit = 0;
+    const samplerTextureUnit = 1;
+    const normalTextureUnit = 2;
+
+    gl.uniform1i(program.uCubeSampler, cubeMapTextureUnit);
+    gl.uniform1i(program.uSampler, samplerTextureUnit);
+    gl.uniform1i(program.uNormalSampler, normalTextureUnit);
+
+    // console.log("cubeSampler",program.getUniform(program.uCubeSampler))
+    // console.log("sampler",program.getUniform(program.uSampler))
+    // console.log("normal",program.getUniform(program.uNormalSampler))
+
 
 }
 
@@ -997,7 +1011,6 @@ function draw() {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
     transforms.updatePerspective();
-
     try {
         gl.uniform1i(program.uUpdateLight, fixedLight);
 
@@ -1006,7 +1019,6 @@ function draw() {
             if (object.hidden) return;
             // Calculate local transformations
             transforms.calculateModelView();
-            const matrix = transforms.push();
 
             //cubmaps
             if (object.alias === "cubeMap") {
@@ -1154,9 +1166,9 @@ function dibujarMallaDeObjeto(object) {
         gl.uniform1i(program.uIsTheCubeMapShader, true);
 
         // Activate cube map
+        // gl.uniform1i(program.uCubeSampler, 0);
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubeTexture);
-        gl.uniform1i(program.uCubeSampler, 0);
 
     } else
         // Activate texture
@@ -1165,17 +1177,17 @@ function dibujarMallaDeObjeto(object) {
         gl.uniform1i(program.uIsTheCubeMapShader, false);
         gl.uniform1i(program.uHasTexture, true);
 
+        // gl.uniform1i(program.uSampler, 1)
         gl.activeTexture(gl.TEXTURE1);
         gl.bindTexture(gl.TEXTURE_2D, texture.glTexture);
-        gl.uniform1i(program.uSampler, 1)
         /*
                 gl.activeTexture(gl.TEXTURE1);
                 gl.bindTexture(gl.TEXTURE_2D, texture1.glTexture);
                 gl.uniform1i(program.uSpecularSampler, 1);
         */
+        // gl.uniform1i(program.uNormalSampler, 2);
         gl.activeTexture(gl.TEXTURE2);
         gl.bindTexture(gl.TEXTURE_2D, texture2.glTexture);
-        gl.uniform1i(program.uNormalSampler, 2);
     } else {
 
         gl.uniform1i(program.uIsTheCubeMapShader, false);

@@ -240,14 +240,5 @@ export class PanelSolar {
             this.nuevo('panelSolar2')
         }
     }
-    cargarPanelesSolares1(){
-        const {scene} = this
-
-
-    }
-
-
-
-
 }
 

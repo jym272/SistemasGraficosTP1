@@ -17,6 +17,8 @@ import {colores} from "./js/colores";
 import {Anillo, Bloques, Capsula, Esfera, Nave, PanelesSolares, TransformacionesAfin} from "./js/TransformacionesAfin";
 import {mat4, vec3} from "gl-matrix";
 import {Texture} from "./js/Texture";
+import {Floor} from "./js/Floor";
+import {Axis} from "./js/Axis";
 
 
 let
@@ -28,7 +30,7 @@ let
     wireframe = false,
     ajuste = 8.0,  //para ajustar posiciones de los objetos, se usa en el diseño
     dxAnillo = 0.01,
-    lightPosition = [20, 20, 20],
+    lightPosition = [0, 50, 200],
     animationRate; //ms
 
 const colorGenerico = colores.RojoMetalico;
@@ -74,7 +76,7 @@ function configure() {
         'uHasTexture',
         'uIsTheCubeMapShader',
         'uSampler',
-        /*'uSpecularSampler',*/
+        'uSpecularSampler',
         'uNormalSampler',
         'uCubeSampler'
     ];
@@ -87,7 +89,7 @@ function configure() {
 
     // Configure `camera` and `controls`
     camera = new Camera(Camera.ORBITING_TYPE, 70, 0);
-    camera.goTo([0, 0, 50], 0, -60, [0, 0, 0])
+    camera.goTo([0, 0, 40], -0, -30, [0, 0, 0])
     droneCam = new DroneCameraControl([0, 0, -10], camera);
     controles = new Controls(camera, canvas, droneCam);
 
@@ -108,6 +110,8 @@ function configure() {
     transformar = new TransformacionesAfin(transforms, droneCam, controles, camera, bloque,
         new AnimacionPanelesSolares(300, intervaloEnGrados)
     );
+
+
 
     // CubeMap
     // Configure cube texture
@@ -159,319 +163,23 @@ function loadCubemapFace(gl, target, texture, url) {
         gl.bindTexture(gl.TEXTURE_CUBE_MAP, null);
     };
 }
-
-
 // Se carga todos los objetos a la escena
 function load() {
 
     scene.load('/geometries/cube-texture.json', 'cubeMap');
     scene.load('/sphere.json', 'light');
-
-
     // scene.add(new Floor(80, 1));
     // scene.add(new Axis(82));
-
-
-    const nave = new Superficie(null, 'nave')
-    scene.add(nave)
-
-
+    scene.add(new Superficie(null, 'nave'))
     cargarNucleo()
-
-
     panelSolar = new PanelSolar(scene);
     panelSolar.cargarPanelesSolares()
-    panelSolar.cargarPanelesSolares1()
     cargarAnillo()
     bloque.setType(Bloque.BLOQUES_4);
     moduloVioleta()
     cargarEsfera()
     cargarCapsula()
-
-
-    // test()
-
     // cargarPlanetaTierra()
-
-    //cubo()
-
-
-    // scene.load('/geometries/cube-complex.json', 'complexCube', { hidden: true });
-
-    //teatro()
-    //superTest()
-}
-
-
-function nuevasCoordenadas(matrizDeTransformacion, superficie, unshift = false) {
-
-    const vertices = superficie.vertices
-    const normales = superficie.normales
-    const tangentes = superficie.tangentes
-    const newVertices = []
-    const newNormales = []
-    const newTangentes = []
-    let i = 0, f = 3;
-
-    (vertices.length !== normales.length) ? console.log('Vertices y normales distinta longitud') : null;
-    while (f <= vertices.length) {
-
-        const new_vertex = vec3.fromValues(...vertices.slice(i, f));
-        const new_normal = vec3.fromValues(...normales.slice(i, f));
-        const new_tangente = vec3.fromValues(...tangentes.slice(i, f));
-
-        vec3.transformMat4(new_normal, new_normal, matrizDeTransformacion);
-        vec3.transformMat4(new_vertex, new_vertex, matrizDeTransformacion);
-        vec3.transformMat4(new_tangente, new_tangente, matrizDeTransformacion);
-
-        (unshift) ? newVertices.unshift(...new_vertex) : newVertices.push(...new_vertex);
-
-        vec3.normalize(new_normal, new_normal);
-        (unshift) ? newNormales.unshift(...new_normal) : newNormales.push(...new_normal);
-
-        vec3.normalize(new_tangente, new_tangente);
-        (unshift) ? newTangentes.unshift(...new_tangente) : newTangentes.push(...new_tangente);
-
-        i += 3
-        f += 3
-    }
-    (newVertices.length !== newNormales.length) ? console.log('Vertices y normales nuevas distinta longitud') : null;
-    (vertices.length !== newVertices.length) ? console.log('Vertices transformados no coinciden en longitud') : null;
-    (normales.length !== newNormales.length) ? console.log('Normales transformadas no coinciden en longitud') : null;
-    return {
-        vertices: newVertices,
-        normales: newNormales,
-        tangentes: newTangentes
-
-    }
-}
-
-function superTest() {
-    //Se necesita 6 planos para cubo
-    const dimensionesTringulos = {
-        filas: 1,
-        columnas: 1,
-    }
-    const dimensiones = {
-        ancho: 5,
-        largo: 5,
-    }
-    scene.add(new Superficie(null, 'superTest'))
-
-    const cubo_lado1 = new Plano('superTest1', dimensiones, dimensionesTringulos)
-    const cubo_lado2 = new Plano('superTest2', dimensiones, dimensionesTringulos)
-    const cubo_lado3 = new Plano('superTest3', dimensiones, dimensionesTringulos)
-    const cubo_lado4 = new Plano('superTest4', dimensiones, dimensionesTringulos)
-    const cubo_lado5 = new Plano('superTest5', dimensiones, dimensionesTringulos)
-    const cubo_lado6 = new Plano('superTest6', dimensiones, dimensionesTringulos)
-
-
-    //Matrices de transformacion
-    const cuboLado1Transform = mat4.identity(mat4.create());
-    //mat4.rotate(cuboLadoTransform, cuboLadoTransform , Math.PI / 2, [1, 0, 0]);
-    mat4.translate(cuboLado1Transform, cuboLado1Transform, [0, 0, 2.5]);
-    mat4.rotate(cuboLado1Transform, cuboLado1Transform, Math.PI / 2, [1, 0, 0]);
-
-    const cuboLado2Transform = mat4.identity(mat4.create());
-    mat4.rotate(cuboLado2Transform, cuboLado2Transform, Math.PI / 2, [1, 0, 0]);
-    mat4.multiply(cuboLado2Transform, cuboLado2Transform, cuboLado1Transform);
-
-    const cuboLado3Transform = mat4.identity(mat4.create());
-    mat4.rotate(cuboLado3Transform, cuboLado3Transform, Math.PI, [1, 0, 0]);
-    mat4.multiply(cuboLado3Transform, cuboLado3Transform, cuboLado1Transform);
-
-    const cuboLado4Transform = mat4.identity(mat4.create());
-    mat4.rotate(cuboLado4Transform, cuboLado4Transform, -Math.PI / 2, [1, 0, 0]);
-    mat4.multiply(cuboLado4Transform, cuboLado4Transform, cuboLado1Transform);
-
-    const cuboLado5Transform = mat4.identity(mat4.create());
-    mat4.rotate(cuboLado5Transform, cuboLado5Transform, Math.PI / 2, [0, 1, 0]);
-    mat4.multiply(cuboLado5Transform, cuboLado5Transform, cuboLado1Transform);
-
-    const cuboLado6Transform = mat4.identity(mat4.create());
-    mat4.rotate(cuboLado6Transform, cuboLado6Transform, -Math.PI / 2, [0, 1, 0]);
-    mat4.multiply(cuboLado6Transform, cuboLado6Transform, cuboLado1Transform);
-
-    const {
-        vertices: newVertices2,
-        normales: newNormales2
-    } = nuevasCoordenadas(cuboLado2Transform, cubo_lado2.vertices, cubo_lado2.normales)
-
-    const {
-        vertices: newVertices1,
-        normales: newNormales1
-    } = nuevasCoordenadas(cuboLado1Transform, cubo_lado1.vertices, cubo_lado1.normales)
-
-    const {
-        vertices: newVertices3,
-        normales: newNormales3
-    } = nuevasCoordenadas(cuboLado3Transform, cubo_lado3.vertices, cubo_lado3.normales)
-
-    const {
-        vertices: newVertices4,
-        normales: newNormales4
-    } = nuevasCoordenadas(cuboLado4Transform, cubo_lado4.vertices, cubo_lado4.normales)
-
-    const {
-        vertices: newVertices5,
-        normales: newNormales5
-    } = nuevasCoordenadas(cuboLado5Transform, cubo_lado5.vertices, cubo_lado5.normales)
-
-    const {
-        vertices: newVertices6,
-        normales: newNormales6
-    } = nuevasCoordenadas(cuboLado6Transform, cubo_lado6.vertices, cubo_lado6.normales)
-    console.log(newVertices6, newNormales6)
-    const newV = []
-    newV.push(...newVertices1, ...newVertices2, ...newVertices3, ...newVertices4, ...newVertices5, ...newVertices6)
-    const newN = []
-    newN.push(...newNormales1, ...newNormales2, ...newNormales3, ...newNormales4, ...newNormales5, ...newNormales6)
-
-    cubo_lado1.vertices = newV
-    cubo_lado1.normales = newN
-    console.log(cubo_lado1)
-    const arr = [0,
-        2,
-        1,
-        3,
-        3,
-        2,
-        2,
-        4,
-        3,
-        5,
-        5,
-        4,
-        4,
-        6,
-        5,
-        7,
-        7,
-        6,
-        6,
-        8,
-        7,
-        9,
-        9,
-        8,
-        8,
-        10,
-        9,
-        11,
-        11,
-        10,
-        10,
-        12,
-        11,
-        13,
-        13,
-        12,
-        12,
-        14,
-        13,
-        15,
-        15,
-        14,
-        14,
-        16,
-        15,
-        17,
-        17,
-        16,
-        16,
-        18,
-        17,
-        19,
-        19,
-        18,
-        18,
-        20,
-        19,
-        21,
-        21,
-        20,
-        20,
-        22,
-        21,
-        23
-    ]
-    const arr2 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 19, 22, 22, 20, 23, 21]
-    cubo_lado1.indices = arr2 //[0,2,1,3,3,4,5,6,7,8,9,10,11]
-
-
-    scene.add(cubo_lado1)
-
-
-}
-
-function teatro() {
-    const dimensionesTringulos = {
-        filas: 10,
-        columnas: 10,
-    }
-    const dimensiones = {
-        ancho: 5,
-        largo: 5,
-    }
-    let i = 0;
-    scene.add(new Superficie(null, 'teatro'))
-
-    while (3 > i++) {
-        const cubo_lado = new Plano('teatro_lado', dimensiones, dimensionesTringulos)
-        cubo_lado.alias = 'teatro_lado' + i.toString()
-        //cubo_lado.diffuse = [0.2,0.2,0.2,1.0]
-        cubo_lado.ambient = [0.2, 0.2, 0.2, 1.0]
-        console.log(cubo_lado)
-        scene.add(cubo_lado)
-        console.log(cubo_lado)
-
-    }
-
-}
-
-function cubo() {
-    //Se necesita 6 planos para cubo
-    const dimensionesTringulos = {
-        filas: 1,
-        columnas: 1,
-    }
-    const dimensiones = {
-        ancho: 5,
-        largo: 5,
-    }
-    let i = 0;
-    scene.add(new Superficie(null, 'cubo'))
-
-    while (6 > i++) {
-        const cubo_lado = new Plano('cubo_lado', dimensiones, dimensionesTringulos)
-        cubo_lado.alias = 'cubo_lado' + i.toString()
-        //cubo_lado.diffuse = [0.0,0.0,0.0,1.0]
-        cubo_lado.ambient = [0.2, 0.2, 0.2, 1.0]
-        console.log(cubo_lado)
-        scene.add(cubo_lado)
-
-    }
-}
-
-function test() {
-    const dimensionesTringulos = {
-        filas: 10,
-        columnas: 10,
-    }
-    const dimensiones = {
-        ancho: 1,
-        largo: 2,
-    }
-    const dimensionesOrigen = {
-        ancho: 0.2,
-        largo: 0.2,
-    }
-
-
-    const testSup = new Plano('test', dimensiones, dimensionesTringulos)
-    testSup.hasTexture = true;
-    scene.add(testSup);
-    scene.add(new Plano('testOrigen', dimensionesOrigen, dimensionesTringulos))
 }
 
 function cargarPlanetaTierra() {
@@ -674,6 +382,9 @@ function cargarCapsula() {
 function cargarEsfera() {
     //Creo una Superficie de Revolucion
 
+    /*
+    Dimensiones de la esfera
+     */
     //El recorrido va ser circular con radio 0, mientras mas puntos mas se parece a
     //una circunferencia en lugar de un poligono -> tomar en cuenta para la tapa
     const pasoDiscretoRecorrido = 30
@@ -683,7 +394,6 @@ function cargarEsfera() {
     const radio = Esfera.radio //2
     //reutilizo la funcion para crear una forma circular
     const forma = utils.crearRecorridoCircular(radio, porcionDeCircunferencia, divisionesForma)
-
     //rotar los puntos del recorrido x,y 45 grados
     const angulo = Esfera.angulo     //Math.PI/4 //tengo que rotar, los puntos obtenidos parten de cero
     //los pts me sirven, las binormales, le quito la z y son las normales
@@ -699,34 +409,270 @@ function cargarEsfera() {
                 punto[0] * Math.cos(angulo) - punto[1] * Math.sin(angulo),
                 punto[0] * Math.sin(angulo) + punto[1] * Math.cos(angulo)
             ]
-        })
+        }),
+        tangentes: forma.tangentes.map(punto => {
+            return [
+                punto[0] * Math.cos(angulo) - punto[1] * Math.sin(angulo),
+                punto[0] * Math.sin(angulo) + punto[1] * Math.cos(angulo)
+            ]
+        }),
     }
-
     const pasoDiscretoForma = datosDeLaForma.puntos.length - 1
     const dimensiones = {
         filas: pasoDiscretoRecorrido, //paso discreto del recorrido
         columnas: pasoDiscretoForma, //divisiones de la forma
     }
-
-    //Klave para la sup de Rev
     const datosDelRecorrido = utils.crearRecorridoCircular(0, 1, dimensiones["filas"])
 
-    const nuevaSup = new SuperficieParametrica("esfera", datosDeLaForma, datosDelRecorrido, dimensiones, true)
-    scene.add(nuevaSup)
+    /*
+    Superficie de Revolucion
+     */
+    const esfera = new Superficie(null, "esfera")
 
-    scene.add(new Tapa('esferaTapaAtras', radio * Math.sin(angulo), {
+    const cuerpo = new SuperficieParametrica1("esfera_cuerpo", datosDeLaForma, datosDelRecorrido, dimensiones, true)
+
+    const tapaAtras = new Tapa('esfera_TapaAtras', radio * Math.sin(angulo), {
         filas: 1, //segmentosRadiales
         columnas: pasoDiscretoRecorrido, //segmentosDeAltura
-    }), {
-        diffuse: colorGenerico,
-    });
+    })
 
-    scene.add(new Tapa('esferaTapaAdelante', radio * Math.sin(angulo), {
+    const tapaAdelante = new Tapa('esfera_TapaAdelante', radio * Math.sin(angulo), {
         filas: 1, //segmentosRadiales
         columnas: pasoDiscretoRecorrido, //segmentosDeAltura
-    }), {
-        diffuse: colorGenerico,
+    })
+
+    /*
+     * Transformaciones
+     */
+    //Tapa Adelante
+    const tapaAdelanteNyT = mat4.identity(mat4.create());
+    mat4.rotate(tapaAdelanteNyT, tapaAdelanteNyT, Math.PI / 2, [1, 0, 0]);
+
+    const tapaAdelanteTransf = mat4.identity(mat4.create());
+    mat4.translate(tapaAdelanteTransf, tapaAdelanteTransf, [0, 0, Esfera.radio * Math.cos(Esfera.angulo)]);
+    mat4.multiply(tapaAdelanteTransf, tapaAdelanteTransf, tapaAdelanteNyT);
+
+    //calculando nuevas tangentes para la tapa de adelante
+    const nuevasTanBitTapaAdelante = calcularTanYBiTan(tapaAdelante)
+    tapaAdelante.tangentes = nuevasTanBitTapaAdelante.tangentes
+
+    const TapaAdelante_NEW_AUX = utils.nuevasCoordenadas(tapaAdelanteNyT, tapaAdelante, false)
+    const TapaAdelante_NEW = utils.nuevasCoordenadas(tapaAdelanteTransf, tapaAdelante, false)
+    TapaAdelante_NEW.normales = TapaAdelante_NEW_AUX.normales
+    TapaAdelante_NEW.tangentes = TapaAdelante_NEW_AUX.tangentes
+
+    //Tapa Atras
+    const tapaAtrasNyT = mat4.identity(mat4.create());
+    mat4.rotate(tapaAtrasNyT, tapaAtrasNyT, -Math.PI / 2, [1, 0, 0]);
+
+
+    const tapaAtrasTransf = mat4.identity(mat4.create());
+    mat4.translate(tapaAtrasTransf, tapaAtrasTransf, [0, 0, -Esfera.radio * Math.cos(Esfera.angulo)]);
+    mat4.multiply(tapaAtrasTransf, tapaAtrasTransf, tapaAtrasNyT);
+
+    //calculando nuevas tangentes para la tapa de atras
+    const nuevasTanBitTapaAtras = calcularTanYBiTan(tapaAtras)
+    tapaAtras.tangentes = nuevasTanBitTapaAtras.tangentes
+
+
+    const TapaAtras_NEW_AUX = utils.nuevasCoordenadas(tapaAtrasNyT, tapaAtras, true)
+    const TapaAtras_NEW = utils.nuevasCoordenadas(tapaAtrasTransf, tapaAtras, true)
+    TapaAtras_NEW.normales = TapaAtras_NEW_AUX.normales
+    TapaAtras_NEW.tangentes = TapaAtras_NEW_AUX.tangentes
+
+    /*
+    * Nuevas UVs
+    */
+    const {columna1, _} = utils.I2(tapaAdelante.textureCoords, "noImprimir")
+
+    const UTextureCoord = columna1.slice(0, -31)
+    const VTextureCoord = [];
+
+    VTextureCoord.push(0, 0.2)
+
+    const newTextureCoords = []
+
+    for (let i = 0; i < VTextureCoord.length; i++) {
+        for (let j = 0; j < UTextureCoord.length; j++) {
+            newTextureCoords.push(1 - UTextureCoord[j], VTextureCoord[i]);
+        }
+    }
+    //UV tapa de atras
+    const VTextureCoordAtras = [];
+    const newTextureCoordsAtras = []
+    VTextureCoordAtras.push(0.8,1.0)
+    for (let i = 0; i < VTextureCoordAtras.length; i++) {
+        for (let j = 0; j < UTextureCoord.length; j++) {
+            newTextureCoordsAtras.push(1 - UTextureCoord[j], VTextureCoordAtras[i]);
+        }
+    }
+
+    //UV del cuerpo, las UV de la tapa van con v = (0,0.1), las del v del cuerpo van con v = (0.2,0.8)
+    const newTextureCoordsCuerpo = []
+    const newVTextureCoordsCuerpo = []
+
+    //divide the interval [0.2, 0.8] into 20 equal parts
+    const distance = 0.6 / (pasoDiscretoForma)
+    for(let i=0; i<=pasoDiscretoForma; i++) {
+        newVTextureCoordsCuerpo.push(0.2 + distance * i)
+    }
+    for (let i = 0; i < UTextureCoord.length; i++) {
+        for (let j = 0; j < newVTextureCoordsCuerpo.length; j++) {
+            newTextureCoordsCuerpo.push(UTextureCoord[i], newVTextureCoordsCuerpo[j]);
+        }
+    }
+    /*
+    Indices
+     */
+    const cuerpo_NEW_indices = []
+    const tapaAtras_NEW_indices = []
+    cuerpo.indices.forEach(indice => {
+        cuerpo_NEW_indices.push(indice + Math.max(...tapaAdelante.indices) + 1);
+
     });
+    tapaAtras.indices.forEach(indice => {
+        tapaAtras_NEW_indices.push(indice + Math.max(...cuerpo_NEW_indices) + 1);
+    });
+    /*
+     * Asignacion al objeto final: esfera
+     */
+    //indices
+    esfera.indices.push(
+        ...tapaAdelante.indices,61,62,
+        ...cuerpo_NEW_indices, 712,713,
+        ...tapaAtras_NEW_indices
+    )
+    //Vertices
+    esfera.vertices.push(
+        ...TapaAdelante_NEW.vertices,
+        ...cuerpo.vertices,
+        ...TapaAtras_NEW.vertices
+    );
+    //normales
+    esfera.normales.push(
+        ...TapaAdelante_NEW.normales,
+        ...cuerpo.normales,
+        ...TapaAtras_NEW.normales
+    );
+    //tangentes
+    //el cuerpo no tiene transformaciones, las tapas las tienen, puede agregar las tan del cuerpo aca
+    const nuevasTanBitCuerpo = calcularTanYBiTan(cuerpo)
+    esfera.tangentes.push(
+        ...TapaAdelante_NEW.tangentes,
+        ...nuevasTanBitCuerpo.tangentes,
+        ...TapaAtras_NEW.tangentes
+    )
+    //UV
+    esfera.textureCoords.push(
+        ...newTextureCoords,
+        ...newTextureCoordsCuerpo,
+        ...newTextureCoordsAtras
+    );
+    //Se carga a la escena
+    esfera.diffuse = colores.Textura
+    esfera.hasTexture = true
+    scene.add(esfera)
+}
+
+function calcularTanYBiTan(superficie){
+    const {vertices, indices, textureCoords} = superficie
+
+    const verticesArray = utils.arrayDeVectores(vertices, 3)
+    const textureCoordsArray = utils.arrayDeVectores(textureCoords, 2)
+
+
+    const tangentes = []
+    const bitangentes = []
+
+    for (let i = 0; i < verticesArray.length; i++) {
+        tangentes[i] = [0, 0, 0];
+        bitangentes[i] = [0, 0, 0];
+    }
+
+    const tan={
+        x:0,
+        y:0,
+        z:0
+    }
+    const bitan={
+        x:0,
+        y:0,
+        z:0
+    }
+    let f_value = 0; //se usa en el caso de que f sea infinito
+    let seAsignof = false;
+    for (let i = 0; i < indices.length-2; i++) {
+        const indice1 = indices[i]
+        const indice2 = indices[i + 1]
+        const indice3 = indices[i + 2]
+
+        const v1 = verticesArray[indice1]
+        const v2 = verticesArray[indice2]
+        const v3 = verticesArray[indice3]
+
+
+        const edge1 = [v2[0] - v1[0], v2[1] - v1[1], v2[2] - v1[2]]
+        const edge2 = [v3[0] - v1[0], v3[1] - v1[1], v3[2] - v1[2]]
+
+        const t1 = textureCoordsArray[indice1]
+        const t2 = textureCoordsArray[indice2]
+        const t3 = textureCoordsArray[indice3]
+
+        const deltaU1 = t2[0] - t1[0]
+        const deltaV1 = t2[1] - t1[1]
+
+        const deltaU2 = t3[0] - t1[0]
+        const deltaV2 = t3[1] - t1[1]
+
+        let f = 1/((deltaU1 * deltaV2) - (deltaU2 * deltaV1));
+        if(!seAsignof && f!==Infinity && f!==-Infinity && f!==0){
+            f_value = Math.abs(f);
+            seAsignof = true;
+        }
+        (f === Infinity) ? f = f_value : null;
+        (f === -Infinity) ? f = -f_value : null;
+
+
+        tan.x = f * ((deltaV2 * edge1[0]) - (deltaV1 * edge2[0]))
+        tan.y = f * ((deltaV2 * edge1[1]) - (deltaV1 * edge2[1]))
+        tan.z = f * ((deltaV2 * edge1[2]) - (deltaV1 * edge2[2]))
+
+        bitan.x = f * ((deltaU1 * edge2[0]) - (deltaU2 * edge1[0]))
+        bitan.y = f * ((deltaU1 * edge2[1]) - (deltaU2 * edge1[1]))
+        bitan.z = f * ((deltaU1 * edge2[2]) - (deltaU2 * edge1[2]))
+
+        const tanAnterior1 = tangentes[indice1]
+        const tanAnterior2 = tangentes[indice2]
+        const tanAnterior3 = tangentes[indice3]
+
+        const bitanAnterior1 = bitangentes[indice1]
+        const bitanAnterior2 = bitangentes[indice2]
+        const bitanAnterior3 = bitangentes[indice3]
+
+        tangentes[indice1] = [tanAnterior1[0] + tan.x, tanAnterior1[1] + tan.y, tanAnterior1[2] + tan.z]
+        tangentes[indice2] = [tanAnterior2[0] + tan.x, tanAnterior2[1] + tan.y, tanAnterior2[2] + tan.z]
+        tangentes[indice3] = [tanAnterior3[0] + tan.x, tanAnterior3[1] + tan.y, tanAnterior3[2] + tan.z]
+
+        bitangentes[indice1] = [bitanAnterior1[0] + bitan.x, bitanAnterior1[1] + bitan.y, bitanAnterior1[2] + bitan.z]
+        bitangentes[indice2] = [bitanAnterior2[0] + bitan.x, bitanAnterior2[1] + bitan.y, bitanAnterior2[2] + bitan.z]
+        bitangentes[indice3] = [bitanAnterior3[0] + bitan.x, bitanAnterior3[1] + bitan.y, bitanAnterior3[2] + bitan.z]
+    }
+
+    //recorro y normalizo
+    const TAN=[]
+    tangentes.forEach((t,i)=>{
+        TAN.push(...utils.normalizarVector(t))
+    })
+
+    const BITAN = []
+    bitangentes.forEach((t,i)=>{
+        BITAN.push( utils.normalizarVector(t))
+    })
+
+    return{
+        tangentes:TAN,
+        bitangentes:BITAN
+    }
 }
 
 function moduloVioleta() {
@@ -753,171 +699,62 @@ function moduloVioleta() {
 
 
     const datosDelRecorrido = utils.crearRecorrido(pasoDiscretoRecorrido, curvaRecorrido)
-
-
     const datosDeLaForma = utils.crearForma(divisionesForma, formaSuperficie)
-
-
     const pasoDiscretoForma = datosDeLaForma.puntos.length - 1
 
     const dim = {
         filas: pasoDiscretoRecorrido, //paso discreto del recorrido
         columnas: pasoDiscretoForma, //divisiones de la forma
     }
+    //calculo de las nuevas UVTextures
+    let perimetroDeLaForma = 0
+    let distanciaEntrePtos = []
+    let newUTexture = []
 
-    scene.add(new SuperficieParametrica("moduloVioletaPS", datosDeLaForma, datosDelRecorrido, dim), {
-        diffuse: colores.Violeta,
-    });
-    scene.add(new SuperficieParametrica("moduloVioletaAnillo", datosDeLaForma, datosDelRecorrido, dim), {
-        diffuse: colores.Violeta,
-    });
+    for (let i = 0; i < datosDeLaForma.puntos.length - 1; i++) {
 
-}
+        const P1 = datosDeLaForma.puntos[i]
+        const P2 = datosDeLaForma.puntos[(i + 1)]
 
+        const D = Math.sqrt(Math.pow(P2[0] - P1[0], 2) + Math.pow(P2[1] - P1[1], 2))
+        distanciaEntrePtos.push(D)
+        perimetroDeLaForma += D
 
-function calcularTangentes1(superficie) {
-    // Calculate tangets for a given set of vertices
-    const vs = superficie.vertices
-    const tc = superficie.textureCoords
-    const ind = superficie.indices
-    //vs tc ind
-    const tangents = [];
-    // console.log(superficie.tangentes)
-    for (let i = 0; i < vs.length / 3; i++) {
-        tangents[i] = [0, 0, 0];
     }
+    //sumar la distancia entre los puntos
+    let p = 0
+    newUTexture.push(0)
+    distanciaEntrePtos.map(distancia => {
+        p += distancia
+        newUTexture.push(p / perimetroDeLaForma)
+    })
 
-    let
-        a = [0, 0, 0],
-        b = [0, 0, 0],
-        deltaUV1 = [0, 0],
-        deltaUV2 = [0, 0],
-        f = 1.0,
-        triTangent = [0, 0, 0];
+    const newVTexture = []
 
-    for (let i = 0; i < ind.length; i++) {
-        const i0 = ind[i];
-        const i1 = ind[i + 1];
-        const i2 = ind[i + 2];
-
-        const pos0 = [vs[i0 * 3], vs[i0 * 3 + 1], vs[i0 * 3 + 2]];
-        const pos1 = [vs[i1 * 3], vs[i1 * 3 + 1], vs[i1 * 3 + 2]];
-        const pos2 = [vs[i2 * 3], vs[i2 * 3 + 1], vs[i2 * 3 + 2]];
-
-        const tex0 = [tc[i0 * 2], tc[i0 * 2 + 1]];
-        const tex1 = [tc[i1 * 2], tc[i1 * 2 + 1]];
-        const tex2 = [tc[i2 * 2], tc[i2 * 2 + 1]];
-
-        vec3.subtract(a, pos1, pos0);
-        vec3.subtract(b, pos2, pos0);
-
-        const c2c1b = tex1[1] - tex0[1];
-        const c3c1b = tex2[0] - tex0[1];
-
-        deltaUV1[0] = tex1[0] - tex0[0];
-        deltaUV1[1] = tex1[1] - tex0[1];
-
-        deltaUV2[0] = tex2[0] - tex0[0];
-        deltaUV2[1] = tex2[1] - tex0[1];
-
-        f = 1.0 / (deltaUV1[0] * deltaUV2[1] - deltaUV2[0] * deltaUV1[1]);
-        triTangent = [
-            f * (deltaUV2[1] * a[0] - deltaUV1[1] * b[0]),
-            f * (deltaUV2[1] * a[1] - deltaUV1[1] * b[1]),
-            f * (deltaUV2[1] * a[2] - deltaUV1[1] * b[2])
-        ];
-
-        // triTangent = [c3c1b * a[0] - c2c1b * b[0], c3c1b * a[1] - c2c1b * b[1], c3c1b * a[2] - c2c1b * b[2]];
-        // console.log(triTangent)
-
-        //recorrer triTanget si todos son cero return pass
-        if (triTangent[0] === 0 && triTangent[1] === 0 && triTangent[2] === 0)
-            continue;
-        if (isNaN(triTangent[0]) || isNaN(triTangent[1]) || isNaN(triTangent[2]))
-            continue;
-
-
-        vec3.add(tangents[i0], tangents[i0], triTangent);
-        vec3.add(tangents[i1], tangents[i1], triTangent);
-        vec3.add(tangents[i2], tangents[i2], triTangent);
-    }
-
-    // Normalize tangents
-    const ts = [];
-
-    tangents.forEach(tan => {
-        vec3.normalize(tan, tan);
-        ts.push(tan[0]);
-        ts.push(tan[1]);
-        ts.push(tan[2]);
-    });
-    // console.log(ts)
-
-    return ts;
-
-}
-
-
-function calcularTangentes(superficie) {
-    // Calculate tangets for a given set of vertices
-    const vs = superficie.vertices
-    const tc = superficie.textureCoords
-    const ind = superficie.indices
-    //vs tc ind
-    const tangents = [];
-    // console.log(superficie.tangentes)
-    for (let i = 0; i < vs.length / 3; i++) {
-        tangents[i] = [0, 0, 0];
-    }
-
-    let
-        a = [0, 0, 0],
-        b = [0, 0, 0],
-        triTangent = [0, 0, 0];
-
-    for (let i = 0; i < ind.length - 2; i++) {
-        const i0 = ind[i];
-        const i1 = ind[i + 1];
-        const i2 = ind[i + 2];
-
-        if (i0 === i1 || i0 === i2 || i1 === i2) {
-            continue
+    newVTexture.push(0, 0.5)
+    const nuevasUV = []
+    for (let i = 0; i < newVTexture.length; i++) {
+        for (let j = 0; j < newUTexture.length; j++) {
+            nuevasUV.push(1 - newUTexture[j], newVTexture[i])
         }
-
-        const pos0 = [vs[i0 * 3], vs[i0 * 3 + 1], vs[i0 * 3 + 2]];
-        const pos1 = [vs[i1 * 3], vs[i1 * 3 + 1], vs[i1 * 3 + 2]];
-        const pos2 = [vs[i2 * 3], vs[i2 * 3 + 1], vs[i2 * 3 + 2]];
-
-        const tex0 = [tc[i0 * 2], tc[i0 * 2 + 1]];
-        const tex1 = [tc[i1 * 2], tc[i1 * 2 + 1]];
-        const tex2 = [tc[i2 * 2], tc[i2 * 2 + 1]];
-
-        vec3.subtract(a, pos1, pos0);
-        vec3.subtract(b, pos2, pos0);
-
-        const c2c1b = tex1[1] - tex0[1];
-        const c3c1b = tex2[0] - tex0[1];
-
-        triTangent = [c3c1b * a[0] - c2c1b * b[0], c3c1b * a[1] - c2c1b * b[1], c3c1b * a[2] - c2c1b * b[2]];
-        // console.log(triTangent)
-
-        vec3.add(tangents[i0], tangents[i0], triTangent);
-        vec3.add(tangents[i1], tangents[i1], triTangent);
-        vec3.add(tangents[i2], tangents[i2], triTangent);
     }
 
-    // Normalize tangents
-    const ts = [];
 
-    tangents.forEach(tan => {
-        vec3.normalize(tan, tan);
-        ts.push(tan[0]);
-        ts.push(tan[1]);
-        ts.push(tan[2]);
+    const moduloVioletaPS = new SuperficieParametrica1("moduloVioletaPS", datosDeLaForma, datosDelRecorrido, dim)
+    const moduloVioletaAnillo = new SuperficieParametrica1("moduloVioletaAnillo", datosDeLaForma, datosDelRecorrido, dim)
+
+    moduloVioletaPS.textureCoords = nuevasUV
+    moduloVioletaAnillo.textureCoords = nuevasUV
+
+    scene.add(moduloVioletaPS, {
+        diffuse: colores.Textura,
+        hasTexture: true,
     });
-    // console.log(ts)
 
-    return ts;
+    scene.add(moduloVioletaAnillo, {
+        diffuse: colores.Textura,
+        hasTexture: true,
+    });
 
 }
 
@@ -1002,18 +839,18 @@ function cargarNucleo() {
 
     const tuboTransformacion = mat4.identity(mat4.create());
 
-    const tubo_NEW = nuevasCoordenadas(tuboTransformacion, tubo, true)
+    const tubo_NEW = utils.nuevasCoordenadas(tuboTransformacion, tubo, true)
 
-    const cilindroSup_NEW = nuevasCoordenadas(cilidroSupTransformacion, cilindroSup, true)
-    const cilindroSup_NEW_normals_tangents = nuevasCoordenadas(cilindroSupOnlyNormalsTangentsTransform, cilindroSup, true)
+    const cilindroSup_NEW = utils.nuevasCoordenadas(cilidroSupTransformacion, cilindroSup, true)
+    const cilindroSup_NEW_normals_tangents = utils.nuevasCoordenadas(cilindroSupOnlyNormalsTangentsTransform, cilindroSup, true)
     cilindroSup_NEW.normales = cilindroSup_NEW_normals_tangents.normales
     cilindroSup_NEW.tangentes = cilindroSup_NEW_normals_tangents.tangentes
 
-    const tapaSup_NEW = nuevasCoordenadas(tapaSupTransformacion, tapaSup)
-    const cilindroInf_NEW = nuevasCoordenadas(cilidroInfTransformacion, cilindroInf)
+    const tapaSup_NEW = utils.nuevasCoordenadas(tapaSupTransformacion, tapaSup)
+    const cilindroInf_NEW = utils.nuevasCoordenadas(cilidroInfTransformacion, cilindroInf)
 
-    const tapaInf_NEW = nuevasCoordenadas(tapaInfTransformacion, tapaInf, true)
-    const tapaInf_NEW_normals_tangents = nuevasCoordenadas(tapaInfOnlyNormalsTangentsTransform, tapaInf, true)
+    const tapaInf_NEW = utils.nuevasCoordenadas(tapaInfTransformacion, tapaInf, true)
+    const tapaInf_NEW_normals_tangents = utils.nuevasCoordenadas(tapaInfOnlyNormalsTangentsTransform, tapaInf, true)
     tapaInf_NEW.normales = tapaInf_NEW_normals_tangents.normales
     tapaInf_NEW.tangentes = tapaInf_NEW_normals_tangents.tangentes
 
@@ -1081,13 +918,6 @@ function cargarNucleo() {
         ...nuevasUV
     );
 
-    const nuevasTan = calcularTangentes(nucleoPS);
-    // nucleoPS.tangentes = nuevasTan
-
-    // console.log(nucleoPS.tangentes, nuevasTan)
-
-    // printArray2D(nuevasUV)
-    // printArray2D(cilindroSup.textureCoords)
     nucleoPS.diffuse = [0.9, 0.9, 0.9, 1.0];
 
     nucleoPS.hasTexture = true;
@@ -1426,19 +1256,7 @@ function initControls() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-    */
-            'PanelesSolares': {
+   'PanelesSolares': {
                 'Filas': {
                     value: panelSolar.cantidadDeFilas,
                     min: 1, max: 10, step: 1,
@@ -1469,6 +1287,28 @@ function initControls() {
             },
 
 
+      'Bloques': {
+                value: bloque.type,
+                options: [Bloque.BLOQUES_4, Bloque.BLOQUES_5, Bloque.BLOQUES_6, Bloque.BLOQUES_7, Bloque.BLOQUES_8],
+                onChange: v => {
+                    bloque.setType(v);
+                }
+            },
+
+
+
+
+
+
+
+
+    */
+
+
+
+
+
+
             ...['Translate X', 'Translate Y', 'Translate Z'].reduce((result, name, i) => {
                 result[name] = {
                     value: lightPosition[i],
@@ -1487,13 +1327,6 @@ function initControls() {
             //'Go Home': () => camera.goHome(),
 
 
-            'Bloques': {
-                value: bloque.type,
-                options: [Bloque.BLOQUES_4, Bloque.BLOQUES_5, Bloque.BLOQUES_6, Bloque.BLOQUES_7, Bloque.BLOQUES_8],
-                onChange: v => {
-                    bloque.setType(v);
-                }
-            },
             'Static Light Position': {
                 value: fixedLight,
                 onChange: v => fixedLight = v

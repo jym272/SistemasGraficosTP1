@@ -4,7 +4,6 @@ import {vec3} from "gl-matrix";
 
 // A set of utility functions for /common operations across our application
 export const utils = {
-
     // Find and return a DOM element given an ID
     getCanvas(id) {
         const canvas = document.getElementById(id);
@@ -16,12 +15,10 @@ export const utils = {
 
         return canvas;
     },
-
     // Given a canvas element, return the WebGL2 context
     getGLContext(canvas) {
         return canvas.getContext('webgl2') || console.error('WebGL2 is not available in your browser.');
     },
-
     // Given a canvas element, expand it to the size of the window
     // and ensure that it automatically resizes as the window changes
     autoResizeCanvas(canvas) {
@@ -33,7 +30,6 @@ export const utils = {
         // Resize screen when the browser has triggered the resize event
         window.addEventListener('resize', expandFullScreen);
     },
-
     // Given a WebGL context and an id for a shader script,
     // return a compiled shader
     getShader(gl, id) {
@@ -63,17 +59,14 @@ export const utils = {
 
         return shader;
     },
-
     // Normalize colors from 0-255 to 0-1
     normalizeColor(color) {
         return color.map(c => c / 255);
     },
-
     // De-normalize colors from 0-1 to 0-255
     denormalizeColor(color) {
         return color.map(c => c * 255);
     },
-
     // A simpler API on top of the dat.GUI API, specifically
     // designed for this book for a simpler codebase
     configureControls(settings, options = {width: 300}) {
@@ -132,7 +125,6 @@ export const utils = {
             controller.onChange(v => onChange(v, state))
         });
     },
-
     restarVectores(pt1, pt2) {
 
         const resultado = [];
@@ -142,7 +134,6 @@ export const utils = {
 
         return resultado
     },
-
     normalizarVector(unVector) {
 
         const resultado = [];
@@ -152,7 +143,9 @@ export const utils = {
         }
         suma = Math.sqrt(suma);
         for (let i = 0; i < unVector.length; i++) {
-            resultado.push(unVector[i] / suma);
+
+            const val = (suma === 0) ? 0 : unVector[i] / suma;
+            resultado.push(val);
         }
         return resultado;
     },
@@ -266,7 +259,6 @@ export const utils = {
             vectorNormal: normal
         };
     },
-
     nuevasCoordenadas(matrizDeTransformacion, superficie, unshift = false) {
 
         const vertices = superficie.vertices
@@ -309,27 +301,39 @@ export const utils = {
 
         }
     },
-    I3(vector) {
+    I3(vector, msg) {
 
-        //imprimir en pares
+        (msg) ? console.log(msg) : null;
         for (let i = 0; i < vector.length; i = i + 3) {
             //print with fixed 2 decimals
             console.log(vector[i].toFixed(4) + " " + vector[i + 1].toFixed(4)
                 + " " + vector[i + 2].toFixed(4)
             );
         }
-
     },
+    arrayDeVectores(streamDePuntos, dimension){
+        const arrayDeVectores = []
+        for(let i=0; i<streamDePuntos.length; i = i + dimension){
+            arrayDeVectores.push([...streamDePuntos.slice(i, i + dimension)])
+        }
+        return arrayDeVectores
+    },
+    I2(vector, msg) {
 
-    I2(vector) {
-
-        //imprimir en pares
+        const columna1 = [];
+        const columna2 = [];
+        (msg && msg !== "noImprimir") ? console.log(msg) : null;
         for (let i = 0; i < vector.length; i = i + 2) {
             //print with fixed 2 decimals
-            console.log(vector[i].toFixed(4) + " " + vector[i + 1].toFixed(4)
-            );
+            columna1.push(vector[i]);
+            columna2.push(vector[i + 1]);
+            (msg !== "noImprimir") ?
+            console.log(vector[i].toFixed(4) + " " + vector[i + 1].toFixed(4)) :null;
         }
-
+        return {
+            columna1,
+            columna2
+        }
     },
 };
 

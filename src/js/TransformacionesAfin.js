@@ -200,18 +200,9 @@ export class TransformacionesAfin {
 
     esfera() {
         const {transforms} = this;
-
         if (this.alias === 'esfera') {
             Esfera.esferaTransform = transforms.modelViewMatrix;
             mat4.translate(Esfera.esferaTransform, Nave.naveTransform, [0, 0, -Esfera.posRelativaALaNave]);
-        } else if (this.alias === 'esferaTapaAtras') {
-            const esferaTapaAtrasTransform = transforms.modelViewMatrix;
-            mat4.translate(esferaTapaAtrasTransform, Esfera.esferaTransform, [0, 0, Esfera.radio * Math.cos(Esfera.angulo)]);
-            mat4.rotate(esferaTapaAtrasTransform, esferaTapaAtrasTransform, Math.PI / 2, [1, 0, 0]);
-        } else if (this.alias === 'esferaTapaAdelante') {
-            const esferaTapaAdenlanteTransform = transforms.modelViewMatrix;
-            mat4.translate(esferaTapaAdenlanteTransform, Esfera.esferaTransform, [0, 0, -Esfera.radio * Math.cos(Esfera.angulo)]);
-            mat4.rotate(esferaTapaAdenlanteTransform, esferaTapaAdenlanteTransform, Math.PI / 2, [-1, 0, 0]);
         }
     }
 

@@ -301,19 +301,19 @@ export const utils = {
 
         }
     },
-    I3(vector, msg) {
+    I3(vector, msg, fixed = 3) {
 
         (msg) ? console.log(msg) : null;
         for (let i = 0; i < vector.length; i = i + 3) {
             //print with fixed 2 decimals
-            console.log(vector[i].toFixed(4) + " " + vector[i + 1].toFixed(4)
-                + " " + vector[i + 2].toFixed(4)
+            console.log(vector[i].toFixed(fixed) + " " + vector[i + 1].toFixed(fixed)
+                + " " + vector[i + 2].toFixed(fixed)
             );
         }
     },
-    arrayDeVectores(streamDePuntos, dimension){
+    arrayDeVectores(streamDePuntos, dimension) {
         const arrayDeVectores = []
-        for(let i=0; i<streamDePuntos.length; i = i + dimension){
+        for (let i = 0; i < streamDePuntos.length; i = i + dimension) {
             arrayDeVectores.push([...streamDePuntos.slice(i, i + dimension)])
         }
         return arrayDeVectores
@@ -328,11 +328,111 @@ export const utils = {
             columna1.push(vector[i]);
             columna2.push(vector[i + 1]);
             (msg !== "noImprimir") ?
-            console.log(vector[i].toFixed(4) + " " + vector[i + 1].toFixed(4)) :null;
+                console.log(vector[i].toFixed(4) + " " + vector[i + 1].toFixed(4)) : null;
         }
         return {
             columna1,
             columna2
+        }
+    },
+    calcularTanYBiTan(superficie) {
+        const {vertices, indices, textureCoords} = superficie
+
+        const verticesArray = utils.arrayDeVectores(vertices, 3)
+        const textureCoordsArray = utils.arrayDeVectores(textureCoords, 2)
+
+
+        const tangentes = []
+        const bitangentes = []
+
+        for (let i = 0; i < verticesArray.length; i++) {
+            tangentes[i] = [0, 0, 0];
+            bitangentes[i] = [0, 0, 0];
+        }
+
+        const tan = {
+            x: 0,
+            y: 0,
+            z: 0
+        }
+        const bitan = {
+            x: 0,
+            y: 0,
+            z: 0
+        }
+        let f_value = 0; //se usa en el caso de que f sea infinito
+        let seAsignof = false;
+        for (let i = 0; i < indices.length - 2; i++) {
+            const indice1 = indices[i]
+            const indice2 = indices[i + 1]
+            const indice3 = indices[i + 2]
+
+            const v1 = verticesArray[indice1]
+            const v2 = verticesArray[indice2]
+            const v3 = verticesArray[indice3]
+
+
+            const edge1 = [v2[0] - v1[0], v2[1] - v1[1], v2[2] - v1[2]]
+            const edge2 = [v3[0] - v1[0], v3[1] - v1[1], v3[2] - v1[2]]
+
+            const t1 = textureCoordsArray[indice1]
+            const t2 = textureCoordsArray[indice2]
+            const t3 = textureCoordsArray[indice3]
+
+            const deltaU1 = t2[0] - t1[0]
+            const deltaV1 = t2[1] - t1[1]
+
+            const deltaU2 = t3[0] - t1[0]
+            const deltaV2 = t3[1] - t1[1]
+
+            let f = 1 / ((deltaU1 * deltaV2) - (deltaU2 * deltaV1));
+            if (!seAsignof && f !== Infinity && f !== -Infinity && f !== 0) {
+                f_value = Math.abs(f);
+                seAsignof = true;
+            }
+            (f === Infinity) ? f = f_value : null;
+            (f === -Infinity) ? f = -f_value : null;
+
+
+            tan.x = f * ((deltaV2 * edge1[0]) - (deltaV1 * edge2[0]))
+            tan.y = f * ((deltaV2 * edge1[1]) - (deltaV1 * edge2[1]))
+            tan.z = f * ((deltaV2 * edge1[2]) - (deltaV1 * edge2[2]))
+
+            bitan.x = f * ((deltaU1 * edge2[0]) - (deltaU2 * edge1[0]))
+            bitan.y = f * ((deltaU1 * edge2[1]) - (deltaU2 * edge1[1]))
+            bitan.z = f * ((deltaU1 * edge2[2]) - (deltaU2 * edge1[2]))
+
+            const tanAnterior1 = tangentes[indice1]
+            const tanAnterior2 = tangentes[indice2]
+            const tanAnterior3 = tangentes[indice3]
+
+            const bitanAnterior1 = bitangentes[indice1]
+            const bitanAnterior2 = bitangentes[indice2]
+            const bitanAnterior3 = bitangentes[indice3]
+
+            tangentes[indice1] = [tanAnterior1[0] + tan.x, tanAnterior1[1] + tan.y, tanAnterior1[2] + tan.z]
+            tangentes[indice2] = [tanAnterior2[0] + tan.x, tanAnterior2[1] + tan.y, tanAnterior2[2] + tan.z]
+            tangentes[indice3] = [tanAnterior3[0] + tan.x, tanAnterior3[1] + tan.y, tanAnterior3[2] + tan.z]
+
+            bitangentes[indice1] = [bitanAnterior1[0] + bitan.x, bitanAnterior1[1] + bitan.y, bitanAnterior1[2] + bitan.z]
+            bitangentes[indice2] = [bitanAnterior2[0] + bitan.x, bitanAnterior2[1] + bitan.y, bitanAnterior2[2] + bitan.z]
+            bitangentes[indice3] = [bitanAnterior3[0] + bitan.x, bitanAnterior3[1] + bitan.y, bitanAnterior3[2] + bitan.z]
+        }
+
+        //recorro y normalizo
+        const TAN = []
+        tangentes.forEach((t, i) => {
+            TAN.push(...utils.normalizarVector(t))
+        })
+
+        const BITAN = []
+        bitangentes.forEach((t, i) => {
+            BITAN.push(utils.normalizarVector(t))
+        })
+
+        return {
+            tangentes: TAN,
+            bitangentes: BITAN
         }
     },
 };

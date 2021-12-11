@@ -27,7 +27,7 @@ export class Camera {
     this.factorVelocidad = 500; //con la cual la camara regresa a su posicion por default
     //el inicio de la camara de la capsula por default
     this.azimuthActual = 0;
-    this.elevationActual = -30
+    this.elevationActual = -30;
     this.timeOutIdPool = [];
 
     //Matrix de rotacion que rota a la camara según la rotación de la capsula
@@ -201,6 +201,7 @@ export class Camera {
     const position = vec4.create();
     vec4.set(position, 0, 0, 0, 1);
     vec4.transformMat4(position, position, this.matrix);
+    this.cameraPositionCoordDelMundo = position;
     //tengo en position[0,1,2] la posicion de la camara
 
     //calculate position - this.focus in a new vector zAxis

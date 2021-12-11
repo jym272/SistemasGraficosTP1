@@ -235,17 +235,27 @@ export class Torus extends Superficie{
                  normal[1] = vertex[1] - center[1]
                  normal[2] = vertex[2] - center[2]
 
-                 const len = Math.sqrt( normal[0] * normal[0] + normal[1] * normal[1] + normal[2] * normal[2] );
-                 normal[0] /= len;
-                 normal[1] /= len;
-                 normal[2] /= len;
-                 return [normal[0], normal[1], normal[2] ];
+                 return utils.normalizarVector(normal);
              },
              getCoordenadasTextura: function (u, v) {
                  return [u, v];
              },
              getTangente: function (u, v) {
-                 return [0,0,0]
+                 v =  Math.PI * 2 *v
+                 u = u * arc
+
+                 const RUx = ( radius + tube * Math.cos( v ) ) * (-Math.sin( u ));
+                 const RUy = ( radius + tube * Math.cos( v ) ) * Math.cos( u );
+                 const RUz = 0;
+
+                 const RVx =  tube * Math.sin( v ) * Math.cos( u );
+                 const RVy = ( - tube * Math.sin( v ) ) * Math.sin( u );
+                 const RVz = tube* Math.cos( v );
+
+                 const vectorTangente = [RUx + RVx, RUy + RVy, RUz + RVz];
+                 return utils.normalizarVector(vectorTangente);
+
+
              }
          }
 

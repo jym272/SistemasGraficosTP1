@@ -14,6 +14,7 @@
         uniform mat4 uProjectionMatrix;
         uniform mat4 uNormalMatrix;
         uniform vec3 uLightPosition;
+        uniform mat4 uViewMatrix;
         uniform vec4 uMaterialDiffuse;
         uniform bool uWireframe;
         uniform bool uUpdateLight;
@@ -28,6 +29,7 @@
         out vec3 vNormal;
         out vec3 vLightRay;
         out vec3 vEyeVector;
+        out vec3 vSurfaceToView;
         out vec4 vFinalColor;
         out vec2 vTextureCoords;
         out vec3 vTangentLightDirection;
@@ -42,17 +44,12 @@
             if (uWireframe) {
                 vFinalColor = uMaterialDiffuse;
             }
-
-
-
-
             vec4 vertex = uModelViewMatrix * vec4(aVertexPosition, 1.0);
             vec4 light = vec4(uLightPosition, 1.0);
-
             // If true, then ensure that light position
             // is appropruately updated
             if (uUpdateLight) {
-                light = uModelViewMatrix * vec4(uLightPosition, 1.0);
+                light = uViewMatrix * vec4(uLightPosition, 1.0);
             }
 
             vNormal = vec3(uNormalMatrix * vec4(aVertexNormal, 1.0));
@@ -73,16 +70,11 @@
 
             // Light direction, from light position to vertex
             vec3 lightDirection = light.xyz - vertex.xyz;
-            /*
-        if(uInvertLightDirection){
-            lightDirection = vertex.xyz - light.xyz ;//uLightPosition - vertex.xyz;
-        }else{
-            lightDirection = light.xyz - vertex.xyz;
-        }
-        */
 
             // Eye direction, from camera position to vertex
             vec3 eyeDirection = -vertex.xyz;
+
+
 
             vTextureCoords = aVertexTextureCoords;
             gl_Position = uProjectionMatrix * uModelViewMatrix * vec4(aVertexPosition, 1.0);
@@ -127,6 +119,7 @@
         in vec3 vNormal;
         in vec3 vLightRay;
         in vec3 vEyeVector;
+       // in vec3 vSurfaceToView;
         in vec4 vFinalColor;
         in vec2 vTextureCoords;
         in vec3 vTangentLightDirection;
@@ -179,6 +172,9 @@
                     vec3 N = normalize(vNormal);
                     float lambertTerm = dot(N, -L);
 
+                   // vec3 surfaceToViewDirection = normalize(vSurfaceToView);
+                   // vec3 halfVector = normalize(-L + surfaceToViewDirection);
+
 
                     // Ambient
                     vec4 Ia = uLightAmbient * uMaterialAmbient;
@@ -187,15 +183,21 @@
                     // Specular
                     vec4 Is = vec4(0.0, 0.0, 0.0, 1.0);
 
-
+                    //float kd = max(0.0, dot(surfaceToViewDirection, N));
                     if (lambertTerm > 0.0) {
                         Id = uLightDiffuse * uMaterialDiffuse * lambertTerm;
                         vec3 E = normalize(vEyeVector);
                         vec3 R = reflect(L, N);
+
+
+
                         float specular = pow(max(dot(R, E), 0.0), uShininess);
+//                        float specular = pow(max(dot(N, halfVector), 0.0), uShininess);
                         Is = uLightSpecular * uMaterialSpecular * specular;//*specularFactor;
                     }
                     vec4 vColor = vec4(vec3(Ia + Id + Is), 1.0);
+
+//                    fragColor = vec4(Id.rgb * kd + 0.1, 1.0);
                     fragColor = vColor;
 
                 }

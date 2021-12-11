@@ -56,7 +56,6 @@ export class Transforms {
     const matrix = mat4.create();
     mat4.copy(matrix, this.modelViewMatrix);
     this.stack.push(matrix);
-    return matrix
   }
 
   // Pops and returns matrix off the stack

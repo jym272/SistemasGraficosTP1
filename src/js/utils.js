@@ -336,14 +336,15 @@ export const utils = {
         }
     },
     calcularTanYBiTan(superficie) {
-        const {vertices, indices, textureCoords} = superficie
+        const {vertices, indices, textureCoords, normales} = superficie
 
         const verticesArray = utils.arrayDeVectores(vertices, 3)
         const textureCoordsArray = utils.arrayDeVectores(textureCoords, 2)
-
+        const normalesArray = utils.arrayDeVectores(normales, 3)
 
         const tangentes = []
         const bitangentes = []
+
 
         for (let i = 0; i < verticesArray.length; i++) {
             tangentes[i] = [0, 0, 0];
@@ -418,7 +419,30 @@ export const utils = {
             bitangentes[indice2] = [bitanAnterior2[0] + bitan.x, bitanAnterior2[1] + bitan.y, bitanAnterior2[2] + bitan.z]
             bitangentes[indice3] = [bitanAnterior3[0] + bitan.x, bitanAnterior3[1] + bitan.y, bitanAnterior3[2] + bitan.z]
         }
+        //// Orthonormalize each tangent and calculate the handedness.
+        const signArray = []
+        for (let i = 0; i < verticesArray.length; i++) {
+            const t = tangentes[i];
+            const b = bitangentes[i];
+            const n = normalesArray[i];
+            const sign = (utils.Dot(utils.Cross(t, b), n) > 0.0) ? 1.0 : -1.0;
+            signArray[i] = sign
+            if (sign < 0)
+                tangentes[i] = utils.MultiplyVector(tangentes[i], -1) //actualizo el signo de las tangentes
 
+        }
+        let posCounter = 0
+        let negCounter = 0
+        if(signArray.length > 0){
+            for (let i = 0; i < signArray.length; i++) {
+                if (signArray[i] < 0) {
+                    negCounter++
+                } else {
+                    posCounter++
+                }
+            }
+        }
+        console.log(posCounter,negCounter)
         //recorro y normalizo
         const TAN = []
         tangentes.forEach((t, i) => {
@@ -434,6 +458,32 @@ export const utils = {
             tangentes: TAN,
             bitangentes: BITAN
         }
+    },
+    Dot(a,b){
+        return (a[0]*b[0] + a[1]*b[1] + a[2]*b[2]);
+    },
+    Reject(a, b) { //b por ahora es una normal, su dot no puede ser cero
+        // a - b * [Dot(a, b) / Dot(b, b)];
+        let factor = (utils.Dot(a,b) / utils.Dot(b,b));
+        return [
+            a[0] - b[0]* factor,
+            a[1] - b[1]* factor,
+            a[2] - b[2]* factor
+        ]
+    },
+    Cross(a, b) {
+        return [
+            a[1] * b[2] - a[2] * b[1],
+            a[2] * b[0] - a[0] * b[2],
+            a[0] * b[1] - a[1] * b[0]
+        ]
+    },
+    MultiplyVector(vector, a){
+        return [
+            vector[0] * a,
+            vector[1] * a,
+            vector[2] * a
+        ]
     },
 };
 

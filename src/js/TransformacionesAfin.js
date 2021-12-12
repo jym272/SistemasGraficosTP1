@@ -402,12 +402,9 @@ export class TransformacionesAfin {
         if(this.alias === 'luna'){
             const lunaTransform = transforms.modelViewMatrix;
             mat4.rotate(lunaTransform, lunaTransform, -2*Math.PI*this.posicionAnillo/10, [0, 1, 0]);
-            mat4.translate(lunaTransform, lunaTransform, [0,0, 20]);
+            mat4.translate(lunaTransform, lunaTransform, [0, 0, 15]);
+            mat4.rotate(lunaTransform, lunaTransform, -Math.PI/2, [1, 0, 0]);
 
-        }else if(this.alias === 'lunaTexture'){
-            const lunaTransform = transforms.modelViewMatrix;
-            mat4.rotate(lunaTransform, lunaTransform, -2*Math.PI*this.posicionAnillo/10 +0.8, [0, 1, 0]);
-            mat4.translate(lunaTransform, lunaTransform, [0,0, 20]);
 
         }
     }

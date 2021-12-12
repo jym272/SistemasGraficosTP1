@@ -25,7 +25,6 @@
         in vec4 aVertexColor;
         in vec2 aVertexTextureCoords;
 
-
         out vec3 vNormal;
         out vec3 vLightRay;
         out vec3 vEyeVector;
@@ -34,9 +33,7 @@
         out vec2 vTextureCoords;
         out vec3 vTangentLightDirection;
         out vec3 vTangentEyeDirection;
-
-        //para el cubemaps
-        out vec3 vVertexNormal;
+        out vec3 vVertexNormal;//para el cubemaps
 
 
         void main(void) {
@@ -53,40 +50,28 @@
             }
 
             vNormal = vec3(uNormalMatrix * vec4(aVertexNormal, 1.0));
-
-            vec3 normal = vec3(uNormalMatrix * vec4(aVertexNormal, 1.0));
-            vec3 tangent = vec3(uNormalMatrix * vec4(aVertexTangent, 1.0));
-            vec3 bitangent = cross(normal, tangent);
-
             vLightRay = vertex.xyz-light.xyz;
             vEyeVector = -vec3(vertex.xyz);
 
-            //tangent
+            // NORMAL MAPPING
+            vec3 normal = normalize(vNormal);
+            vec3 tangent = normalize(vec3(uNormalMatrix * vec4(aVertexTangent, 1.0)));
+            tangent = normalize(tangent - dot(tangent, normal) * normal);
+            vec3 bitangent = cross(normal, tangent);
+            //tbn Matrix, already transposed
             mat3 tbnMatrix = mat3(
-            tangent.x, bitangent.x, normal.x,
-            tangent.y, bitangent.y, normal.y,
-            tangent.z, bitangent.z, normal.z
+            tangent.x, bitangent.x, normal.x, //first column
+            tangent.y, bitangent.y, normal.y, //second column
+            tangent.z, bitangent.z, normal.z//third column
             );
-
-            // Light direction, from light position to vertex
-            vec3 lightDirection = light.xyz - vertex.xyz;
-
-            // Eye direction, from camera position to vertex
-            vec3 eyeDirection = -vertex.xyz;
-
-
-
+            vTangentEyeDirection =  tbnMatrix * vEyeVector;// Eye direction, from camera position to vertex
+            vTangentLightDirection =  tbnMatrix * (-vLightRay);// Light direction, from light position to vertex
             vTextureCoords = aVertexTextureCoords;
-            gl_Position = uProjectionMatrix * uModelViewMatrix * vec4(aVertexPosition, 1.0);
-
-            vTangentEyeDirection = eyeDirection * tbnMatrix;
-            vTangentLightDirection = lightDirection * tbnMatrix;
 
             //para el cubemaps
-//            vVertexNormal = normalize((uNormalMatrix * vec4(-aVertexPosition, 1.0)).xyz);
+            //            vVertexNormal = normalize((uNormalMatrix * vec4(-aVertexPosition, 1.0)).xyz);
             vVertexNormal = normalize(aVertexPosition);
-
-
+            gl_Position = uProjectionMatrix * uModelViewMatrix * vec4(aVertexPosition, 1.0);
         }
     </script>
 
@@ -108,18 +93,14 @@
         uniform vec4 uMaterialSpecular;
         uniform float uShininess;
 
-
-
         uniform float uAjuste;
         uniform bool uHasTexture;
         uniform bool uIsTheCubeMapShader;
 
-
-
         in vec3 vNormal;
         in vec3 vLightRay;
         in vec3 vEyeVector;
-       // in vec3 vSurfaceToView;
+        // in vec3 vSurfaceToView;
         in vec4 vFinalColor;
         in vec2 vTextureCoords;
         in vec3 vTangentLightDirection;
@@ -127,8 +108,6 @@
 
         //para el cubemaps
         in vec3 vVertexNormal;
-
-
 
         out vec4 fragColor;
 
@@ -138,13 +117,10 @@
             }
             else {
 
-                if(uIsTheCubeMapShader){
-
-//                    fragColor = texture(uSampler, vTextureCoords) * texture(uCubeSampler, vVertexNormal);
+                if (uIsTheCubeMapShader){
+                    //fragColor = texture(uSampler, vTextureCoords) * texture(uCubeSampler, vVertexNormal);
                     fragColor =  texture(uCubeSampler, normalize(vVertexNormal));
-
-
-                }else
+                } else
 
                 if (uHasTexture){
                     // Unpack tangent-space normal from texture
@@ -172,10 +148,6 @@
                     vec3 N = normalize(vNormal);
                     float lambertTerm = dot(N, -L);
 
-                   // vec3 surfaceToViewDirection = normalize(vSurfaceToView);
-                   // vec3 halfVector = normalize(-L + surfaceToViewDirection);
-
-
                     // Ambient
                     vec4 Ia = uLightAmbient * uMaterialAmbient;
                     // Diffuse
@@ -183,23 +155,16 @@
                     // Specular
                     vec4 Is = vec4(0.0, 0.0, 0.0, 1.0);
 
-                    //float kd = max(0.0, dot(surfaceToViewDirection, N));
                     if (lambertTerm > 0.0) {
                         Id = uLightDiffuse * uMaterialDiffuse * lambertTerm;
                         vec3 E = normalize(vEyeVector);
                         vec3 R = reflect(L, N);
-
-
-
                         float specular = pow(max(dot(R, E), 0.0), uShininess);
-//                        float specular = pow(max(dot(N, halfVector), 0.0), uShininess);
                         Is = uLightSpecular * uMaterialSpecular * specular;//*specularFactor;
                     }
                     vec4 vColor = vec4(vec3(Ia + Id + Is), 1.0);
 
-//                    fragColor = vec4(Id.rgb * kd + 0.1, 1.0);
                     fragColor = vColor;
-
                 }
             }
         }

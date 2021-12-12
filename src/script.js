@@ -15,7 +15,7 @@ import {CurvaCubicaDeBezier} from "./js/CurvasDeBezier";
 import {DroneCameraControl} from "./js/droneCamara";
 import {colores} from "./js/colores";
 import {Anillo, Bloques, Capsula, Esfera, Nave, PanelesSolares, TransformacionesAfin} from "./js/TransformacionesAfin";
-import {mat4} from "gl-matrix";
+import {mat4, vec3} from "gl-matrix";
 import {Texture} from "./js/Texture";
 import {Floor} from "./js/Floor";
 import {Axis} from "./js/Axis";
@@ -238,18 +238,11 @@ function cargarALaLuna() {
     const nuevaSup = new SuperficieParametrica1("luna", datosDeLaForma, datosDelRecorrido, dimensiones, true)
 
     const nuevasTangentes  = utils.calcularTanYBiTan(nuevaSup)
+
     nuevaSup.tangentes = nuevasTangentes.tangentes
+    nuevaSup.hasTexture = true;
+    nuevaSup.diffuse = colores.Textura
 
-
-    // nuevaSup.hasTexture = true;
-    // nuevaSup.diffuse = [1.0, 1.0, 1.0, 1];
-    //clone nuevaSup
-    const nuevaSupTextures = Object.assign({}, nuevaSup)
-    nuevaSupTextures.alias = "lunaTexture"
-    nuevaSupTextures.hasTexture = true;
-    nuevaSupTextures.diffuse = [1.0, 1.0, 1.0, 1];
-
-    scene.add(nuevaSupTextures)
     scene.add(nuevaSup)
 
 }
@@ -1129,9 +1122,9 @@ function draw() {
             // Se la pusheo para guardarla , ahora al multiplicar transforms.modelViewMatrix por las matrices de
             // transformacion de los objetos se convierte en la ModelViewMatrix y se la manda a la uniform correspondiente
             // ahora se popea para que vuelva a ser la matriz de vista.
-
             // const viewMatrix = camera.getViewTransform() //alternativamente-------->es la de vista
             gl.uniformMatrix4fv(program.uViewMatrix, false, transforms.modelViewMatrix);
+
             dibujarMallaDeObjeto(object)
 
         });

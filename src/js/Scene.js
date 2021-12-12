@@ -136,8 +136,13 @@ export class Scene {
     }
 
     // Image texture
-    if (object.image) {
-      object.texture = new Texture(gl, object.image);
+    if (object.texture) {
+      const diffuse = new Texture(gl, object.texture.diffuse)
+      const normal = new Texture(gl, object.texture.normal)
+      object.texture = {
+        diffuse,
+        normal
+      }
     }
 
     // Push to our objects list for later access

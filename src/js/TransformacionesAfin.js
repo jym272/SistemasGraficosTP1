@@ -401,9 +401,16 @@ export class TransformacionesAfin {
         const {transforms} = this;
         if(this.alias === 'luna'){
             const lunaTransform = transforms.modelViewMatrix;
-            mat4.rotate(lunaTransform, lunaTransform, -2*Math.PI*this.posicionAnillo/10, [0, 1, 0]);
-            mat4.translate(lunaTransform, lunaTransform, [0, 0, 15]);
-            mat4.rotate(lunaTransform, lunaTransform, -Math.PI/2, [1, 0, 0]);
+            // mat4.rotate(lunaTransform, lunaTransform, -2*Math.PI*this.posicionAnillo/10, [0, 1, 0]);
+            const factor = 6
+            const lunaPosition0 =  [105*factor, 96*factor, 22*factor]
+            const lunaPosition1 =   [-45*factor,-9.5*factor,103.5*(factor)]
+            const lunaPosition2 = [-0.7*factor,20*factor,104.6*factor];
+
+
+            mat4.translate(lunaTransform, lunaTransform,lunaPosition1);
+
+            // mat4.rotate(lunaTransform, lunaTransform, -2*Math.PI*this.posicionAnillo/10, [0, 1, 0]);
 
 
         }

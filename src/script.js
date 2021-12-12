@@ -24,7 +24,7 @@ import {Axis} from "./js/Axis";
 let
     gl, scene, program, camera, transforms, transformar, bloque, panelSolar, controles, droneCam,
     targetNave, targetPanelesSolares, //focus de la nave y los paneles en el cual se enfoca la camara
-    elapsedTime, initialTime, texture, texture1, texture2, cubeTexture,
+    elapsedTime, initialTime, textureDiffuse, textureNormal, cubeTexture,
     fixedLight = true,
     triangleStrip = true,
     wireframe = false,
@@ -116,7 +116,7 @@ function configure() {
 
 function cargarTexturas() {
     // Configure cube texture
-    /*
+
     const skyBoxFiles = [
         "Left_1K_TEX.png",
         "Right_1K_TEX.png",
@@ -140,6 +140,14 @@ function cargarTexturas() {
 
     //cada vez que empieza el programa, elige aleatoriamente un set de texturas para el cubemap
     let random = Math.floor(Math.random() * 3);
+    random = 1
+
+    const lightPosition0 = [-1050,-960,-220];
+    const lightPosition1 = [450,95,-1035]
+    const lightPosition2 = [7,-200,-1046]
+
+    gl.uniform3fv(program.uLightPosition, lightPosition1);
+
 
     loadCubemapFace(gl, gl.TEXTURE_CUBE_MAP_POSITIVE_X, cubeTexture, skyBox_url[random][0]);
     loadCubemapFace(gl, gl.TEXTURE_CUBE_MAP_NEGATIVE_X, cubeTexture, skyBox_url[random][1]);
@@ -149,11 +157,11 @@ function cargarTexturas() {
     loadCubemapFace(gl, gl.TEXTURE_CUBE_MAP_NEGATIVE_Z, cubeTexture, skyBox_url[random][5]);
 
 
-     */
+
     // Textures
-    texture = new Texture(gl, 'UV.jpg');
+    textureDiffuse = new Texture(gl, 'UV.jpg');
     // texture1 = new Texture(gl, 'earthSpecular.jpg');
-    texture2 = new Texture(gl, 'UV_normal.jpg');
+    textureNormal = new Texture(gl, 'UV_normal.jpg');
 
     //Asignando unidades de texturas
     const cubeMapTextureUnit = 0;
@@ -184,19 +192,19 @@ function loadCubemapFace(gl, target, texture, url) {
 // Se carga todos los objetos a la escena
 function load() {
 
-    // scene.load('/geometries/cube-texture.json', 'cubeMap');
-    scene.load('/sphere.json', 'light');
-    scene.add(new Floor(80, 1));
-    scene.add(new Axis(82));
-    // scene.add(new Superficie(null, 'nave'))
-    // cargarNucleo()
+    scene.load('/geometries/cube-texture.json', 'cubeMap');
+    // scene.load('/sphere.json', 'light');
+    // scene.add(new Floor(80, 1));
+    // scene.add(new Axis(82));
+    scene.add(new Superficie(null, 'nave'))
+    cargarNucleo()
     panelSolar = new PanelSolar(scene);
-    // panelSolar.cargarPanelesSolares()
-    // cargarAnillo()
-    // bloque.setType(Bloque.BLOQUES_4);
-    // moduloVioleta()
-    // cargarEsfera()
-    // cargarCapsula()
+    panelSolar.cargarPanelesSolares()
+    cargarAnillo()
+    bloque.setType(Bloque.BLOQUES_4);
+    moduloVioleta()
+    cargarEsfera()
+    cargarCapsula()
     cargarALaLuna()
 }
 
@@ -206,13 +214,11 @@ function cargarALaLuna() {
     const divisionesForma = 50 //precision en la forma
 
     const porcionDeCircunferencia = 1 / 2
-    const radio = 10
+    const radio = 120
     //reutilizo la funcion para crear una forma circular
     const forma = utils.crearRecorridoCircular(radio, porcionDeCircunferencia, divisionesForma)
 
     //rotar los puntos del recorrido x,y 45 grados
-    const angulo = 0    //Math.PI/4 //tengo que rotar, los puntos obtenidos parten de cero
-    //los pts me sirven, las binormales, le quito la z y son las normales
     const datosDeLaForma = {
         puntos: forma.puntos,
         normales: forma.binormales.map(punto => {
@@ -235,16 +241,19 @@ function cargarALaLuna() {
     //Klave para la sup de Rev
     const datosDelRecorrido = utils.crearRecorridoCircular(0, 1, dimensiones["filas"])
 
-    const nuevaSup = new SuperficieParametrica1("luna", datosDeLaForma, datosDelRecorrido, dimensiones, true)
+    const luna = new SuperficieParametrica1("luna", datosDeLaForma, datosDelRecorrido, dimensiones, true)
 
-    const nuevasTangentes  = utils.calcularTanYBiTan(nuevaSup)
+    const nuevasTangentes  = utils.calcularTanYBiTan(luna)
 
-    nuevaSup.tangentes = nuevasTangentes.tangentes
-    nuevaSup.hasTexture = true;
-    nuevaSup.diffuse = colores.Textura
+    luna.tangentes = nuevasTangentes.tangentes
+    luna.diffuse = colores.Textura
+    luna.ambient = [0.2, 0.2, 0.2, 1]
 
-    scene.add(nuevaSup)
-
+    luna.texture = {
+        diffuse: 'moon/diffuse1080.jpg',
+        normal: 'moon/normal1080.jpg'
+    }
+    scene.add(luna)
 }
 
 function cargarCapsula() {
@@ -586,11 +595,12 @@ function cargarEsfera() {
         ...TapaAtras_NEW.tangentes
     )
 
-
     //Se carga a la escena
     esfera.diffuse = colores.Textura
-    esfera.hasTexture = true
+    esfera.UVTexture = true;
     scene.add(esfera)
+
+
 }
 
 function moduloVioleta() {
@@ -836,9 +846,9 @@ function cargarNucleo() {
         ...nuevasUV
     );
 
-    nucleoPS.diffuse = [0.9, 0.9, 0.9, 1.0];
+    nucleoPS.diffuse = colores.Textura
+    nucleoPS.UVTexture = true
 
-    nucleoPS.hasTexture = true;
     //clone object nucleoPS
     const nucleoAnillo = Object.assign({}, nucleoPS);
     nucleoAnillo.alias = "nucleoAnillo";
@@ -972,13 +982,18 @@ function cargarTorus() {
 
     torus.textureCoords = nuevasTexturasUV;
 
-    // const nuevasTanBitCuerpo = utils.calcularTanYBiTan(torus)
-    // torus.tangentes = nuevasTanBitCuerpo.tangentes
+    const nuevasTanBitCuerpo = utils.calcularTanYBiTan(torus)
+    torus.tangentes = nuevasTanBitCuerpo.tangentes
 
-    torus.diffuse = colores.Textura //1111
-    torus.hasTexture = true
+    //Se carga a la escena
+    torus.diffuse = colores.Textura
+    const gris = 0.2
+    torus.ambient = [gris,gris,gris,1]
+    torus.texture = {
+        diffuse: 'torus/diffuse.jpg',
+        normal: 'torus/normal.jpg'
+    }
     scene.add(torus)
-
 }
 
 function draw() {
@@ -1090,13 +1105,8 @@ function draw() {
                  */
             }
             //////////////////////////////////////////////////////////
-          //  transformar.complexCube()
-
-         //   transformar.teatro()
-           // transformar.cubo()
             transformar.luna()
 
-            /*
             transformar.nucleoDelPanelSolar()
 
             transformar.panelesSolares()
@@ -1113,7 +1123,7 @@ function draw() {
 
             transformar.capsula()
 
-             */
+
             ///////////////////////////////////////////
             transforms.setMatrixUniforms();
             transforms.pop();
@@ -1123,6 +1133,9 @@ function draw() {
             // transformacion de los objetos se convierte en la ModelViewMatrix y se la manda a la uniform correspondiente
             // ahora se popea para que vuelva a ser la matriz de vista.
             // const viewMatrix = camera.getViewTransform() //alternativamente-------->es la de vista
+            const posicionCamara = Array.from(camera.cameraPositionCoordDelMundo)
+            console.log(`posCamara: ${posicionCamara[0].toFixed(2)}, ${posicionCamara[1].toFixed(2)}, ${posicionCamara[2].toFixed(2)}`);
+
             gl.uniformMatrix4fv(program.uViewMatrix, false, transforms.modelViewMatrix);
 
             dibujarMallaDeObjeto(object)
@@ -1167,22 +1180,26 @@ function dibujarMallaDeObjeto(object) {
 
     } else
         // Activate texture
-    if (object.hasTexture) {
+    if (object.texture || object.UVTexture) {
 
         gl.uniform1i(program.uIsTheCubeMapShader, false);
         gl.uniform1i(program.uHasTexture, true);
 
-        // gl.uniform1i(program.uSampler, 1)
+        // Texture Diffuse : gl.uniform1i(program.uSampler, 1)
         gl.activeTexture(gl.TEXTURE1);
-        gl.bindTexture(gl.TEXTURE_2D, texture.glTexture);
+        (object.UVTexture) ?
+            gl.bindTexture(gl.TEXTURE_2D, textureDiffuse.glTexture) :
+            gl.bindTexture(gl.TEXTURE_2D, object.texture.diffuse.glTexture);
         /*
                 gl.activeTexture(gl.TEXTURE1);
                 gl.bindTexture(gl.TEXTURE_2D, texture1.glTexture);
                 gl.uniform1i(program.uSpecularSampler, 1);
         */
-        // gl.uniform1i(program.uNormalSampler, 2);
+        // Texture Normal: gl.uniform1i(program.uNormalSampler, 2);
         gl.activeTexture(gl.TEXTURE2);
-        gl.bindTexture(gl.TEXTURE_2D, texture2.glTexture);
+        (object.UVTexture) ?
+            gl.bindTexture(gl.TEXTURE_2D, textureNormal.glTexture) :
+            gl.bindTexture(gl.TEXTURE_2D, object.texture.normal.glTexture);
     } else {
 
         gl.uniform1i(program.uIsTheCubeMapShader, false);

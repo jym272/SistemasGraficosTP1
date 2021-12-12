@@ -420,40 +420,30 @@ export const utils = {
             bitangentes[indice3] = [bitanAnterior3[0] + bitan.x, bitanAnterior3[1] + bitan.y, bitanAnterior3[2] + bitan.z]
         }
         //// Orthonormalize each tangent and calculate the handedness.
+        const TAN = []
+        const BITAN = []
         const signArray = []
+        let posCounter = 0
+        let negCounter = 0
+
         for (let i = 0; i < verticesArray.length; i++) {
-            const t = tangentes[i];
+            let t = tangentes[i];
             const b = bitangentes[i];
             const n = normalesArray[i];
             const sign = (utils.Dot(utils.Cross(t, b), n) > 0.0) ? 1.0 : -1.0;
             signArray[i] = sign
-            if (sign < 0)
-                tangentes[i] = utils.MultiplyVector(tangentes[i], -1) //actualizo el signo de las tangentes
-
-        }
-        let posCounter = 0
-        let negCounter = 0
-        if(signArray.length > 0){
-            for (let i = 0; i < signArray.length; i++) {
-                if (signArray[i] < 0) {
-                    negCounter++
-                } else {
-                    posCounter++
-                }
+            if (sign < 0) {
+                t = utils.MultiplyVector(t, -1) //actualizo el signo de las tangentes
+                negCounter++;
             }
+            else
+                posCounter++;
+
+            TAN.push(...utils.normalizarVector(t))
+            BITAN.push(...utils.normalizarVector(b))
+
         }
         console.log(posCounter,negCounter)
-        //recorro y normalizo
-        const TAN = []
-        tangentes.forEach((t, i) => {
-            TAN.push(...utils.normalizarVector(t))
-        })
-
-        const BITAN = []
-        bitangentes.forEach((t, i) => {
-            BITAN.push(utils.normalizarVector(t))
-        })
-
         return {
             tangentes: TAN,
             bitangentes: BITAN

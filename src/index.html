@@ -99,6 +99,7 @@
         uniform bool uHasTexture;
         uniform bool uIsTheCubeMapShader;
         uniform bool uActivateEarthTextures;
+        uniform bool uActivateSpecularTexture;
 
         in vec3 vNormal;
         in vec3 vLightRay;
@@ -155,24 +156,25 @@
                     float lambertTerm = max(dot(normal, lightDirection), 0.1); //0.0 en este caso las sombras pueden ser totalmente negras
 
                     //Si tengo un mapa especular se agregar el termino al calculo final
-                    float specularTexture = 1.0;
+                    float specularTexture = 1.0;//vec4(1.0);
                     vec4 cloudEarthColor = vec4(0.0);
                     if (uActivateEarthTextures){
-                        specularTexture = texture(uSpecularSampler, vTextureCoords).r;
                         cloudEarthColor = texture(uCloudSampler, vTextureCoords);
+                    }
+                    if(uActivateSpecularTexture){
+                        specularTexture = texture(uSpecularSampler, vTextureCoords).r;
                     }
                     // Calculate Specular level
                     vec3 eyeDirection = normalize(vTangentEyeDirection);
                     vec3 reflectDir = reflect(-lightDirection, normal);
                     float specular = pow(clamp(dot(reflectDir, eyeDirection), 0.0, 1.0), 8.0);
-                    float specularFactor = specular  *  specularTexture;
 
                     // Ambient
                     vec4 Ia = uLightAmbient * uMaterialAmbient;
                     // Diffuse
                     vec4 Id = uLightDiffuse * uMaterialDiffuse  * lambertTerm * ( texture(uSampler, vTextureCoords) + cloudEarthColor);
                     // Specular
-                    vec4 Is = uLightSpecular * uMaterialSpecular * specularFactor;
+                    vec4 Is = uLightSpecular * uMaterialSpecular * specular * specularTexture;
 
                     vec4 vColor = vec4(vec3(Ia + Id + Is), 1.0);
 

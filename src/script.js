@@ -28,7 +28,6 @@ let
     wireframe = false,
     lightColor, lightAmbient, lightSpecular,
     textureEarthClouds,
-    textureEarthSpecular,
     textureMap,
     ajuste = 8.0,  //para ajustar posiciones de los objetos, se usa en el diseño
     dxAnillo = 0.01,
@@ -84,6 +83,7 @@ function configure() {
         'uCloudSampler',
         'uSpecularSampler',
         'uActivateEarthTextures',
+        'uActivateSpecularTexture',
         'uNormalSampler',
         'uCubeSampler',
 
@@ -140,10 +140,8 @@ function cargarTexturas() {
 
     //cada vez que empieza el programa, elige aleatoriamente un set de texturas para el cubemap
     let random = Math.floor(Math.random() * 3);
-    random = 2
     transformar.tierraLunaEnElMundo(random)
 
-    const gray = 0.1
     lightAmbient = [0.1, 0.1, 0.1, 1.0];
     lightSpecular = [1.0, 1.0, 1.0, 1.0];
     lightColor = utils.normalizeColor(colores.lightColor[random])
@@ -153,14 +151,12 @@ function cargarTexturas() {
     gl.uniform4fv(program.uLightSpecular, lightSpecular);
     gl.uniform1f(program.uShininess, 230.0);
 
-
     loadCubemapFace(gl, gl.TEXTURE_CUBE_MAP_POSITIVE_X, cubeTexture, skyBox_url[random][0]);
     loadCubemapFace(gl, gl.TEXTURE_CUBE_MAP_NEGATIVE_X, cubeTexture, skyBox_url[random][1]);
     loadCubemapFace(gl, gl.TEXTURE_CUBE_MAP_POSITIVE_Y, cubeTexture, skyBox_url[random][2]);
     loadCubemapFace(gl, gl.TEXTURE_CUBE_MAP_NEGATIVE_Y, cubeTexture, skyBox_url[random][3]);
     loadCubemapFace(gl, gl.TEXTURE_CUBE_MAP_POSITIVE_Z, cubeTexture, skyBox_url[random][4]);
     loadCubemapFace(gl, gl.TEXTURE_CUBE_MAP_NEGATIVE_Z, cubeTexture, skyBox_url[random][5]);
-
 
     // Textures
     textureMap = {}
@@ -169,10 +165,10 @@ function cargarTexturas() {
         normal: new Texture(gl, 'UV_normal.jpg')
     }
     textureMap["bloque"] = {
-        diffuse: new Texture(gl, 'bloque/diffuse.jpg'),
-        normal: new Texture(gl, 'bloque/normal.jpg')
+        diffuse: new Texture(gl, 'bloque/1/diffuse.jpg'),
+        normal: new Texture(gl, 'bloque/1/normal.jpg'),
+        // specular: new Texture(gl, 'bloque/1/specular.jpg')
     }
-
 
     //Asignando unidades de texturas
     const cubeMapTextureUnit = 0;
@@ -272,11 +268,11 @@ function cargarALaTierra() {
     tierra.texture = 'tierra'
     textureMap[tierra.texture] = {
         diffuse: new Texture(gl, 'earth/Earth.Diffuse.3840.jpg'),
-        normal: new Texture(gl, 'earth/Earth.Normal.3840.jpg')
+        normal: new Texture(gl, 'earth/Earth.Normal.3840.jpg'),
+        specular: new Texture(gl, 'earth/Earth.Specular.3840.jpg')
     }
 
-    textureEarthClouds = new Texture(gl, 'earth/Earth.Clouds.2048.jpg')
-    textureEarthSpecular = new Texture(gl, 'earth/Earth.Specular.2048.jpg')
+    textureEarthClouds = new Texture(gl, 'earth/Earth.Clouds.3840.jpg')
 
     scene.add(tierra)
 
@@ -1251,6 +1247,7 @@ function dibujarMallaDeObjeto(object) {
     gl.uniform1i(program.uIsTheCubeMapShader, false);
     gl.uniform1i(program.uHasTexture, false);
     gl.uniform1i(program.uActivateEarthTextures, false);
+    gl.uniform1i(program.uActivateSpecularTexture, false);
 
     //Textures
     if (object.alias === 'cubeMap') {
@@ -1272,15 +1269,18 @@ function dibujarMallaDeObjeto(object) {
         gl.activeTexture(gl.TEXTURE2);
         gl.bindTexture(gl.TEXTURE_2D, texture.normal.glTexture);
 
-        //si el objeto es la tierra cargamos dos texturas mas para el shader
+        //si el objeto es la tierra cargamos nubes
         if (object.alias === 'tierra') {
             gl.uniform1i(program.uActivateEarthTextures, true);
             //nubes
             gl.activeTexture(gl.TEXTURE3);
             gl.bindTexture(gl.TEXTURE_2D, textureEarthClouds.glTexture);
+        }
+        if(texture.specular){
+            gl.uniform1i(program.uActivateSpecularTexture, true);
             //specular
             gl.activeTexture(gl.TEXTURE4);
-            gl.bindTexture(gl.TEXTURE_2D, textureEarthSpecular.glTexture);
+            gl.bindTexture(gl.TEXTURE_2D, texture.specular.glTexture);
         }
     }
     // Draw

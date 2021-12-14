@@ -377,7 +377,7 @@ export class Bloque {
     actualizarEscena() {
         this.dictionary[this.type].forEach(item => {
             this.scene.add(item, {
-                texture : "UV",
+                texture : "bloque",
                 diffuse : colores.Textura.diffuse,
                 ambient : colores.Textura.ambient
             });

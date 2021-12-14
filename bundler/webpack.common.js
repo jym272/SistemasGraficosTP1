@@ -1,4 +1,5 @@
 const CopyWebpackPlugin = require('copy-webpack-plugin')
+const json5 = require('json5')
 const HtmlWebpackPlugin = require('html-webpack-plugin')
 const MiniCSSExtractPlugin = require('mini-css-extract-plugin')
 const path = require('path')
@@ -61,6 +62,16 @@ module.exports = {
                     MiniCSSExtractPlugin.loader,
                     'css-loader'
                 ]
+            },
+
+            // Json
+            {
+                test: /\.json5$/i,
+                type: "json",
+                parser:
+                    {
+                        parse: json5.parse,
+                    }
             },
 
             // Images

@@ -18,6 +18,12 @@ import {Anillo, Bloques, Capsula, Esfera, Nave, PanelesSolares, Transformaciones
 import {mat4} from "gl-matrix";
 import {Texture} from "./js/Texture";
 
+import UVdiffuse from './images/UV.jpg';
+import UVnormal from './images/UV_normal.jpg';
+
+import CubeTexture from './geometries/cube-texture.json5'
+import Sphere from './geometries/sphere.json5'
+
 
 let
     gl, scene, program, camera, transforms, transformar, bloque, panelSolar, controles, droneCam,
@@ -161,8 +167,8 @@ function cargarTexturas() {
     // Textures
     textureMap = {}
     textureMap["UV"] = {
-        diffuse: new Texture(gl, 'UV.jpg'),
-        normal: new Texture(gl, 'UV_normal.jpg')
+        diffuse: new Texture(gl, UVdiffuse),
+        normal: new Texture(gl, UVnormal),
     }
     textureMap["bloque"] = {
         diffuse: new Texture(gl, 'bloque/1/diffuse.jpg'),
@@ -206,8 +212,10 @@ function loadCubemapFace(gl, target, texture, url) {
 // Se carga todos los objetos a la escena
 function load() {
 
-    scene.load('/geometries/cube-texture.json', 'cubeMap');
-    scene.load('/geometries/sphere.json', 'light');
+    CubeTexture.alias = "cubeMap"
+    Sphere.alias = "light"
+    scene.add(CubeTexture)
+    scene.add(Sphere);
     // scene.add(new Floor(80, 1));
     // scene.add(new Axis(82));
 
@@ -1108,17 +1116,7 @@ function draw() {
             if (object.alias === "cubeMap") {
                 const cubeMapTransform = transforms.modelViewMatrix;
                 const factor = 2048 * 2;
-
-                const {
-                    rotationMatrix,
-                    position,
-                } = droneCam.update()
-
-                mat4.translate(cubeMapTransform, Capsula.capsulaTransform, position);
-                mat4.multiply(cubeMapTransform, cubeMapTransform, rotationMatrix);
-                // mat4.multiply(cubeMapTransform, cubeMapTransform, camera.getViewTransform());
                 mat4.scale(cubeMapTransform, cubeMapTransform, [factor, factor, factor]);
-                // return;
             }
 
 

@@ -55,6 +55,20 @@ export const dimensiones = {
             altura: 0.8,
         },
     },
-
+    ajusteTierra :{
+        radio: 1,
+        coordenadas : [0,0,0],
+        rotacion: [0,0,0],
+    },
+    ajusteLuna :{
+        radio: 1,
+        coordenadas : [0,0,0],
+        rotacion: [0,0,0],
+    },
+    lightPosition : [
+        [-2093, -1909, -440],
+        [910, 180, -2080],
+        [24, -408, -2073]
+    ]
 };
 

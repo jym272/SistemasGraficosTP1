@@ -59,6 +59,7 @@ export const Cubo = {
 export const Teatro = {
     transform: null,
 }
+
 export class TransformacionesAfin {
 
     constructor(transforms, droneCam, controles, camera, bloque, animacion) {
@@ -79,6 +80,72 @@ export class TransformacionesAfin {
         this.posicionAnillo = 0;
         this.cargarParametrosBloques();
         this.cuboTransform = transforms.modelViewMatrix;
+        this.cargarParametrosMundo();
+    }
+
+    cargarParametrosMundo() {
+        this.tierraLunaTransform = [
+            {
+                tierra: {
+                    x: 904,
+                    y: -939,
+                    z: 1554,
+                    rx: 0.87,
+                    ry: 4.89,
+                    rz: 3.73,
+                    radio: 1405
+                },
+                luna: {
+                    x: 525,
+                    y: 850,
+                    z: -722,
+                    rx: 1.96,
+                    ry: 1.08,
+                    rz: 0,
+                    radio: 345
+                }
+            },
+            {
+                tierra: {
+                    x: -1101,
+                    y: -1047,
+                    z: 1392,
+                    rx: 1.49,
+                    ry: 4.01,
+                    rz: 3.39,
+                    radio: 1405
+                },
+                luna: {
+                    x: 1283,
+                    y: -17,
+                    z: -180,
+                    rx: 1.42,
+                    ry: 2.78,
+                    rz: 5.98,
+                    radio: 345
+                }
+            },
+            {
+                tierra: {
+                    x: -2131,
+                    y: -939,
+                    z: 741,
+                    rx: 0.4,
+                    ry: 1.89,
+                    rz: 1.83,
+                    radio: 1405
+                },
+                luna: {
+                    x: 796,
+                    y: 145,
+                    z: 1066,
+                    rx: 0.87,
+                    ry: 0.67,
+                    rz: 2.57,
+                    radio: 345
+                }
+            },
+        ]
     }
 
     cargarParametrosBloques() {
@@ -238,7 +305,7 @@ export class TransformacionesAfin {
         const {transforms} = this;
         const distanciaModuloVioleta = dimensiones.profundidadModuloVioleta + dimensiones.CilindroNucleoPS.altura
 
-        if(this.alias === 'nucleoPS'){
+        if (this.alias === 'nucleoPS') {
             Nucleo.nucleoPSTransform = transforms.modelViewMatrix;
             mat4.translate(Nucleo.nucleoPSTransform, Nave.naveTransform, [0, 0, distanciaModuloVioleta]);
             mat4.rotate(Nucleo.nucleoPSTransform, Nucleo.nucleoPSTransform, Math.PI / 2, [1, 0, 0]);
@@ -312,7 +379,7 @@ export class TransformacionesAfin {
             mat4.rotate(panelLadoBTransform, panelLadoBTransform, Math.PI, [1, 1, 0]);
         } else if (this.alias === 'panelLadoB1') {
             const panelLadoB1Transform = transforms.modelViewMatrix;
-            mat4.translate(panelLadoB1Transform, PanelesSolares.panelTransform, [-dimensiones.panelSolar.lado.largo / 2, dimensiones.panelSolar.lado.ancho/ 2, 0]);
+            mat4.translate(panelLadoB1Transform, PanelesSolares.panelTransform, [-dimensiones.panelSolar.lado.largo / 2, dimensiones.panelSolar.lado.ancho / 2, 0]);
             mat4.rotate(panelLadoB1Transform, panelLadoB1Transform, -Math.PI, [0, 0, 1]);
             mat4.rotate(panelLadoB1Transform, panelLadoB1Transform, -Math.PI, [1, 1, 0]);
         }
@@ -320,14 +387,14 @@ export class TransformacionesAfin {
 
     nucleoDelAnillo() {
         const {transforms} = this;
-        if(this.alias === "nucleoAnillo"){
+        if (this.alias === "nucleoAnillo") {
             Nucleo.nucleoAnilloTransform = transforms.modelViewMatrix
             mat4.translate(Nucleo.nucleoAnilloTransform, Nave.naveTransform, [0, 0, -Bloques.distanciaNucleoDelAnilloYNave])
             mat4.rotate(Nucleo.nucleoAnilloTransform, Nucleo.nucleoAnilloTransform, Math.PI / 2, [1, 0, 0])
         }
     }
 
-    animarAnillo(diferencial){
+    animarAnillo(diferencial) {
         this.posicionAnillo += diferencial;
 
     }
@@ -374,18 +441,18 @@ export class TransformacionesAfin {
             mat4.translate(tuboH1Transform, Anillo.torusTransform, [-dimensiones.anillo.distanciaEntreTubos, -dimensiones.anillo.tubo.altura / 2, 0]);
         } else if (this.alias === 'anillo_tuboH2') {
             const tuboH2Transform = transforms.modelViewMatrix;
-            mat4.translate(tuboH2Transform, Anillo.torusTransform, [dimensiones.anillo.distanciaEntreTubos, -dimensiones.anillo.tubo.altura  / 2, 0]);
+            mat4.translate(tuboH2Transform, Anillo.torusTransform, [dimensiones.anillo.distanciaEntreTubos, -dimensiones.anillo.tubo.altura / 2, 0]);
         } else if (this.alias === 'anillo_tuboV1') {
             const tuboV1Transform = transforms.modelViewMatrix;
-            mat4.translate(tuboV1Transform, Anillo.torusTransform, [dimensiones.anillo.tubo.altura  / 2, dimensiones.anillo.distanciaEntreTubos, 0]);
+            mat4.translate(tuboV1Transform, Anillo.torusTransform, [dimensiones.anillo.tubo.altura / 2, dimensiones.anillo.distanciaEntreTubos, 0]);
             mat4.rotate(tuboV1Transform, tuboV1Transform, Math.PI / 2, [0, 0, 1]);
         } else if (this.alias === 'anillo_tuboV2') {
             const tuboV2Transform = transforms.modelViewMatrix;
-            mat4.translate(tuboV2Transform, Anillo.torusTransform, [dimensiones.anillo.tubo.altura  / 2, -dimensiones.anillo.distanciaEntreTubos, 0]);
+            mat4.translate(tuboV2Transform, Anillo.torusTransform, [dimensiones.anillo.tubo.altura / 2, -dimensiones.anillo.distanciaEntreTubos, 0]);
             mat4.rotate(tuboV2Transform, tuboV2Transform, Math.PI / 2, [0, 0, 1]);
         } else if (this.alias === 'anillo_tuboInterior') {
             const tubointeriorTransform = transforms.modelViewMatrix;
-            if (Anillo.desplazamientoTuboInterior < dimensiones.anillo.tubo.altura )
+            if (Anillo.desplazamientoTuboInterior < dimensiones.anillo.tubo.altura)
                 mat4.translate(tubointeriorTransform, Anillo.torusTransform, [0, Anillo.distanciaTubosInteriores - Anillo.desplazamientoTuboInterior, 0]);
             else
                 mat4.translate(tubointeriorTransform, Anillo.torusTransform, [Anillo.factorDesplazamientoEntreTubosInteriores * Anillo.distanciaTubosInteriores - Anillo.desplazamientoTuboInterior, 0, 0]);
@@ -397,108 +464,168 @@ export class TransformacionesAfin {
         }
     }
 
-    luna(){
-        const {transforms} = this;
-        if(this.alias === 'luna'){
+    luna() {
+        const {transforms, mundo} = this;
+        if (this.alias === 'luna') {
             const lunaTransform = transforms.modelViewMatrix;
-            // mat4.rotate(lunaTransform, lunaTransform, -2*Math.PI*this.posicionAnillo/10, [0, 1, 0]);
-            const factor = 6
-            const lunaPosition0 =  [105*factor, 96*factor, 22*factor]
-            const lunaPosition1 =   [-45*factor,-9.5*factor,103.5*(factor)]
-            const lunaPosition2 = [-0.7*factor,20*factor,104.6*factor];
 
+            const x = dimensiones.ajusteLuna.coordenadas[0]
+            const y = dimensiones.ajusteLuna.coordenadas[1]
+            const z = dimensiones.ajusteLuna.coordenadas[2]
 
-            mat4.translate(lunaTransform, lunaTransform,lunaPosition1);
+            const rx = dimensiones.ajusteLuna.rotacion[0]
+            const ry = dimensiones.ajusteLuna.rotacion[1]
+            const rz = dimensiones.ajusteLuna.rotacion[2]
 
-            // mat4.rotate(lunaTransform, lunaTransform, -2*Math.PI*this.posicionAnillo/10, [0, 1, 0]);
+            const radio = dimensiones.ajusteLuna.radio
+            /*
+            mat4.translate(lunaTransform, lunaTransform, [x, y, z]);
+            mat4.scale(lunaTransform, lunaTransform, [radio, radio, radio]);
+            mat4.rotateX(lunaTransform, lunaTransform, rx);
+            mat4.rotateZ(lunaTransform, lunaTransform, ry);
+            mat4.rotateY(lunaTransform, lunaTransform, rz);
+
+             */
+
+            mat4.translate(lunaTransform, lunaTransform, [mundo.luna.x, mundo.luna.y, mundo.luna.z]);
+            // mat4.scale(lunaTransform, lunaTransform, [mundo.luna.radio, mundo.luna.radio, mundo.luna.radio]);
+            mat4.rotateX(lunaTransform, lunaTransform, mundo.luna.rx);
+            mat4.rotateZ(lunaTransform, lunaTransform, mundo.luna.ry);
+            mat4.rotateY(lunaTransform, lunaTransform, mundo.luna.rz);
 
 
         }
     }
 
-    translate(testTransform, x,y){
-        mat4.translate(testTransform, testTransform, [x,0,-y]);
+    tierra() {
+        const {transforms, mundo} = this;
+        if (this.alias === 'tierra') {
+            const tierraTransform = transforms.modelViewMatrix;
+
+
+            const x = dimensiones.ajusteTierra.coordenadas[0]
+            const y = dimensiones.ajusteTierra.coordenadas[1]
+            const z = dimensiones.ajusteTierra.coordenadas[2]
+
+            const rx = dimensiones.ajusteTierra.rotacion[0]
+            const ry = dimensiones.ajusteTierra.rotacion[1]
+            const rz = dimensiones.ajusteTierra.rotacion[2]
+
+            const radio = dimensiones.ajusteTierra.radio
+            /*
+            mat4.translate(tierraTransform, tierraTransform, [x, y, z]);
+            mat4.scale(tierraTransform, tierraTransform, [radio, radio, radio]);
+            mat4.rotateX(tierraTransform, tierraTransform, rx);
+            mat4.rotateZ(tierraTransform, tierraTransform, ry);
+            mat4.rotateY(tierraTransform, tierraTransform, rz);
+
+             */
+
+            mat4.translate(tierraTransform, tierraTransform, [mundo.tierra.x, mundo.tierra.y, mundo.tierra.z]);
+            // mat4.scale(tierraTransform, tierraTransform, [mundo.tierra.radio, mundo.tierra.radio, mundo.tierra.radio]);
+            mat4.rotateX(tierraTransform, tierraTransform, mundo.tierra.rx);
+            mat4.rotateZ(tierraTransform, tierraTransform, mundo.tierra.ry);
+            mat4.rotateY(tierraTransform, tierraTransform, mundo.tierra.rz);
+
+
+
+        }
     }
-    rotate(transform, angle){
+
+    tierraLunaEnElMundo(random) {
+
+        this.mundo = this.tierraLunaTransform[random]
+
+
+    }
+
+    translate(testTransform, x, y) {
+        mat4.translate(testTransform, testTransform, [x, 0, -y]);
+    }
+
+    rotate(transform, angle) {
         const angleRadians = angle * Math.PI / 180;
         mat4.rotate(transform, transform, angleRadians, [0, 1, 0]);
     }
-    scale(transform, x,y){
-        mat4.scale(transform, transform, [x,0,y]);
+
+    scale(transform, x, y) {
+        mat4.scale(transform, transform, [x, 0, y]);
     }
 
-    test(){
+    test() {
         const {transforms} = this;
-        if(this.alias === 'test'){
+        if (this.alias === 'test') {
             const testTransform = transforms.modelViewMatrix;
 
-             this.translate(testTransform, -4,-6);
-           // this.rotate(testTransform, 90);
+            this.translate(testTransform, -4, -6);
+            // this.rotate(testTransform, 90);
             // this.translate(testTransform, 4,0);
             //this.translate(testTransform, 2,0);
 
-            this.translate(testTransform, 4,0);
-            this.scale(testTransform, 2,2);
+            this.translate(testTransform, 4, 0);
+            this.scale(testTransform, 2, 2);
 
-             this.rotate(testTransform, 45);
-           this.translate(testTransform, 2,0);
-            this.translate(testTransform, 2,-0.5);
+            this.rotate(testTransform, 45);
+            this.translate(testTransform, 2, 0);
+            this.translate(testTransform, 2, -0.5);
 
         }
     }
-    cubo(){
+
+    cubo() {
         const {transforms} = this;
-        if(this.alias === 'cubo'){
+        if (this.alias === 'cubo') {
             Cubo.transform = transforms.modelViewMatrix;
-        }else if(this.alias === 'cubo_lado1'){
+        } else if (this.alias === 'cubo_lado1') {
             const cuboLadoTransform = transforms.modelViewMatrix;
             mat4.translate(cuboLadoTransform, Cubo.transform, [0, 0, Cubo.lado / 2]);
-            mat4.rotate(cuboLadoTransform, cuboLadoTransform , Math.PI / 2, [1, 0, 0]);
-        }else if(this.alias === 'cubo_lado2'){
+            mat4.rotate(cuboLadoTransform, cuboLadoTransform, Math.PI / 2, [1, 0, 0]);
+        } else if (this.alias === 'cubo_lado2') {
             const cuboLadoTransform = transforms.modelViewMatrix;
             mat4.translate(cuboLadoTransform, Cubo.transform, [0, 0, -Cubo.lado / 2]);
-            mat4.rotate(cuboLadoTransform, cuboLadoTransform , Math.PI / 2, [-1, 0, 0]);
-        }else if(this.alias === 'cubo_lado3'){
+            mat4.rotate(cuboLadoTransform, cuboLadoTransform, Math.PI / 2, [-1, 0, 0]);
+        } else if (this.alias === 'cubo_lado3') {
             const cuboLadoTransform = transforms.modelViewMatrix;
-            mat4.rotate(cuboLadoTransform, Cubo.transform , Math.PI / 2, [0, 1, 0]);
-            mat4.translate(cuboLadoTransform,cuboLadoTransform, [0, 0, -Cubo.lado / 2]);
-            mat4.rotate(cuboLadoTransform, cuboLadoTransform , Math.PI / 2, [-1, 0, 0]);
-        }else if(this.alias === 'cubo_lado4'){
+            mat4.rotate(cuboLadoTransform, Cubo.transform, Math.PI / 2, [0, 1, 0]);
+            mat4.translate(cuboLadoTransform, cuboLadoTransform, [0, 0, -Cubo.lado / 2]);
+            mat4.rotate(cuboLadoTransform, cuboLadoTransform, Math.PI / 2, [-1, 0, 0]);
+        } else if (this.alias === 'cubo_lado4') {
             const cuboLadoTransform = transforms.modelViewMatrix;
-            mat4.rotate(cuboLadoTransform, Cubo.transform , -Math.PI / 2, [0, 1, 0]);
-            mat4.translate(cuboLadoTransform,cuboLadoTransform, [0, 0, -Cubo.lado / 2]);
-            mat4.rotate(cuboLadoTransform, cuboLadoTransform , Math.PI / 2, [-1, 0, 0]);
-        }else if(this.alias === 'cubo_lado5'){
+            mat4.rotate(cuboLadoTransform, Cubo.transform, -Math.PI / 2, [0, 1, 0]);
+            mat4.translate(cuboLadoTransform, cuboLadoTransform, [0, 0, -Cubo.lado / 2]);
+            mat4.rotate(cuboLadoTransform, cuboLadoTransform, Math.PI / 2, [-1, 0, 0]);
+        } else if (this.alias === 'cubo_lado5') {
             const cuboLadoTransform = transforms.modelViewMatrix;
-            mat4.translate(cuboLadoTransform,Cubo.transform, [0, Cubo.lado / 2, 0]);
-        }else if(this.alias === 'cubo_lado6'){
+            mat4.translate(cuboLadoTransform, Cubo.transform, [0, Cubo.lado / 2, 0]);
+        } else if (this.alias === 'cubo_lado6') {
             const cuboLadoTransform = transforms.modelViewMatrix;
-            mat4.translate(cuboLadoTransform,Cubo.transform, [0, -Cubo.lado / 2, 0]);
-            mat4.rotate(cuboLadoTransform, cuboLadoTransform , Math.PI, [1, 0, 0]);
+            mat4.translate(cuboLadoTransform, Cubo.transform, [0, -Cubo.lado / 2, 0]);
+            mat4.rotate(cuboLadoTransform, cuboLadoTransform, Math.PI, [1, 0, 0]);
 
         }
     }
 
-    teatro(){
+    teatro() {
         const {transforms} = this;
-        if(this.alias === 'teatro'){
+        if (this.alias === 'teatro') {
             Teatro.transform = transforms.modelViewMatrix;
-        }else if(this.alias === 'teatro_lado1'){
+        } else if (this.alias === 'teatro_lado1') {
             const teatroLadoTransform = transforms.modelViewMatrix;
             // mat4.translate(teatroLadoTransform, Teatro.transform, [0, 0, 2]);
-          //  mat4.rotate(teatroLadoTransform, teatroLadoTransform , Math.PI / 2, [1, 0, 0]);
-        }else if(this.alias === 'teatro_lado2'){
+            //  mat4.rotate(teatroLadoTransform, teatroLadoTransform , Math.PI / 2, [1, 0, 0]);
+        } else if (this.alias === 'teatro_lado2') {
             const teatroLadoTransform = transforms.modelViewMatrix;
             mat4.translate(teatroLadoTransform, Teatro.transform, [0, 2, -2]);
-            mat4.rotate(teatroLadoTransform, teatroLadoTransform , Math.PI / 2, [1, 0, 0]);
-        }else if(this.alias === 'teatro_lado3'){
+            mat4.rotate(teatroLadoTransform, teatroLadoTransform, Math.PI / 2, [1, 0, 0]);
+        } else if (this.alias === 'teatro_lado3') {
             const teatroLadoTransform = transforms.modelViewMatrix;
-            mat4.rotate(teatroLadoTransform, Teatro.transform , Math.PI / 2, [0, 1, 0]);
-            mat4.translate(teatroLadoTransform,teatroLadoTransform, [0, 2, -2]);
-            mat4.rotate(teatroLadoTransform, teatroLadoTransform , Math.PI / 2, [1, 0, 0]);
+            mat4.rotate(teatroLadoTransform, Teatro.transform, Math.PI / 2, [0, 1, 0]);
+            mat4.translate(teatroLadoTransform, teatroLadoTransform, [0, 2, -2]);
+            mat4.rotate(teatroLadoTransform, teatroLadoTransform, Math.PI / 2, [1, 0, 0]);
         }
 
     }
+
     complexCube() {
         const {transforms} = this;
         if (this.alias === 'complexCube') {

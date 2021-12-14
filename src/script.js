@@ -8,17 +8,15 @@ import {Camera} from "./js/Camera";
 import {Controls} from "./js/Controls";
 import {Transforms} from "./js/Transforms";
 import {AnimacionPanelesSolares, PanelSolar} from "./js/PanelSolar";
-import {Cilindro, Superficie, Tapa, Torus, Tubo,} from "./js/Superficies";
+import {Cilindro, Superficie, Tapa, Tubo,} from "./js/Superficies";
 import {Forma, SuperficieParametrica, SuperficieParametrica1} from "./js/SuperficiesDeBarrido";
 import {Bloque} from "./js/Bloque";
 import {CurvaCubicaDeBezier} from "./js/CurvasDeBezier";
 import {DroneCameraControl} from "./js/droneCamara";
 import {colores} from "./js/colores";
 import {Anillo, Bloques, Capsula, Esfera, Nave, PanelesSolares, TransformacionesAfin} from "./js/TransformacionesAfin";
-import {mat4, vec3} from "gl-matrix";
+import {mat4} from "gl-matrix";
 import {Texture} from "./js/Texture";
-import {Floor} from "./js/Floor";
-import {Axis} from "./js/Axis";
 
 
 let
@@ -28,9 +26,14 @@ let
     fixedLight = true,
     triangleStrip = true,
     wireframe = false,
+    lightColor, lightAmbient, lightSpecular,
+    textureEarthClouds,
+    textureEarthSpecular,
     ajuste = 8.0,  //para ajustar posiciones de los objetos, se usa en el diseño
     dxAnillo = 0.01,
-    lightPosition = [-7, 13, 20],
+    lightPosition = [100, 100, 100],
+    // lightPosition = [0,0,0],
+
     animationRate; //ms
 
 const colorGenerico = colores.RojoMetalico;
@@ -77,7 +80,9 @@ function configure() {
         'uHasTexture',
         'uIsTheCubeMapShader',
         'uSampler',
+        'uCloudSampler',
         'uSpecularSampler',
+        'uActivateEarthTextures',
         'uNormalSampler',
         'uCubeSampler',
 
@@ -91,18 +96,13 @@ function configure() {
 
     // Configure `camera` and `controls`
     camera = new Camera(Camera.ORBITING_TYPE, 70, 0);
-    camera.goTo([0, 0, 60], 0, -30, [0, 0, 0])
+    camera.goTo([0, 0, 30], 0, -30, [0, 0, 0])
     droneCam = new DroneCameraControl([0, 0, -10], camera);
     controles = new Controls(camera, canvas, droneCam);
 
     // Configure `transforms`
     transforms = new Transforms(gl, program, camera, canvas);
 
-    gl.uniform3fv(program.uLightPosition, lightPosition);
-    gl.uniform4fv(program.uLightAmbient, [0.2, 0.2, 0.2, 1]);
-    gl.uniform4fv(program.uLightDiffuse, [1, 1, 1, 1]);
-    gl.uniform4fv(program.uLightSpecular, [1, 1, 1, 1]);
-    gl.uniform1f(program.uShininess, 230);
 
     //Bloques del anillo
     bloque = new Bloque(dimensiones.anillo.radio, scene)
@@ -116,7 +116,6 @@ function configure() {
 
 function cargarTexturas() {
     // Configure cube texture
-
     const skyBoxFiles = [
         "Left_1K_TEX.png",
         "Right_1K_TEX.png",
@@ -140,13 +139,17 @@ function cargarTexturas() {
 
     //cada vez que empieza el programa, elige aleatoriamente un set de texturas para el cubemap
     let random = Math.floor(Math.random() * 3);
-    random = 1
+    random = 2
+    transformar.tierraLunaEnElMundo(random)
 
-    const lightPosition0 = [-1050,-960,-220];
-    const lightPosition1 = [450,95,-1035]
-    const lightPosition2 = [7,-200,-1046]
-
-    gl.uniform3fv(program.uLightPosition, lightPosition1);
+    const gray = 0.1
+    lightAmbient = [0.1, 0.1, 0.1, 1.0];
+    lightSpecular = [1.0, 1.0, 1.0, 1.0];
+    gl.uniform3fv(program.uLightPosition, dimensiones.lightPosition[random]);
+    gl.uniform4fv(program.uLightAmbient, lightAmbient);
+    gl.uniform4fv(program.uLightDiffuse, utils.normalizeColor(colores.lightColor[random]));
+    gl.uniform4fv(program.uLightSpecular, lightSpecular);
+    gl.uniform1f(program.uShininess, 230.0);
 
 
     loadCubemapFace(gl, gl.TEXTURE_CUBE_MAP_POSITIVE_X, cubeTexture, skyBox_url[random][0]);
@@ -172,6 +175,13 @@ function cargarTexturas() {
     gl.uniform1i(program.uSampler, samplerTextureUnit);
     gl.uniform1i(program.uNormalSampler, normalTextureUnit);
 
+    //texturas adicionales de la tierra
+    const cloudTextureUnit = 3;
+    const specularTextureUnit = 4;
+    gl.uniform1i(program.uCloudSampler, cloudTextureUnit);
+    gl.uniform1i(program.uSpecularSampler, specularTextureUnit);
+
+
     // console.log("cubeSampler",program.getUniform(program.uCubeSampler))
     // console.log("sampler",program.getUniform(program.uSampler))
     // console.log("normal",program.getUniform(program.uNormalSampler))
@@ -193,9 +203,10 @@ function loadCubemapFace(gl, target, texture, url) {
 function load() {
 
     scene.load('/geometries/cube-texture.json', 'cubeMap');
-    // scene.load('/sphere.json', 'light');
+    scene.load('/geometries/sphere.json', 'light');
     // scene.add(new Floor(80, 1));
     // scene.add(new Axis(82));
+
     scene.add(new Superficie(null, 'nave'))
     cargarNucleo()
     panelSolar = new PanelSolar(scene);
@@ -206,15 +217,15 @@ function load() {
     cargarEsfera()
     cargarCapsula()
     cargarALaLuna()
+    cargarALaTierra()
 }
 
-function cargarALaLuna() {
-
+function cargarALaTierra() {
     const pasoDiscretoRecorrido = 50
     const divisionesForma = 50 //precision en la forma
 
     const porcionDeCircunferencia = 1 / 2
-    const radio = 120
+    const radio = 1405
     //reutilizo la funcion para crear una forma circular
     const forma = utils.crearRecorridoCircular(radio, porcionDeCircunferencia, divisionesForma)
 
@@ -223,11 +234,64 @@ function cargarALaLuna() {
         puntos: forma.puntos,
         normales: forma.binormales.map(punto => {
             return [
-                punto[0] ,punto[1]]
+                punto[0], punto[1]]
         }),
         tangentes: forma.tangentes.map(punto => {
             return [
-                punto[0] ,punto[1]
+                punto[0], punto[1]
+            ]
+        }),
+    }
+
+    const pasoDiscretoForma = datosDeLaForma.puntos.length - 1
+    const dimensiones = {
+        filas: pasoDiscretoRecorrido, //paso discreto del recorrido
+        columnas: pasoDiscretoForma, //divisiones de la forma
+    }
+
+    //Klave para la sup de Rev
+    const datosDelRecorrido = utils.crearRecorridoCircular(0, 1, dimensiones["filas"])
+
+    const tierra = new SuperficieParametrica1("tierra", datosDeLaForma, datosDelRecorrido, dimensiones, true)
+
+    const nuevasTangentes = utils.calcularTanYBiTan(tierra)
+
+    tierra.tangentes = nuevasTangentes.tangentes
+    tierra.diffuse = colores.Textura
+    const gray = 0.1
+    tierra.ambient = [gray, gray, gray, 1]
+
+    tierra.texture = {
+        diffuse: 'earth/Earth.Diffuse.3840.jpg',
+        normal: 'earth/Earth.Normal.3840.jpg'
+    }
+    textureEarthClouds = new Texture(gl, 'earth/Earth.Clouds.2048.jpg')
+    textureEarthSpecular = new Texture(gl, 'earth/Earth.Specular.2048.jpg')
+
+    scene.add(tierra)
+
+}
+
+function cargarALaLuna() {
+
+    const pasoDiscretoRecorrido = 50
+    const divisionesForma = 50 //precision en la forma
+
+    const porcionDeCircunferencia = 1 / 2
+    const radio = 345//120
+    //reutilizo la funcion para crear una forma circular
+    const forma = utils.crearRecorridoCircular(radio, porcionDeCircunferencia, divisionesForma)
+
+    //rotar los puntos del recorrido x,y 45 grados
+    const datosDeLaForma = {
+        puntos: forma.puntos,
+        normales: forma.binormales.map(punto => {
+            return [
+                punto[0], punto[1]]
+        }),
+        tangentes: forma.tangentes.map(punto => {
+            return [
+                punto[0], punto[1]
             ]
         }),
     }
@@ -243,7 +307,7 @@ function cargarALaLuna() {
 
     const luna = new SuperficieParametrica1("luna", datosDeLaForma, datosDelRecorrido, dimensiones, true)
 
-    const nuevasTangentes  = utils.calcularTanYBiTan(luna)
+    const nuevasTangentes = utils.calcularTanYBiTan(luna)
 
     luna.tangentes = nuevasTangentes.tangentes
     luna.diffuse = colores.Textura
@@ -845,9 +909,11 @@ function cargarNucleo() {
     nucleoPS.textureCoords.push(
         ...nuevasUV
     );
+    const gris = 0.2
 
-    nucleoPS.diffuse = colores.Textura
+    nucleoPS.diffuse =  colores.Textura
     nucleoPS.UVTexture = true
+    nucleoPS.ambient = [gris, gris, gris, 1]
 
     //clone object nucleoPS
     const nucleoAnillo = Object.assign({}, nucleoPS);
@@ -930,11 +996,11 @@ function cargarTorus() {
         puntos: forma.puntos,
         normales: forma.binormales.map(punto => {
             return [
-                punto[0] ,punto[1]]
+                punto[0], punto[1]]
         }),
         tangentes: forma.tangentes.map(punto => {
             return [
-                punto[0] ,punto[1]
+                punto[0], punto[1]
             ]
         }),
     }
@@ -951,8 +1017,8 @@ function cargarTorus() {
     let UTexture = []
     const VTexture = []
 
-    for (let i=0; i<= (dimensionesTriangulosTorus.filas); i++) {
-        VTexture.push( i / (dimensionesTriangulosTorus.filas))
+    for (let i = 0; i <= (dimensionesTriangulosTorus.filas); i++) {
+        VTexture.push(i / (dimensionesTriangulosTorus.filas))
     }
 
     const arrayDePuntos = []
@@ -963,7 +1029,7 @@ function cargarTorus() {
     //80 = 5 * (15 + 1)
     //80 = 4 * (19 + 1)
     arrayDePuntos.push(0)
-    for (let j=0; j<=cant_UVTexture; j++) {
+    for (let j = 0; j <= cant_UVTexture; j++) {
         for (let i = 1; i <= divisiones; i++) {
             arrayDePuntos.push(i / divisiones + j)
         }
@@ -973,12 +1039,12 @@ function cargarTorus() {
         ...arrayDePuntos
     )
 
-    for(let i=0; i<UTexture.length; i++) {
-        for(let j=0; j<VTexture.length; j++) {
+    for (let i = 0; i < UTexture.length; i++) {
+        for (let j = 0; j < VTexture.length; j++) {
             nuevasTexturasUV.push(UTexture[i], VTexture[j])
         }
     }
-    (torus.textureCoords.length!==nuevasTexturasUV.length)? console.error("Distintas cantidades de texturas") : null
+    (torus.textureCoords.length !== nuevasTexturasUV.length) ? console.error("Distintas cantidades de texturas") : null
 
     torus.textureCoords = nuevasTexturasUV;
 
@@ -988,7 +1054,7 @@ function cargarTorus() {
     //Se carga a la escena
     torus.diffuse = colores.Textura
     const gris = 0.2
-    torus.ambient = [gris,gris,gris,1]
+    torus.ambient = [gris, gris, gris, 1]
     torus.texture = {
         diffuse: 'torus/diffuse.jpg',
         normal: 'torus/normal.jpg'
@@ -1027,11 +1093,10 @@ function draw() {
             }
 
 
-
             //cubmaps
             if (object.alias === "cubeMap") {
                 const cubeMapTransform = transforms.modelViewMatrix;
-                const factor = 2048;
+                const factor = 2048 * 2;
 
                 const {
                     rotationMatrix,
@@ -1044,8 +1109,6 @@ function draw() {
                 mat4.scale(cubeMapTransform, cubeMapTransform, [factor, factor, factor]);
                 // return;
             }
-
-
 
 
             //Actualizo el wireframe
@@ -1107,6 +1170,8 @@ function draw() {
             //////////////////////////////////////////////////////////
             transformar.luna()
 
+            transformar.tierra()
+
             transformar.nucleoDelPanelSolar()
 
             transformar.panelesSolares()
@@ -1133,10 +1198,9 @@ function draw() {
             // transformacion de los objetos se convierte en la ModelViewMatrix y se la manda a la uniform correspondiente
             // ahora se popea para que vuelva a ser la matriz de vista.
             // const viewMatrix = camera.getViewTransform() //alternativamente-------->es la de vista
-            const posicionCamara = Array.from(camera.cameraPositionCoordDelMundo)
-            console.log(`posCamara: ${posicionCamara[0].toFixed(2)}, ${posicionCamara[1].toFixed(2)}, ${posicionCamara[2].toFixed(2)}`);
-
             gl.uniformMatrix4fv(program.uViewMatrix, false, transforms.modelViewMatrix);
+            // const posicionCamara = Array.from(camera.cameraPositionCoordDelMundo)
+            // console.log(`posCamara: ${posicionCamara[0].toFixed(2)}, ${posicionCamara[1].toFixed(2)}, ${posicionCamara[2].toFixed(2)}`);
 
             dibujarMallaDeObjeto(object)
 
@@ -1167,46 +1231,45 @@ function dibujarMallaDeObjeto(object) {
     // Bind
     gl.bindVertexArray(object.vao);
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, object.ibo);
-    //Cubemap
-    if (object.alias === 'cubeMap') {
-        //le indicamos al shader las acciones que tiene que tomar con la cubemap
-        gl.uniform1i(program.uHasTexture, false);
-        gl.uniform1i(program.uIsTheCubeMapShader, true);
 
+    // Reset
+    gl.uniform1i(program.uIsTheCubeMapShader, false);
+    gl.uniform1i(program.uHasTexture, false);
+    gl.uniform1i(program.uActivateEarthTextures, false);
+
+    //Textures
+    if (object.alias === 'cubeMap') {
+
+        gl.uniform1i(program.uIsTheCubeMapShader, true);
         // Activate cube map
-        // gl.uniform1i(program.uCubeSampler, 0);
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubeTexture);
 
-    } else
-        // Activate texture
-    if (object.texture || object.UVTexture) {
+    } else if (object.texture || object.UVTexture) {
 
-        gl.uniform1i(program.uIsTheCubeMapShader, false);
         gl.uniform1i(program.uHasTexture, true);
 
-        // Texture Diffuse : gl.uniform1i(program.uSampler, 1)
         gl.activeTexture(gl.TEXTURE1);
         (object.UVTexture) ?
             gl.bindTexture(gl.TEXTURE_2D, textureDiffuse.glTexture) :
             gl.bindTexture(gl.TEXTURE_2D, object.texture.diffuse.glTexture);
-        /*
-                gl.activeTexture(gl.TEXTURE1);
-                gl.bindTexture(gl.TEXTURE_2D, texture1.glTexture);
-                gl.uniform1i(program.uSpecularSampler, 1);
-        */
-        // Texture Normal: gl.uniform1i(program.uNormalSampler, 2);
+
         gl.activeTexture(gl.TEXTURE2);
         (object.UVTexture) ?
             gl.bindTexture(gl.TEXTURE_2D, textureNormal.glTexture) :
             gl.bindTexture(gl.TEXTURE_2D, object.texture.normal.glTexture);
-    } else {
 
-        gl.uniform1i(program.uIsTheCubeMapShader, false);
-        gl.uniform1i(program.uHasTexture, false);
+        //si el objeto es la tierra cargamos dos texturas mas para el shader
+        if (object.alias === 'tierra') {
+            gl.uniform1i(program.uActivateEarthTextures, true);
+            //nubes
+            gl.activeTexture(gl.TEXTURE3);
+            gl.bindTexture(gl.TEXTURE_2D, textureEarthClouds.glTexture);
+            //specular
+            gl.activeTexture(gl.TEXTURE4);
+            gl.bindTexture(gl.TEXTURE_2D, textureEarthSpecular.glTexture);
+        }
     }
-
-
     // Draw
     if (object.wireframe) { //piso y axis con con gl.LINES
 
@@ -1328,10 +1391,20 @@ function initControls() {
 
 
     */
-
-
-
-
+            'Light Color': {
+                value: utils.denormalizeColor(lightColor),
+                onChange: v => gl.uniform4fv(program.uLightDiffuse, utils.normalizeColor(v))
+            },
+            'Light Ambient Term': {
+                value: lightAmbient[0],
+                min: 0, max: 1, step: 0.01,
+                onChange: v => gl.uniform4fv(program.uLightAmbient, [v, v, v, 1])
+            },
+            'Light Specular Term': {
+                value: lightSpecular[0],
+                min: 0, max: 1, step: 0.01,
+                onChange: v => gl.uniform4fv(program.uLightSpecular, [v, v, v, 1])
+            },
 
 
             ...['Translate X', 'Translate Y', 'Translate Z'].reduce((result, name, i) => {
@@ -1350,6 +1423,80 @@ function initControls() {
             }, {}),
 
             //'Go Home': () => camera.goHome(),
+            ...['Earth X', 'Earth Y', 'Earth Z'].reduce((result, name, i) => {
+                result[name] = {
+                    value: dimensiones.ajusteTierra.coordenadas[i],
+                    min: -2500, max: 2500, step: 1,
+                    onChange(v, state) {
+                        const nuevasCoord = [
+                            state['Earth X'],
+                            state['Earth Y'],
+                            state['Earth Z']
+                        ]
+                        dimensiones.ajusteTierra.coordenadas = nuevasCoord;
+                    }
+                };
+                return result;
+            }, {}),
+            ...['Earth RX', 'Earth RY', 'Earth RZ'].reduce((result, name, i) => {
+                result[name] = {
+                    value: dimensiones.ajusteTierra.rotacion[i],
+                    min: 0, max: 2 * Math.PI, step: 0.01,
+                    onChange(v, state) {
+                        const nuevasCoord = [
+                            state['Earth RX'],
+                            state['Earth RY'],
+                            state['Earth RZ']
+                        ]
+                        dimensiones.ajusteTierra.rotacion = nuevasCoord;
+                    }
+                };
+                return result;
+            }, {}),
+
+            'RadioTierra': {
+                value: dimensiones.ajusteTierra.radio,
+                min: 0, max: 2000, step: 1,
+                onChange: v => dimensiones.ajusteTierra.radio = v,
+            },
+
+
+            ...['Luna X', 'Luna Y', 'Luna Z'].reduce((result, name, i) => {
+                result[name] = {
+                    value: dimensiones.ajusteLuna.coordenadas[i],
+                    min: -2500, max: 2500, step: 1,
+                    onChange(v, state) {
+                        const nuevasCoord = [
+                            state['Luna X'],
+                            state['Luna Y'],
+                            state['Luna Z']
+                        ]
+                        dimensiones.ajusteLuna.coordenadas = nuevasCoord;
+                    }
+                };
+                return result;
+            }, {}),
+            ...['Luna RX', 'Luna RY', 'Luna RZ'].reduce((result, name, i) => {
+                result[name] = {
+                    value: dimensiones.ajusteLuna.rotacion[i],
+                    min: 0, max: 2 * Math.PI, step: 0.01,
+                    onChange(v, state) {
+                        const nuevasCoord = [
+                            state['Luna RX'],
+                            state['Luna RY'],
+                            state['Luna RZ']
+                        ]
+                        dimensiones.ajusteLuna.rotacion = nuevasCoord;
+                    }
+                };
+                return result;
+            }, {}),
+
+            'RadioLuna': {
+                value: dimensiones.ajusteLuna.radio,
+                min: 0, max: 1000, step: 1,
+                onChange: v => dimensiones.ajusteLuna.radio = v,
+            },
 
 
             'Static Light Position': {

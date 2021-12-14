@@ -1,0 +1,193 @@
+<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta content="width=device-width,initial-scale=1" name="viewport"><title>Estación Espacial</title><script id="vertex-shader" type="x-shader/x-vertex">#version 300 es
+        precision mediump float;
+
+        uniform mat4 uModelViewMatrix;
+        uniform mat4 uProjectionMatrix;
+        uniform mat4 uNormalMatrix;
+        uniform vec3 uLightPosition;
+        uniform mat4 uViewMatrix;
+        uniform vec4 uMaterialDiffuse;
+        uniform bool uWireframe;
+        uniform bool uUpdateLight;
+
+        in vec3 aVertexPosition;
+        in vec3 aVertexNormal;
+        in vec3 aVertexTangent;
+        in vec4 aVertexColor;
+        in vec2 aVertexTextureCoords;
+
+        out vec3 vNormal;
+        out vec3 vLightRay;
+        out vec3 vEyeVector;
+        out vec3 vSurfaceToView;
+        out vec4 vFinalColor;
+        out vec2 vTextureCoords;
+        out vec3 vTangentLightDirection;
+        out vec3 vTangentEyeDirection;
+        out vec3 vVertexNormal;//para el cubemaps
+
+
+        void main(void) {
+            // If wireframe is enabled, set color to the diffuse property exclusing lights
+            if (uWireframe) {
+                vFinalColor = uMaterialDiffuse;
+            }
+            vec4 vertex = uModelViewMatrix * vec4(aVertexPosition, 1.0);
+            vec4 light = vec4(uLightPosition, 1.0);
+            // If true, then ensure that light position
+            // is appropruately updated
+            if (uUpdateLight) {
+                light = uViewMatrix * vec4(uLightPosition, 1.0);
+            }
+
+            vNormal = vec3(uNormalMatrix * vec4(aVertexNormal, 1.0));
+            vLightRay = vertex.xyz-light.xyz;
+            vEyeVector = -vec3(vertex.xyz);
+
+            // NORMAL MAPPING
+            vec3 normal = normalize(vNormal);
+            vec3 tangent = normalize(vec3(uNormalMatrix * vec4(aVertexTangent, 1.0)));
+            tangent = normalize(tangent - dot(tangent, normal) * normal);
+            vec3 bitangent = cross(normal, tangent);
+            //tbn Matrix, already transposed
+            mat3 tbnMatrix = mat3(
+            tangent.x, bitangent.x, normal.x, //first column
+            tangent.y, bitangent.y, normal.y, //second column
+            tangent.z, bitangent.z, normal.z//third column
+            );
+            vTangentEyeDirection =  tbnMatrix * vEyeVector;// Eye direction, from camera position to vertex
+            vTangentLightDirection =  tbnMatrix * (-vLightRay);// Light direction, from light position to vertex
+            vTextureCoords = aVertexTextureCoords;
+
+            //para el cubemaps
+            //            vVertexNormal = normalize((uNormalMatrix * vec4(-aVertexPosition, 1.0)).xyz);
+            vVertexNormal = normalize(aVertexPosition);
+            gl_Position = uProjectionMatrix * uModelViewMatrix * vec4(aVertexPosition, 1.0);
+        }</script><script id="fragment-shader" type="x-shader/x-fragment">#version 300 es
+//        #define numTextures 2
+        precision mediump float;
+
+        uniform samplerCube uCubeSampler;
+        uniform sampler2D uSampler;
+        uniform sampler2D uCloudSampler;
+        uniform sampler2D uSpecularSampler;
+        uniform sampler2D uNormalSampler;
+
+        uniform bool uWireframe;
+        uniform vec4 uLightAmbient;
+        uniform vec4 uLightDiffuse;
+        uniform vec4 uLightSpecular;
+        uniform vec4 uMaterialAmbient;
+        uniform vec4 uMaterialDiffuse;
+        uniform vec4 uMaterialSpecular;
+        uniform float uShininess;
+
+        uniform float uAjuste;
+        uniform bool uHasTexture;
+        uniform bool uIsTheCubeMapShader;
+        uniform bool uActivateEarthTextures;
+        uniform bool uActivateSpecularTexture;
+
+        in vec3 vNormal;
+        in vec3 vLightRay;
+        in vec3 vEyeVector;
+        // in vec3 vSurfaceToView;
+        in vec4 vFinalColor;
+        in vec2 vTextureCoords;
+        in vec3 vTangentLightDirection;
+        in vec3 vTangentEyeDirection;
+
+        //para el cubemaps
+        in vec3 vVertexNormal;
+
+        out vec4 fragColor;
+/*
+
+
+        varying float v_textureIndex;
+        uniform sampler2D u_textures[numTextures];
+
+        vec4 getSampleFromArray(sampler2D textures[4], int ndx, vec2 uv) {
+            vec4 color = vec4(0);
+            for (int i = 0; i < numTextures; ++i) {
+                vec4 c = texture2D(u_textures[i], uv);
+                if (i == ndx) {
+                    color += c;
+                }
+            }
+            return color;
+        }
+
+        void main() {
+            gl_FragColor = getSampleFromArray(u_textures, int(v_textureIndex), vec2(0.5, 0.5));
+        }
+        */
+
+        void main(void) {
+            if (uWireframe) {
+                fragColor = vFinalColor;
+            }
+            else {
+
+                if (uIsTheCubeMapShader){
+                    //fragColor = texture(uSampler, vTextureCoords) * texture(uCubeSampler, vVertexNormal);
+                    fragColor =  texture(uCubeSampler, normalize(vVertexNormal));
+                } else
+
+                if (uHasTexture){
+                    // Unpack tangent-space normal from texture
+                    vec3 normal = normalize((texture(uNormalSampler, vTextureCoords).rgb  - 0.5) * 2.0);
+
+                    // Normalize the light direction and determine how much light is hitting this point
+                    vec3 lightDirection = normalize(vTangentLightDirection);
+                    float lambertTerm = max(dot(normal, lightDirection), 0.1); //0.0 en este caso las sombras pueden ser totalmente negras
+
+                    //Si tengo un mapa especular se agregar el termino al calculo final
+                    float specularTexture = 1.0;//vec4(1.0);
+                    vec4 cloudEarthColor = vec4(0.0);
+                    if (uActivateEarthTextures){
+                        cloudEarthColor = texture(uCloudSampler, vTextureCoords);
+                    }
+                    if(uActivateSpecularTexture){
+                        specularTexture = texture(uSpecularSampler, vTextureCoords).r;
+                    }
+                    // Calculate Specular level
+                    vec3 eyeDirection = normalize(vTangentEyeDirection);
+                    vec3 reflectDir = reflect(-lightDirection, normal);
+                    float specular = pow(clamp(dot(reflectDir, eyeDirection), 0.0, 1.0), 8.0);
+
+                    // Ambient
+                    vec4 Ia = uLightAmbient * uMaterialAmbient;
+                    // Diffuse
+                    vec4 Id = uLightDiffuse * uMaterialDiffuse  * lambertTerm * ( texture(uSampler, vTextureCoords) + cloudEarthColor);
+                    // Specular
+                    vec4 Is = uLightSpecular * uMaterialSpecular * specular * specularTexture;
+
+                    vec4 vColor = vec4(vec3(Ia + Id + Is), 1.0);
+
+                    fragColor = vColor;
+
+                } else {
+                    vec3 L = normalize(vLightRay);
+                    vec3 N = normalize(vNormal);
+                    float lambertTerm = max(dot(N, -L), 0.1); //0.0 en este caso las sombras pueden ser totalmente negras
+
+                    // Calculate Specular level
+                    vec3 E = normalize(vEyeVector);
+                    vec3 R = reflect(L, N);
+                    float specular = pow(max(dot(R, E), 0.0), uShininess);
+
+
+                    // Ambient
+                    vec4 Ia = uLightAmbient * uMaterialAmbient;
+                    // Diffuse
+                    vec4 Id = uLightDiffuse * uMaterialDiffuse * lambertTerm;
+                    // Specular
+                    vec4 Is = uLightSpecular * uMaterialSpecular * specular;
+
+                    vec4 vColor = vec4(vec3(Ia + Id + Is), 1.0);
+
+                    fragColor = vColor;
+                }
+            }
+        }</script><link rel="icon" href="favicon.png"><script defer="defer" src="bundle.06af553ccf663258e617.js"></script><link href="main.css" rel="stylesheet"></head><body><canvas height="600" id="webgl-canvas" width="800">Your browser does not support the HTML5 canvas element.</canvas></body></html>

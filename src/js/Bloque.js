@@ -3,6 +3,7 @@ import {Forma, SuperficieParametrica1, TapaSuperficieParametrica} from "./Superf
 import {utils} from "./utils";
 import {mat4} from "gl-matrix";
 import {Superficie} from "./Superficies";
+import {colores} from "./colores";
 
 export class Bloque {
     constructor(radioDelAnillo, scene, type = Bloque.BLOQUES_8,
@@ -326,6 +327,7 @@ export class Bloque {
         );
 
 
+
         let i = 4;
         while (i--) {
             this.dictionary[Bloque.BLOQUES_4].push(bloque4)
@@ -374,9 +376,10 @@ export class Bloque {
 
     actualizarEscena() {
         this.dictionary[this.type].forEach(item => {
-            this.scene.add(item,{
-                diffuse: [1.0, 1.0, 1.0, 1],
-                hasTexture: true,
+            this.scene.add(item, {
+                texture : "UV",
+                diffuse : colores.Textura.diffuse,
+                ambient : colores.Textura.ambient
             });
         });
         this.bloqueActual = this.dictionary[this.type]

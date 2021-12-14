@@ -152,31 +152,41 @@
 
                     // Normalize the light direction and determine how much light is hitting this point
                     vec3 lightDirection = normalize(vTangentLightDirection);
-                    float lambertTerm = max(dot(normal, lightDirection), 0.1);
+                    float lambertTerm = max(dot(normal, lightDirection), 0.1); //0.0 en este caso las sombras pueden ser totalmente negras
 
                     //Si tengo un mapa especular se agregar el termino al calculo final
-                    float specularFactor = 1.0;
-                    vec4 cloudColor = vec4(0.0);
+                    float specularTexture = 1.0;
+                    vec4 cloudEarthColor = vec4(0.0);
                     if (uActivateEarthTextures){
-                        specularFactor = texture(uSpecularSampler, vTextureCoords).r;
-                        cloudColor = texture(uCloudSampler, vTextureCoords);
+                        specularTexture = texture(uSpecularSampler, vTextureCoords).r;
+                        cloudEarthColor = texture(uCloudSampler, vTextureCoords);
                     }
                     // Calculate Specular level
                     vec3 eyeDirection = normalize(vTangentEyeDirection);
                     vec3 reflectDir = reflect(-lightDirection, normal);
-                    float Is = pow(clamp(dot(reflectDir, eyeDirection), 0.0, 1.0), 8.0)* specularFactor;
+                    float specular = pow(clamp(dot(reflectDir, eyeDirection), 0.0, 1.0), 8.0);
+                    float specularFactor = specular  *  specularTexture;
 
-                    vec4 Id = uLightDiffuse * uMaterialDiffuse  * lambertTerm * ( texture(uSampler, vTextureCoords) +cloudColor);
-
+                    // Ambient
                     vec4 Ia = uLightAmbient * uMaterialAmbient;
+                    // Diffuse
+                    vec4 Id = uLightDiffuse * uMaterialDiffuse  * lambertTerm * ( texture(uSampler, vTextureCoords) + cloudEarthColor);
+                    // Specular
+                    vec4 Is = uLightSpecular * uMaterialSpecular * specularFactor;
 
-                    fragColor = Ia + Id + Is;
+                    vec4 vColor = vec4(vec3(Ia + Id + Is), 1.0);
+
+                    fragColor = vColor;
 
                 } else {
                     vec3 L = normalize(vLightRay);
                     vec3 N = normalize(vNormal);
-//                    float lambertTerm = dot(N, -L); en este caso las sombras ceras totalmente negras
-                    float lambertTerm = max(dot(N, -L), 0.1);
+                    float lambertTerm = max(dot(N, -L), 0.1); //0.0 en este caso las sombras pueden ser totalmente negras
+
+                    // Calculate Specular level
+                    vec3 E = normalize(vEyeVector);
+                    vec3 R = reflect(L, N);
+                    float specular = pow(max(dot(R, E), 0.0), uShininess);
 
 
                     // Ambient
@@ -184,10 +194,7 @@
                     // Diffuse
                     vec4 Id = uLightDiffuse * uMaterialDiffuse * lambertTerm;
                     // Specular
-                    vec3 E = normalize(vEyeVector);
-                    vec3 R = reflect(L, N);
-                    float specular = pow(max(dot(R, E), 0.0), uShininess);
-                    vec4 Is = uLightSpecular * uMaterialSpecular * specular;//*specularFactor;
+                    vec4 Is = uLightSpecular * uMaterialSpecular * specular;
 
                     vec4 vColor = vec4(vec3(Ia + Id + Is), 1.0);
 

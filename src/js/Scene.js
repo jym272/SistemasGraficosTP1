@@ -136,6 +136,7 @@ export class Scene {
     }
 
     // Image texture
+    /*
     if (object.texture) {
       const diffuse = new Texture(gl, object.texture.diffuse)
       const normal = new Texture(gl, object.texture.normal)
@@ -144,6 +145,8 @@ export class Scene {
         normal
       }
     }
+
+     */
 
     // Push to our objects list for later access
     this.objects.push(object);

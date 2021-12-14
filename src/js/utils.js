@@ -443,7 +443,7 @@ export const utils = {
             BITAN.push(...utils.normalizarVector(b))
 
         }
-        console.log(posCounter,negCounter)
+        // console.log(posCounter,negCounter)
         return {
             tangentes: TAN,
             bitangentes: BITAN

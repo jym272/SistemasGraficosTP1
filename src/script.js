@@ -29,6 +29,7 @@ let
     lightColor, lightAmbient, lightSpecular,
     textureEarthClouds,
     textureEarthSpecular,
+    textureMap,
     ajuste = 8.0,  //para ajustar posiciones de los objetos, se usa en el diseño
     dxAnillo = 0.01,
     lightPosition = [100, 100, 100],
@@ -145,9 +146,10 @@ function cargarTexturas() {
     const gray = 0.1
     lightAmbient = [0.1, 0.1, 0.1, 1.0];
     lightSpecular = [1.0, 1.0, 1.0, 1.0];
+    lightColor = utils.normalizeColor(colores.lightColor[random])
     gl.uniform3fv(program.uLightPosition, dimensiones.lightPosition[random]);
     gl.uniform4fv(program.uLightAmbient, lightAmbient);
-    gl.uniform4fv(program.uLightDiffuse, utils.normalizeColor(colores.lightColor[random]));
+    gl.uniform4fv(program.uLightDiffuse, lightColor);
     gl.uniform4fv(program.uLightSpecular, lightSpecular);
     gl.uniform1f(program.uShininess, 230.0);
 
@@ -160,11 +162,17 @@ function cargarTexturas() {
     loadCubemapFace(gl, gl.TEXTURE_CUBE_MAP_NEGATIVE_Z, cubeTexture, skyBox_url[random][5]);
 
 
-
     // Textures
-    textureDiffuse = new Texture(gl, 'UV.jpg');
-    // texture1 = new Texture(gl, 'earthSpecular.jpg');
-    textureNormal = new Texture(gl, 'UV_normal.jpg');
+    textureMap = {}
+    textureMap["UV"] = {
+        diffuse: new Texture(gl, 'UV.jpg'),
+        normal: new Texture(gl, 'UV_normal.jpg')
+    }
+    textureMap["bloque"] = {
+        diffuse: new Texture(gl, 'bloque/diffuse.jpg'),
+        normal: new Texture(gl, 'bloque/normal.jpg')
+    }
+
 
     //Asignando unidades de texturas
     const cubeMapTextureUnit = 0;
@@ -257,14 +265,16 @@ function cargarALaTierra() {
     const nuevasTangentes = utils.calcularTanYBiTan(tierra)
 
     tierra.tangentes = nuevasTangentes.tangentes
-    tierra.diffuse = colores.Textura
+    tierra.diffuse = colores.Textura.diffuse
     const gray = 0.1
     tierra.ambient = [gray, gray, gray, 1]
 
-    tierra.texture = {
-        diffuse: 'earth/Earth.Diffuse.3840.jpg',
-        normal: 'earth/Earth.Normal.3840.jpg'
+    tierra.texture = 'tierra'
+    textureMap[tierra.texture] = {
+        diffuse: new Texture(gl, 'earth/Earth.Diffuse.3840.jpg'),
+        normal: new Texture(gl, 'earth/Earth.Normal.3840.jpg')
     }
+
     textureEarthClouds = new Texture(gl, 'earth/Earth.Clouds.2048.jpg')
     textureEarthSpecular = new Texture(gl, 'earth/Earth.Specular.2048.jpg')
 
@@ -310,14 +320,18 @@ function cargarALaLuna() {
     const nuevasTangentes = utils.calcularTanYBiTan(luna)
 
     luna.tangentes = nuevasTangentes.tangentes
-    luna.diffuse = colores.Textura
-    luna.ambient = [0.2, 0.2, 0.2, 1]
+    luna.diffuse = colores.Textura.diffuse
+    luna.ambient = colores.Textura.ambient
 
-    luna.texture = {
-        diffuse: 'moon/diffuse1080.jpg',
-        normal: 'moon/normal1080.jpg'
+    luna.texture = 'luna'
+    textureMap[luna.texture] = {
+        diffuse: new Texture(gl, 'moon/diffuse1080.jpg'),
+        normal: new Texture(gl, 'moon/normal1080.jpg')
     }
     scene.add(luna)
+
+
+
 }
 
 function cargarCapsula() {
@@ -660,8 +674,9 @@ function cargarEsfera() {
     )
 
     //Se carga a la escena
-    esfera.diffuse = colores.Textura
-    esfera.UVTexture = true;
+    esfera.diffuse = colores.Textura.diffuse
+    esfera.ambient = colores.Textura.ambient
+    esfera.texture = "UV";
     scene.add(esfera)
 
 
@@ -733,21 +748,19 @@ function moduloVioleta() {
 
 
     const moduloVioletaPS = new SuperficieParametrica1("moduloVioletaPS", datosDeLaForma, datosDelRecorrido, dim)
-    const moduloVioletaAnillo = new SuperficieParametrica1("moduloVioletaAnillo", datosDeLaForma, datosDelRecorrido, dim)
+    const nuevasTanBitmoduloVioletaPS = utils.calcularTanYBiTan(moduloVioletaPS)
 
+    moduloVioletaPS.tangentes = nuevasTanBitmoduloVioletaPS.tangentes
     moduloVioletaPS.textureCoords = nuevasUV
-    moduloVioletaAnillo.textureCoords = nuevasUV
+    moduloVioletaPS.diffuse = colores.Textura.diffuse
+    moduloVioletaPS.ambient = colores.Textura.ambient
+    moduloVioletaPS.texture = "UV";
 
-    scene.add(moduloVioletaPS, {
-        diffuse: colores.Textura,
-        hasTexture: true,
-    });
+    const moduloVioletaAnillo = Object.assign({}, moduloVioletaPS)
+    moduloVioletaAnillo.alias = "moduloVioletaAnillo"
 
-    scene.add(moduloVioletaAnillo, {
-        diffuse: colores.Textura,
-        hasTexture: true,
-    });
-
+    scene.add(moduloVioletaPS)
+    scene.add(moduloVioletaAnillo)
 }
 
 function cargarNucleo() {
@@ -909,15 +922,15 @@ function cargarNucleo() {
     nucleoPS.textureCoords.push(
         ...nuevasUV
     );
-    const gris = 0.2
 
-    nucleoPS.diffuse =  colores.Textura
-    nucleoPS.UVTexture = true
-    nucleoPS.ambient = [gris, gris, gris, 1]
+    nucleoPS.diffuse = colores.Textura.diffuse
+    nucleoPS.ambient = colores.Textura.ambient
+    nucleoPS.texture = "UV"
 
     //clone object nucleoPS
     const nucleoAnillo = Object.assign({}, nucleoPS);
     nucleoAnillo.alias = "nucleoAnillo";
+
 
     scene.add(nucleoPS)
     scene.add(nucleoAnillo)
@@ -1052,13 +1065,15 @@ function cargarTorus() {
     torus.tangentes = nuevasTanBitCuerpo.tangentes
 
     //Se carga a la escena
-    torus.diffuse = colores.Textura
-    const gris = 0.2
-    torus.ambient = [gris, gris, gris, 1]
-    torus.texture = {
-        diffuse: 'torus/diffuse.jpg',
-        normal: 'torus/normal.jpg'
+    torus.diffuse = colores.Textura.diffuse
+    torus.ambient = colores.Textura.ambient
+    torus.texture = "torus"
+
+    textureMap[torus.texture] = {
+        diffuse: new Texture(gl, 'torus/diffuse.jpg'),
+        normal: new Texture(gl, 'torus/normal.jpg')
     }
+
     scene.add(torus)
 }
 
@@ -1245,19 +1260,17 @@ function dibujarMallaDeObjeto(object) {
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubeTexture);
 
-    } else if (object.texture || object.UVTexture) {
+    } else if (object.texture) {
 
         gl.uniform1i(program.uHasTexture, true);
 
+        const texture = textureMap[object.texture]
+
         gl.activeTexture(gl.TEXTURE1);
-        (object.UVTexture) ?
-            gl.bindTexture(gl.TEXTURE_2D, textureDiffuse.glTexture) :
-            gl.bindTexture(gl.TEXTURE_2D, object.texture.diffuse.glTexture);
+        gl.bindTexture(gl.TEXTURE_2D, texture.diffuse.glTexture);
 
         gl.activeTexture(gl.TEXTURE2);
-        (object.UVTexture) ?
-            gl.bindTexture(gl.TEXTURE_2D, textureNormal.glTexture) :
-            gl.bindTexture(gl.TEXTURE_2D, object.texture.normal.glTexture);
+        gl.bindTexture(gl.TEXTURE_2D, texture.normal.glTexture);
 
         //si el objeto es la tierra cargamos dos texturas mas para el shader
         if (object.alias === 'tierra') {
@@ -1375,13 +1388,7 @@ function initControls() {
             },
 
 
-      'Bloques': {
-                value: bloque.type,
-                options: [Bloque.BLOQUES_4, Bloque.BLOQUES_5, Bloque.BLOQUES_6, Bloque.BLOQUES_7, Bloque.BLOQUES_8],
-                onChange: v => {
-                    bloque.setType(v);
-                }
-            },
+
 
 
 
@@ -1391,6 +1398,13 @@ function initControls() {
 
 
     */
+            'Bloques': {
+            value: bloque.type,
+            options: [Bloque.BLOQUES_4, Bloque.BLOQUES_5, Bloque.BLOQUES_6, Bloque.BLOQUES_7, Bloque.BLOQUES_8],
+            onChange: v => {
+                bloque.setType(v);
+            }
+        },
             'Light Color': {
                 value: utils.denormalizeColor(lightColor),
                 onChange: v => gl.uniform4fv(program.uLightDiffuse, utils.normalizeColor(v))

@@ -24,6 +24,32 @@ import UVnormal from './images/UV_normal.jpg';
 import CubeTexture from './geometries/cube-texture.json5'
 import Sphere from './geometries/sphere.json5'
 
+import backSkyBox1 from './images/skyBox/1/Back_1K_TEX.png';
+import backSkyBox2 from './images/skyBox/2/Back_1K_TEX.png';
+import backSkyBox3 from './images/skyBox/3/Back_1K_TEX.png';
+
+import downSkyBox1 from './images/skyBox/1/Down_1K_TEX.png';
+import downSkyBox2 from './images/skyBox/2/Down_1K_TEX.png';
+import downSkyBox3 from './images/skyBox/3/Down_1K_TEX.png';
+
+import frontSkyBox1 from './images/skyBox/1/Front_1K_TEX.png';
+import frontSkyBox2 from './images/skyBox/2/Front_1K_TEX.png';
+import frontSkyBox3 from './images/skyBox/3/Front_1K_TEX.png';
+
+import leftSkyBox1 from './images/skyBox/1/Left_1K_TEX.png';
+import leftSkyBox2 from './images/skyBox/2/Left_1K_TEX.png';
+import leftSkyBox3 from './images/skyBox/3/Left_1K_TEX.png';
+
+import rightSkyBox1 from './images/skyBox/1/Right_1K_TEX.png';
+import rightSkyBox2 from './images/skyBox/2/Right_1K_TEX.png';
+import rightSkyBox3 from './images/skyBox/3/Right_1K_TEX.png';
+
+import upSkyBox1 from './images/skyBox/1/Up_1K_TEX.png';
+import upSkyBox2 from './images/skyBox/2/Up_1K_TEX.png';
+import upSkyBox3 from './images/skyBox/3/Up_1K_TEX.png';
+
+
+
 
 let
     gl, scene, program, camera, transforms, transformar, bloque, panelSolar, controles, droneCam,
@@ -122,21 +148,7 @@ function configure() {
 }
 
 function cargarTexturas() {
-    // Configure cube texture
-    const skyBoxFiles = [
-        "Left_1K_TEX.png",
-        "Right_1K_TEX.png",
-        "Up_1K_TEX.png",
-        "Down_1K_TEX.png",
-        "Front_1K_TEX.png",
-        "Back_1K_TEX.png"
-    ];
-    const skyBox_url = [[], [], []];
-    for (let i = 0; i < 3; i++) {
-        for (let j = 0; j < 6; j++) {
-            skyBox_url[i].push(`/skyBox/` + (i + 1).toString() + `/${skyBoxFiles[j]}`)
-        }
-    }
+
 
     cubeTexture = gl.createTexture();
 
@@ -156,6 +168,12 @@ function cargarTexturas() {
     gl.uniform4fv(program.uLightDiffuse, lightColor);
     gl.uniform4fv(program.uLightSpecular, lightSpecular);
     gl.uniform1f(program.uShininess, 230.0);
+
+    const skyBox_url = [
+        [leftSkyBox1, rightSkyBox1, upSkyBox1, downSkyBox1, frontSkyBox1, backSkyBox1],
+        [leftSkyBox2, rightSkyBox2, upSkyBox2, downSkyBox2, frontSkyBox2, backSkyBox2],
+        [leftSkyBox3, rightSkyBox3, upSkyBox3, downSkyBox3, frontSkyBox3, backSkyBox3]
+    ];
 
     loadCubemapFace(gl, gl.TEXTURE_CUBE_MAP_POSITIVE_X, cubeTexture, skyBox_url[random][0]);
     loadCubemapFace(gl, gl.TEXTURE_CUBE_MAP_NEGATIVE_X, cubeTexture, skyBox_url[random][1]);
@@ -1117,6 +1135,7 @@ function draw() {
                 const cubeMapTransform = transforms.modelViewMatrix;
                 const factor = 2048 * 2;
                 mat4.scale(cubeMapTransform, cubeMapTransform, [factor, factor, factor]);
+                mat4.rotate(cubeMapTransform, cubeMapTransform, Math.PI, [1, 0, 0]);
             }
 
 

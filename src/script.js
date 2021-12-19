@@ -24,44 +24,17 @@ import UVnormal from './images/UV_normal.jpg';
 import CubeTexture from './geometries/cube-texture.json5'
 import Sphere from './geometries/sphere.json5'
 
-import backSkyBox1 from './images/skyBox/1/Back_1K_TEX.png';
-import backSkyBox2 from './images/skyBox/2/Back_1K_TEX.png';
-import backSkyBox3 from './images/skyBox/3/Back_1K_TEX.png';
-
-import downSkyBox1 from './images/skyBox/1/Down_1K_TEX.png';
-import downSkyBox2 from './images/skyBox/2/Down_1K_TEX.png';
-import downSkyBox3 from './images/skyBox/3/Down_1K_TEX.png';
-
-import frontSkyBox1 from './images/skyBox/1/Front_1K_TEX.png';
-import frontSkyBox2 from './images/skyBox/2/Front_1K_TEX.png';
-import frontSkyBox3 from './images/skyBox/3/Front_1K_TEX.png';
-
-import leftSkyBox1 from './images/skyBox/1/Left_1K_TEX.png';
-import leftSkyBox2 from './images/skyBox/2/Left_1K_TEX.png';
-import leftSkyBox3 from './images/skyBox/3/Left_1K_TEX.png';
-
-import rightSkyBox1 from './images/skyBox/1/Right_1K_TEX.png';
-import rightSkyBox2 from './images/skyBox/2/Right_1K_TEX.png';
-import rightSkyBox3 from './images/skyBox/3/Right_1K_TEX.png';
-
-import upSkyBox1 from './images/skyBox/1/Up_1K_TEX.png';
-import upSkyBox2 from './images/skyBox/2/Up_1K_TEX.png';
-import upSkyBox3 from './images/skyBox/3/Up_1K_TEX.png';
-
-
-
-
 let
     gl, scene, program, camera, transforms, transformar, bloque, panelSolar, controles, droneCam,
     targetNave, targetPanelesSolares, //focus de la nave y los paneles en el cual se enfoca la camara
-    elapsedTime, initialTime, textureDiffuse, textureNormal, cubeTexture,
+    elapsedTime, initialTime, cubeTexture,
     fixedLight = true,
     triangleStrip = true,
     wireframe = false,
     lightColor, lightAmbient, lightSpecular,
     textureEarthClouds,
     textureMap,
-    ajuste = 8.0,  //para ajustar posiciones de los objetos, se usa en el diseño
+    SpecularMap = true,//8.0,  //para ajustar posiciones de los objetos, se usa en el diseño
     dxAnillo = 0.01,
     lightPosition = [100, 100, 100],
     // lightPosition = [0,0,0],
@@ -169,18 +142,7 @@ function cargarTexturas() {
     gl.uniform4fv(program.uLightSpecular, lightSpecular);
     gl.uniform1f(program.uShininess, 230.0);
 
-    const skyBox_url = [
-        [leftSkyBox1, rightSkyBox1, upSkyBox1, downSkyBox1, frontSkyBox1, backSkyBox1],
-        [leftSkyBox2, rightSkyBox2, upSkyBox2, downSkyBox2, frontSkyBox2, backSkyBox2],
-        [leftSkyBox3, rightSkyBox3, upSkyBox3, downSkyBox3, frontSkyBox3, backSkyBox3]
-    ];
-
-    loadCubemapFace(gl, gl.TEXTURE_CUBE_MAP_POSITIVE_X, cubeTexture, skyBox_url[random][0]);
-    loadCubemapFace(gl, gl.TEXTURE_CUBE_MAP_NEGATIVE_X, cubeTexture, skyBox_url[random][1]);
-    loadCubemapFace(gl, gl.TEXTURE_CUBE_MAP_POSITIVE_Y, cubeTexture, skyBox_url[random][2]);
-    loadCubemapFace(gl, gl.TEXTURE_CUBE_MAP_NEGATIVE_Y, cubeTexture, skyBox_url[random][3]);
-    loadCubemapFace(gl, gl.TEXTURE_CUBE_MAP_POSITIVE_Z, cubeTexture, skyBox_url[random][4]);
-    loadCubemapFace(gl, gl.TEXTURE_CUBE_MAP_NEGATIVE_Z, cubeTexture, skyBox_url[random][5]);
+    cargarTexturasCubemap(random);
 
     // Textures
     textureMap = {}
@@ -191,7 +153,7 @@ function cargarTexturas() {
     textureMap["bloque"] = {
         diffuse: new Texture(gl, 'bloque/1/diffuse.jpg'),
         normal: new Texture(gl, 'bloque/1/normal.jpg'),
-        // specular: new Texture(gl, 'bloque/1/specular.jpg')
+        specular: new Texture(gl, 'bloque/1/specular.jpg')
     }
 
     //Asignando unidades de texturas
@@ -215,6 +177,89 @@ function cargarTexturas() {
     // console.log("normal",program.getUniform(program.uNormalSampler))
 
 
+}
+function cargarTexturasCubemap(random) {
+
+    switch (random) {
+        case 0:
+            import ('./images/skyBox/1/Left_1K_TEX.png')
+                .then((url) => {
+                    loadCubemapFace(gl, gl.TEXTURE_CUBE_MAP_POSITIVE_X, cubeTexture, url.default);
+                });
+            import ('./images/skyBox/1/Right_1K_TEX.png')
+                .then((url) => {
+                    loadCubemapFace(gl, gl.TEXTURE_CUBE_MAP_NEGATIVE_X, cubeTexture, url.default);
+                });
+            import ('./images/skyBox/1/Up_1K_TEX.png')
+                .then((url) => {
+                    loadCubemapFace(gl, gl.TEXTURE_CUBE_MAP_POSITIVE_Y, cubeTexture, url.default);
+                });
+            import ('./images/skyBox/1/Down_1K_TEX.png')
+                .then((url) => {
+                    loadCubemapFace(gl, gl.TEXTURE_CUBE_MAP_NEGATIVE_Y, cubeTexture, url.default);
+                });
+            import ('./images/skyBox/1/Front_1K_TEX.png')
+                .then((url) => {
+                    loadCubemapFace(gl, gl.TEXTURE_CUBE_MAP_POSITIVE_Z, cubeTexture, url.default);
+                });
+            import ('./images/skyBox/1/Back_1K_TEX.png')
+                .then((url) => {
+                    loadCubemapFace(gl, gl.TEXTURE_CUBE_MAP_NEGATIVE_Z, cubeTexture, url.default);
+                });
+            break;
+        case 1:
+            import('./images/skyBox/2/Left_1K_TEX.png')
+                .then((url) => {
+                    loadCubemapFace(gl, gl.TEXTURE_CUBE_MAP_POSITIVE_X, cubeTexture, url.default);
+                });
+            import('./images/skyBox/2/Right_1K_TEX.png')
+                .then((url) => {
+                    loadCubemapFace(gl, gl.TEXTURE_CUBE_MAP_NEGATIVE_X, cubeTexture, url.default);
+                });
+            import('./images/skyBox/2/Up_1K_TEX.png')
+                .then((url) => {
+                    loadCubemapFace(gl, gl.TEXTURE_CUBE_MAP_POSITIVE_Y, cubeTexture, url.default);
+                });
+            import('./images/skyBox/2/Down_1K_TEX.png')
+                .then((url) => {
+                    loadCubemapFace(gl, gl.TEXTURE_CUBE_MAP_NEGATIVE_Y, cubeTexture, url.default);
+                });
+            import('./images/skyBox/2/Front_1K_TEX.png')
+                .then((url) => {
+                    loadCubemapFace(gl, gl.TEXTURE_CUBE_MAP_POSITIVE_Z, cubeTexture, url.default);
+                });
+            import('./images/skyBox/2/Back_1K_TEX.png')
+                .then((url) => {
+                    loadCubemapFace(gl, gl.TEXTURE_CUBE_MAP_NEGATIVE_Z, cubeTexture, url.default);
+                });
+            break;
+        case 2:
+            import('./images/skyBox/3/Left_1K_TEX.png')
+                .then((url) => {
+                    loadCubemapFace(gl, gl.TEXTURE_CUBE_MAP_POSITIVE_X, cubeTexture, url.default);
+                });
+            import('./images/skyBox/3/Right_1K_TEX.png')
+                .then((url) => {
+                    loadCubemapFace(gl, gl.TEXTURE_CUBE_MAP_NEGATIVE_X, cubeTexture, url.default);
+                });
+            import('./images/skyBox/3/Up_1K_TEX.png')
+                .then((url) => {
+                    loadCubemapFace(gl, gl.TEXTURE_CUBE_MAP_POSITIVE_Y, cubeTexture, url.default);
+                });
+            import('./images/skyBox/3/Down_1K_TEX.png')
+                .then((url) => {
+                    loadCubemapFace(gl, gl.TEXTURE_CUBE_MAP_NEGATIVE_Y, cubeTexture, url.default);
+                });
+            import('./images/skyBox/3/Front_1K_TEX.png')
+                .then((url) => {
+                    loadCubemapFace(gl, gl.TEXTURE_CUBE_MAP_POSITIVE_Z, cubeTexture, url.default);
+                });
+            import('./images/skyBox/3/Back_1K_TEX.png')
+                .then((url) => {
+                    loadCubemapFace(gl, gl.TEXTURE_CUBE_MAP_NEGATIVE_Z, cubeTexture, url.default);
+                });
+            break;
+    }
 }
 
 function loadCubemapFace(gl, target, texture, url) {
@@ -351,7 +396,6 @@ function cargarALaLuna() {
         normal: new Texture(gl, 'moon/normal1080.jpg')
     }
     scene.add(luna)
-
 
 
 }
@@ -1093,7 +1137,8 @@ function cargarTorus() {
 
     textureMap[torus.texture] = {
         diffuse: new Texture(gl, 'torus/diffuse.jpg'),
-        normal: new Texture(gl, 'torus/normal.jpg')
+        normal: new Texture(gl, 'torus/normal.jpg'),
+        specular: new Texture(gl, 'torus/specular.jpg'),
     }
 
     scene.add(torus)
@@ -1293,8 +1338,8 @@ function dibujarMallaDeObjeto(object) {
             gl.activeTexture(gl.TEXTURE3);
             gl.bindTexture(gl.TEXTURE_2D, textureEarthClouds.glTexture);
         }
-        if(texture.specular){
-            gl.uniform1i(program.uActivateSpecularTexture, true);
+        if (texture.specular) {
+            gl.uniform1i(program.uActivateSpecularTexture, SpecularMap);
             //specular
             gl.activeTexture(gl.TEXTURE4);
             gl.bindTexture(gl.TEXTURE_2D, texture.specular.glTexture);
@@ -1416,12 +1461,12 @@ function initControls() {
 
     */
             'Bloques': {
-            value: bloque.type,
-            options: [Bloque.BLOQUES_4, Bloque.BLOQUES_5, Bloque.BLOQUES_6, Bloque.BLOQUES_7, Bloque.BLOQUES_8],
-            onChange: v => {
-                bloque.setType(v);
-            }
-        },
+                value: bloque.type,
+                options: [Bloque.BLOQUES_4, Bloque.BLOQUES_5, Bloque.BLOQUES_6, Bloque.BLOQUES_7, Bloque.BLOQUES_8],
+                onChange: v => {
+                    bloque.setType(v);
+                }
+            },
             'Light Color': {
                 value: utils.denormalizeColor(lightColor),
                 onChange: v => gl.uniform4fv(program.uLightDiffuse, utils.normalizeColor(v))
@@ -1534,10 +1579,13 @@ function initControls() {
                 value: fixedLight,
                 onChange: v => fixedLight = v
             },
-            'Ajuste': {
-                value: ajuste,
-                min: -2.0, max: 2.0, step: 0.1,
-                onChange: v => gl.uniform1f(program.uAjuste, v)
+            'SpecularMap': {
+                value: SpecularMap,
+                // min: -2.0, max: 2.0, step: 0.1,
+                onChange: v => {
+                    SpecularMap = v;
+                    // gl.uniform1f(program.uAjuste, v)
+                }
             },
             'Wireframe': () => {
                 wireframe = !wireframe;

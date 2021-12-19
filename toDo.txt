@@ -15,7 +15,9 @@ controles de la capsula, adaptarlos a el nuevo skybox
         -> cambiar las tangentes de los barriles
 
 
-
+ideas ->
+    -> se pueden mover las nubes,
+    -> rotacion de la tierra, luna,
 
 
 // Opcional

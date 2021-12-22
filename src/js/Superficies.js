@@ -184,7 +184,7 @@ export class Plano extends Superficie{
                 return [u, v];
             },
             getTangente: function (u, v) {
-                return [0,0,0]
+                return [1,0,0]
             }
         }
     }

@@ -5,10 +5,11 @@ import {vec3} from "gl-matrix";
 
 export class Controls {
 
-  constructor(camera, canvas, droneCam) {
+  constructor(camera, canvas, droneCam, spotLightDir) {
     this.camera = camera;
     this.canvas = canvas;
     this.droneCam = droneCam;
+    this.spotLightDir = spotLightDir;
     this.picker = null;
 
     this.dragging = false;
@@ -25,7 +26,7 @@ export class Controls {
     this.dloc = 0;
     this.dstep = 0;
     this.motionFactor = 10;
-    this.keyIncrement = 5;
+    this.keyIncrement = 3;
 
     this.focusCamera = {
       Nave: false,
@@ -233,6 +234,17 @@ export class Controls {
         return this.dollyHelper(-1);
       case 90: //x zoom in
         return this.dollyHelper(1);
+      case 102:
+        return this.spotLightDir.cambiarAzimuth(this.keyIncrement);
+      case 100:
+        return this.spotLightDir.cambiarAzimuth(-this.keyIncrement);
+      case 104:
+        return this.spotLightDir.cambiarElevation(this.keyIncrement);
+      case 98:
+        return this.spotLightDir.cambiarElevation(-this.keyIncrement);
+
+
+
     }
   }
   onKeyUp(event) {

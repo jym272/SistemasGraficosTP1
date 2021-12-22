@@ -18,6 +18,14 @@ controles de la capsula, adaptarlos a el nuevo skybox
 ideas ->
     -> se pueden mover las nubes,
     -> rotacion de la tierra, luna,
+    -> reemplazar las funciones de maximo en el indice, reemplazarlos porr index[index.length-1]
+    -> crear controles para controlar la direccion de spotlights
+            -> depende del modulo de la direccion de la luz, si es mas grande que la normal, testearlo
+            -> colocar una esfera en el escenario
+
+
+camara -> el update solo sirve cuando se mueve la camara, sino, no revisar
+
 
 
 // Opcional

@@ -9,7 +9,7 @@ export const colores = {
     Violeta : [255 / 255, 0 / 255, 138 / 255, 1.0],
     Pastilla : [169 / 255, 183 / 255, 43 / 255, 1],
     RojoMetalico : [0.71875, 0.0, 0.1796, 1.0],
-    lightColor : [
+    sunLightColor : [
         [255, 176, 186, 255],
         [191, 255, 209, 255],
         [255, 186, 255, 255]

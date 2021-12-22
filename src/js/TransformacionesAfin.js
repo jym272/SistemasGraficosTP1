@@ -552,6 +552,17 @@ export class TransformacionesAfin {
         mat4.scale(transform, transform, [x, 0, y]);
     }
 
+
+    esferaEscenario(){
+        const {transforms} = this;
+
+        if(this.alias ==="esferaEscenario"){
+            const esferaTransformada = transforms.modelViewMatrix;
+            mat4.translate(esferaTransformada, esferaTransformada, [-10, 8, -10])
+            mat4.rotateY(esferaTransformada, esferaTransformada, 2*Math.PI * this.posicionAnillo/3)
+        }
+    }
+
     test() {
         const {transforms} = this;
         if (this.alias === 'test') {

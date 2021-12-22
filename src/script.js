@@ -1882,7 +1882,7 @@ function initControls() {
 
 
     */
-            /*
+
              'Bloques': {
                  value: bloque.type,
                  options: [Bloque.BLOQUES_4, Bloque.BLOQUES_5, Bloque.BLOQUES_6, Bloque.BLOQUES_7, Bloque.BLOQUES_8],
@@ -1891,7 +1891,7 @@ function initControls() {
                  }
              },
 
-             */
+
 
             ...lightsData.reduce((controls, light) => {
                 const positionKeys = [

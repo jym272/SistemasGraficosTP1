@@ -5,7 +5,6 @@
     <meta content="width=device-width, initial-scale=1.0" name="viewport">
     <title>Estación Espacial</title>
 
-
     <script id="vertex-shader" type="x-shader/x-vertex">
         #version 300 es
         precision mediump float;
@@ -14,13 +13,13 @@
         uniform mat4 uModelViewMatrix;
         uniform mat4 uProjectionMatrix;
         uniform mat4 uNormalMatrix;
+        uniform mat4 uViewMatrix;
 
         uniform vec3 uLightPosition[numLights];
         uniform vec3 uLightDirection[numLights];
 
-
-        uniform mat4 uViewMatrix;
         uniform vec4 uMaterialDiffuse;
+
         uniform bool uWireframe;
         uniform bool uLightSource;
 
@@ -31,79 +30,71 @@
         in vec4 aVertexColor;
         in vec2 aVertexTextureCoords;
 
-
         out vec3 vNormal[numLights];
-        out vec4 vLightRay[numLights]; //uso w para theta en la spot light
+        out vec4 vLightRay[numLights];//uso w para theta en la spot light
         out float vLightDistance[numLights];
 
-
         out vec3 vEyeVector;
-        out vec3 vSurfaceToView;
         out vec4 vFinalColor;
         out vec2 vTextureCoords;
         out vec3 vTangentLightDirection[numLights];
         out vec3 vTangentEyeDirection[numLights];
         out vec3 vVertexNormal;//para el cubemaps
 
-
         void main(void) {
             // If wireframe is enabled, set color to the diffuse property exclusing lights
             if (uWireframe || uLightSource) {
                 vFinalColor = uMaterialDiffuse;
             }
-            vec4 vertex = uModelViewMatrix * vec4(aVertexPosition, 1.0);
-            //la normalMatrix es la transpuesta de la inversa de la matriz de modelo
-            vec3 normal = vec3(uNormalMatrix * vec4(aVertexNormal, 1.0));
+            else {
+                vec4 vertex = uModelViewMatrix * vec4(aVertexPosition, 1.0);
+                //la normalMatrix es la transpuesta de la inversa de la matriz de modelo
+                vec3 normal = vec3(uNormalMatrix * vec4(aVertexNormal, 1.0));
+                vEyeVector = -vec3(vertex.xyz);
 
-            for (int i = 0; i < numLights; i++) {
+                for (int i = 0; i < numLights; i++) {
 
-                vec4 positionLight = uViewMatrix * vec4(uLightPosition[i], 1.0);
-                //we calculate the inverse and trasnpose of uViewMatrix
-//                vec3 directionLight = vec3(uNormalMatrix * vec4(uLightDirection[i], 1.0));
-                //recordar que i = 0 es el primer light y no tiene direccion de la luz
-                vec3 directionLight = vec3(mat4(transpose(inverse(uViewMatrix))) * vec4(uLightDirection[i], 1.0));
-
-
-
-                if (i==0){ //luz direccional
                     vNormal[i] = normal;
+                    vec4 positionLight = uViewMatrix * vec4(uLightPosition[i], 1.0);
+                    float theta = 1.0;
 
-                } else { //spotlights
-                    vNormal[i] = normal;//-normalize(directionLight);
+                    if (i!=0){ //solo para spotlights
+                        vec3 directionLight = vec3(mat4(transpose(inverse(uViewMatrix))) * vec4(uLightDirection[i], 1.0));
+                        // theta to check if lighting is inside the spotlight cone
+                        theta = dot(normalize((vertex.xyz - positionLight.xyz)), directionLight);
+                    }
+                    // if theta is inside the cone, calculate the distance to the light
+                    vLightRay[i] = vec4(vertex.xyz - positionLight.xyz, theta);
+
+                    if (i!=0){ //solo para spotlights
+                        vLightDistance[i] = length(vLightRay[i].xyz);
+                    }
                 }
-                // theta to check if lighting is inside the spotlight cone
-                float theta = dot( normalize((vertex.xyz - positionLight.xyz)), directionLight);
 
-                // if theta is inside the cone, calculate the distance to the light
-                vLightRay[i] = vec4(vertex.xyz - positionLight.xyz, theta);
-                vLightDistance[i] = length(vLightRay[i].xyz);
+                // NORMAL MAPPING
+                vec3 tangent = normalize(vec3(uNormalMatrix * vec4(aVertexTangent, 1.0)));
 
+                for (int i = 0; i < numLights; i++) {
+
+                    vec3 normal = normalize(vNormal[i]);
+                    tangent = normalize(tangent - dot(tangent, normal) * normal);
+                    vec3 bitangent = cross(normal, tangent);
+
+                    //tbn Matrix, already transposed
+                    mat3 tbnMatrix = mat3(
+                    tangent.x, bitangent.x, normal.x, //first column
+                    tangent.y, bitangent.y, normal.y, //second column
+                    tangent.z, bitangent.z, normal.z//third column
+                    );
+                    vTangentEyeDirection[i] = tbnMatrix * vEyeVector;// Eye direction, from camera position to vertex
+                    vTangentLightDirection[i] = tbnMatrix * (-vLightRay[i].xyz);// Light direction, from light position to vertex
+                }
+
+                vTextureCoords = aVertexTextureCoords;
+                //para el cubemaps
+                // vVertexNormal = normalize((uNormalMatrix * vec4(-aVertexPosition, 1.0)).xyz);
+                vVertexNormal = normalize(aVertexPosition);
             }
-            vEyeVector = -vec3(vertex.xyz);
-
-            // NORMAL MAPPING
-            vec3 tangent = normalize(vec3(uNormalMatrix * vec4(aVertexTangent, 1.0)));
-
-            for (int i = 0; i < numLights; i++) {
-
-                vec3 normal = normalize(vNormal[i]);
-                tangent = normalize(tangent - dot(tangent, normal) * normal);
-                vec3 bitangent = cross(normal, tangent);
-
-                //tbn Matrix, already transposed
-                mat3 tbnMatrix = mat3(
-                tangent.x, bitangent.x, normal.x, //first column
-                tangent.y, bitangent.y, normal.y, //second column
-                tangent.z, bitangent.z, normal.z//third column
-                );
-                vTangentEyeDirection[i] = tbnMatrix * vEyeVector;// Eye direction, from camera position to vertex
-                vTangentLightDirection[i] = tbnMatrix * (-vLightRay[i].xyz);// Light direction, from light position to vertex
-            }
-
-            vTextureCoords = aVertexTextureCoords;
-            //para el cubemaps
-            // vVertexNormal = normalize((uNormalMatrix * vec4(-aVertexPosition, 1.0)).xyz);
-            vVertexNormal = normalize(aVertexPosition);
             gl_Position = uProjectionMatrix * uModelViewMatrix * vec4(aVertexPosition, 1.0);
         }
     </script>
@@ -135,8 +126,6 @@
         uniform float uLightDecay;
         uniform float uMinLambertTerm;
 
-
-
         uniform float uAjuste;
         uniform bool uHasTexture;
         uniform bool uIsTheCubeMapShader;
@@ -148,51 +137,50 @@
         in vec4 vLightRay[numLights];
         in float vLightDistance[numLights];
         in vec3 vEyeVector;
-        // in vec3 vSurfaceToView;
         in vec4 vFinalColor;
         in vec2 vTextureCoords;
         in vec3 vTangentLightDirection[numLights];
         in vec3 vTangentEyeDirection[numLights];
-
 
         //para el cubemaps
         in vec3 vVertexNormal;
 
         out vec4 fragColor;
 
+        vec2 calculateSpotLigtParam(int i){
+            //attenuation
+            float d = vLightDistance[i];
+            float decay = uLightDecay;
+            float r = uLightRadius;
+            //intensity
+            float theta = vLightRay[i].w;
+            float outerCutOff = cos(radians(uOuterCutOff));
+            float cutOff = cos(radians(uLerpOuterCutOff * uOuterCutOff));
+            float epsilon = cutOff - outerCutOff;
+
+            float attenuation = (1.0 - min(d / (decay * r), 1.0)) * (1.0 - min(d / (decay * r), 1.0));
+            float intensity = clamp((theta - outerCutOff) / epsilon, 0.0, 1.0);
+
+            return vec2(attenuation, intensity);
+        }
 
         void main(void) {
-            vec4 finalColor = vec4(0.0, 0.0, 0.0, 1.0);
 
-            //attenuation
-            float Kc = 1.0f;
-            float Kl = 0.014;
-            float Kq = 0.0007;
-//            7	1.0	0.7	1.8
-//            distancia de 65: 65	1.0	0.07	0.017
-//            distancia de 100: 1.0	0.045	0.0075
-//          distancia de 160:   1.0	0.027	0.0028
-//           distancia  200	1.0	0.022	0.0019
-//            325	1.0	0.014	0.0007
-//            600	1.0	0.007	0.0002
-
-            int iterador = 0;
-            if(uLuzSolarEncendida != true){
-                iterador = 1;
+            if (uIsTheCubeMapShader){
+                //fragColor = texture(uSampler, vTextureCoords) * texture(uCubeSampler, vVertexNormal);
+                fragColor = texture(uCubeSampler, normalize(vVertexNormal));
             }
-
-
-            if (uWireframe || uLightSource) {
+            else if (uWireframe || uLightSource) {
                 fragColor = vFinalColor;
             }
             else {
 
-                if (uIsTheCubeMapShader){
-                    //fragColor = texture(uSampler, vTextureCoords) * texture(uCubeSampler, vVertexNormal);
-                    fragColor = texture(uCubeSampler, normalize(vVertexNormal));
-                } else
+                vec4 finalColor = vec4(0.0, 0.0, 0.0, 1.0);
+                int iterador = 0;
+                if (uLuzSolarEncendida != true){
+                    iterador = 1;
+                }
                 if (uHasTexture){
-
                     //Si tengo un mapa especular se agregar el termino al calculo final
                     float specularTexture = 1.0;//vec4(1.0);
                     vec4 cloudEarthColor = vec4(0.0);
@@ -202,68 +190,39 @@
                     if (uActivateSpecularTexture){
                         specularTexture = texture(uSpecularSampler, vTextureCoords).r;
                     }
-
                     // Ambient
                     vec4 Ia = uLightAmbient * uMaterialAmbient;// Ambient Light, la misma para todos los puntos de la luz
 
                     // Unpack tangent-space normal from texture
                     vec3 normal = normalize((texture(uNormalSampler, vTextureCoords).rgb - 0.5) * 2.0);
 
-
-
-                    for (int i = iterador; i < 3; i++) {
+                    for (int i = iterador; i < numLights; i++) {
                         // Normalize the light direction and determine how much light is hitting this point
                         vec3 lightDirection = normalize(vTangentLightDirection[i]);
 
                         //0.0 en este caso las sombras pueden ser totalmente negras
                         float lambertTerm = max(dot(normal, lightDirection), uMinLambertTerm);
-
-                        float theta = vLightRay[i].w;
-
-                        float outerCutOff = cos(radians(uOuterCutOff));
-                        float cutOff = cos(radians(uLerpOuterCutOff * uOuterCutOff));
-                        float epsilon = cutOff - outerCutOff;
-
-                        float r = uLightRadius;
-                        float d = vLightDistance[i];
-                        float decay = uLightDecay;
-
                         float attenuation = 1.0f;
                         float intensity = 1.0f;
                         if (i!=0){ //este termino no es para la luz del sol
-//                            attenuation = 1.0f / ( Kc + Kl * vLightDistance[i] + Kq * ( vLightDistance[i] * vLightDistance[i] ) );
-//                            float denom = d/r + 1.0;
-//                            attenuation = 1.0 / (denom * denom);
-
-                            attenuation = (1.0 - min(d / (decay * r), 1.0)) * (1.0 - min(d / (decay * r), 1.0));
-
-                            intensity = clamp( ( theta - outerCutOff ) / epsilon, 0.0, 1.0 );
-//                            float intensity_ = pow(lambertTerm, uExponentFactor * uCutOff);
-//                            intensity = intensity_;
+                            vec2 param = calculateSpotLigtParam(i);
+                            attenuation = param.x;
+                            intensity = param.y;
                         }
-
 
                         // Calculate Specular level
                         vec3 eyeDirection = normalize(vTangentEyeDirection[i]);
                         vec3 reflectDir = reflect(-lightDirection, normal);
                         float specular = pow(clamp(dot(reflectDir, eyeDirection), 0.0, 1.0), 8.0);
-                        // float cutSpecularTerm = pow(specular, uExponentFactor * uCutOff);
-
 
                         // Diffuse
-                        //al termino de lambert le falta el CutOff, ExponentFactor de la luz, la intensidad del sol
-                        //deberia ser una constante y no verse alterado por el cutOff, depende en la posicion
-                        //que tiene la luz solar en el array de luz puedo modificar esto.
-
                         vec4 Id = uLightDiffuse[i] * uMaterialDiffuse * lambertTerm * (texture(uSampler, vTextureCoords) +
                         cloudEarthColor);
                         // Specular
                         vec4 Is = uLightSpecular * uMaterialSpecular * specular * specularTexture;
 
                         vec4 vColor = vec4(vec3(Ia * attenuation * intensity + Id * attenuation * intensity + Is * attenuation * intensity), 1.0);
-//                        if(theta > cutOff){
-                            finalColor += vColor;
-//                        }
+                        finalColor += vColor;
                     }
                     fragColor = vec4(vec3(finalColor), 1.0);
 
@@ -273,71 +232,19 @@
                     // Ambient
                     vec4 Ia = uLightAmbient * uMaterialAmbient;
 
-                    for (int i = iterador; i < 3; i++) {
-
-
-
-/*
-                        //spot light
-                        vec3 lightDir = normalize( light.position - fragPos );
-
-                        // Diffuse shading
-                        float diff = max( dot( normal, lightDir ), 0.0 );
-
-                        // Specular shading
-                        vec3 reflectDir = reflect( -lightDir, normal );
-                        float spec = pow( max( dot( viewDir, reflectDir ), 0.0 ), material.shininess );
-
-                        // Attenuation, aca es distinto a lo que tengo
-                        float distance = length( light.position - fragPos );
-                        float attenuation = 1.0f / ( light.constant + light.linear * distance + light.quadratic * ( distance * distance ) );
-
-                        // Spotlight intensity
-                        float theta = dot( lightDir, normalize( -light.direction ) );
-                        float epsilon = light.cutOff - light.outerCutOff;
-                        float intensity = clamp( ( theta - light.outerCutOff ) / epsilon, 0.0, 1.0 );
-
-                        // Combine results
-                        vec3 ambient = light.ambient * vec3( texture( material.diffuse, TexCoords ) );
-                        vec3 diffuse = light.diffuse * diff * vec3( texture( material.diffuse, TexCoords ) );
-                        vec3 specular = light.specular * spec * vec3( texture( material.specular, TexCoords ) );
-
-                        ambient *= attenuation * intensity;
-                        diffuse *= attenuation * intensity;
-                        specular *= attenuation * intensity;
-
-                        return ( ambient + diffuse + specular );
-*/
-                        float lightCutOff = 0.75,
-                              exponentFactor = 40.0;
-
-                        float theta = vLightRay[i].w;
-
-                        float outerCutOff = cos(radians(uOuterCutOff));
-                        float cutOff = cos(radians(uLerpOuterCutOff * uOuterCutOff));
-
-
-                        float epsilon = cutOff - outerCutOff;
+                    for (int i = iterador; i < numLights; i++) {
 
                         vec3 L = normalize(vLightRay[i].xyz);
                         vec3 N = normalize(vNormal[i]);
                         float lambertTerm = max(dot(N, -L), uMinLambertTerm);//0.0 en este caso las sombras pueden ser totalmente negras
 
                         float attenuation = 1.0f;
-                        float r = uLightRadius;
-                        float d = vLightDistance[i];
-                        float decay = uLightDecay;
-
                         float intensity = 1.0f;
+
                         if (i!=0){ //este termino no es para la luz del sol
-//                            attenuation = 1.0f / ( Kc + Kl * vLightDistance[i] + Kq * ( vLightDistance[i] * vLightDistance[i] ) );
-
-
-                            attenuation = (1.0 - min(d / (decay * r), 1.0)) * (1.0 - min(d / (decay * r), 1.0));
-
-                            //                            float intensity_ = pow(lambertTerm, uExponentFactor * uCutOff);
-                            intensity = clamp( ( theta - outerCutOff ) / epsilon, 0.0, 1.0 );
-//                            intensity = intensity_;
+                            vec2 param = calculateSpotLigtParam(i);
+                            attenuation = param.x;
+                            intensity = param.y;
                         }
                         // Calculate Specular level
                         vec3 R = reflect(L, N);
@@ -351,9 +258,7 @@
 
                         vec4 vColor = vec4(vec3(Ia * attenuation * intensity + Id * attenuation * intensity + Is * attenuation * intensity), 1.0);
 
-//                        if(theta > cutOff){
-                            finalColor += vColor;
-//                        }
+                        finalColor += vColor;
                     }
                     fragColor = vec4(vec3(finalColor), 1.0);
                 }

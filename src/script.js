@@ -36,7 +36,6 @@ let
     textureMap, lights,
     SpecularMap = true,//8.0,  //para ajustar posiciones de los objetos, se usa en el diseño
     dxAnillo = 0.01,
-    lightPosition = [100, 100, 100],
     lightsData = [],
     lightLerpOuterCutOff = 0.5,
     lightOuterCutOff = 17.5,

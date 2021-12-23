@@ -22,7 +22,7 @@ ideas ->
     -> crear controles para controlar la direccion de spotlights
             -> depende del modulo de la direccion de la luz, si es mas grande que la normal, testearlo
             -> colocar una esfera en el escenario
-
+   -> darle mas triangulos al anillo amarillo
 
 camara -> el update solo sirve cuando se mueve la camara, sino, no revisar
 
@@ -30,3 +30,14 @@ camara -> el update solo sirve cuando se mueve la camara, sino, no revisar
 
 // Opcional
 -> Corregir los giros, el menor camino para rotar la camara, Ej: de atras hacia la derecha.
+
+
+
+modelViewMatrix-->worldMatrix ---> u_world
+worldInverseMatrix = m4.inverse(worldMatrix);
+normalMatrix    --->  worldInverseTransposeMatrix
+
+u_worldViewProjection -->m4.multiply(viewProjectionMatrix, worldMatrix);
+
+gl_Position = uProjectionMatrix * uModelViewMatrix * vec4(aVertexPosition, 1.0);
+gl_Position = u_worldViewProjection * a_position;

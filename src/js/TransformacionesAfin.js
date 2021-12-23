@@ -533,10 +533,7 @@ export class TransformacionesAfin {
     }
 
     tierraLunaEnElMundo(random) {
-
         this.mundo = this.tierraLunaTransform[random]
-
-
     }
 
     translate(testTransform, x, y) {

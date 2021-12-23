@@ -1,8 +1,0 @@
-modelViewMatrix-->worldMatrix ---> u_world
-worldInverseMatrix = m4.inverse(worldMatrix);
-normalMatrix    --->  worldInverseTransposeMatrix
-
-u_worldViewProjection -->m4.multiply(viewProjectionMatrix, worldMatrix);
-
-gl_Position = uProjectionMatrix * uModelViewMatrix * vec4(aVertexPosition, 1.0);
-gl_Position = u_worldViewProjection * a_position;

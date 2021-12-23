@@ -16,42 +16,37 @@ import {DroneCameraControl} from "./js/droneCamara";
 import {colores} from "./js/colores";
 import {Anillo, Bloques, Capsula, Esfera, Nave, PanelesSolares, TransformacionesAfin} from "./js/TransformacionesAfin";
 import {mat4} from "gl-matrix";
-import {Texture} from "./js/Texture";
-import {Light, LightsManager} from "./js/Light";
-
-import UVdiffuse from './images/UV.jpg';
-import UVnormal from './images/UV_normal.jpg';
-
+import {DireccionSpotLight, Light, LightsManager} from "./js/Light";
+import {TextureLoader} from "./js/TextureLoader.js";
 import CubeTexture from './geometries/cube-texture.json5'
 import Sphere from './geometries/sphere.json5'
+import {CubeMap} from "./js/CubeMap";
 
 let
     gl, scene, program, camera, transforms, transformar, bloque, panelSolar, controles, droneCam,
     targetNave, targetPanelesSolares, //focus de la nave y los paneles en el cual se enfoca la camara
-    elapsedTime, initialTime, cubeTexture,
+    elapsedTime, initialTime,
     triangleStrip = true,
     wireframe = false,
     sunLightColor, lightAmbient, lightSpecular,
-    textureEarthClouds,
-    textureMap, lights,
+    lights,
     SpecularMap = true,//8.0,  //para ajustar posiciones de los objetos, se usa en el diseño
     dxAnillo = 0.01,
     lightsData = [],
     lightLerpOuterCutOff = 0.5,
     lightOuterCutOff = 17.5,
     lightRadius = 100.0,
-    exponentFactor = 10,
     lightDecay = 0.5,
     spotLightDir,
     minLambertTerm = 0.1,
     cubeMapInScene = true,
     luzSolarEncendida = true,
-    lightAzimuth = 0,
-    lightElevation = 260,
+    lightAzimuth,
+    textureLoader,
+    cubeMap,
+    lightElevation,
     animationRate; //ms
 
-
-const colorGenerico = colores.RojoMetalico;
 
 function configure() {
     // Configure `canvas`
@@ -104,7 +99,6 @@ function configure() {
         'uLightSource',
         'uOuterCutOff',
         'uLerpOuterCutOff',
-        'uExponentFactor',
         'uLightRadius',
         'uLightDecay',
         'uMinLambertTerm',
@@ -121,13 +115,13 @@ function configure() {
     camera = new Camera(Camera.ORBITING_TYPE, 70, 0);
     camera.goTo([0, 0, 40], 0, -30, [0, 0, 0])
     droneCam = new DroneCameraControl([0, 0, -10], camera);
-    spotLightDir = new DireccionSpotLight(0, -95);  //234/-72
+    //Luz SpotLight
+    spotLightDir = new DireccionSpotLight(gl, program);
 
     controles = new Controls(camera, canvas, droneCam, spotLightDir);
 
     // Configure `transforms`
     transforms = new Transforms(gl, program, camera, canvas);
-
 
     //Bloques del anillo
     bloque = new Bloque(dimensiones.anillo.radio, scene)
@@ -137,28 +131,18 @@ function configure() {
     transformar = new TransformacionesAfin(transforms, droneCam, controles, camera, bloque,
         new AnimacionPanelesSolares(300, intervaloEnGrados)
     );
-
-    //Lights
-
 }
 
-function cargarTexturas() {
+function cargarTexturasLuces() {
 
-
-    cubeTexture = gl.createTexture();
-
-    gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubeTexture);
-    gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    //CubeMap
+    cubeMap = new CubeMap(gl);
 
     //cada vez que empieza el programa, elige aleatoriamente un set de texturas para el cubemap
     let random = Math.floor(Math.random() * 3);
-    transformar.tierraLunaEnElMundo(random)
+    transformar.tierraLunaEnElMundo(random) //seteo transformaciones predeterminadas
     sunLightColor = utils.normalizeColor(colores.sunLightColor[random])
 
-
-    //luego ubicar las luces en un sitio mas adecuado como una funcion
-// Helper to manage multiple lights
     lights = new LightsManager();
     // Lights data
     lightsData = [
@@ -170,11 +154,11 @@ function cargarTexturas() {
         },
         {
             id: 'greenLight', name: 'Green Light',
-            position: [0, 10.0, 5], diffuse: [0, 1, 0, 1], direction: spotLightDir.vector
+            position: [0, 10.0, 5], diffuse: [0, 1, 0, 1], direction: [0, -1, 0]
         },
         {
             id: 'blueLight', name: 'Blue Light',
-            position: [0, 10.0, -5], diffuse: [0, 0, 1, 1], direction: spotLightDir.vector
+            position: [0, 10.0, -5], diffuse: [0, 0, 1, 1], direction: [0, -1, 0]
         },
     ];
     lightsData.forEach(({id, position, diffuse, direction}) => {
@@ -185,12 +169,13 @@ function cargarTexturas() {
         lights.add(light);
     });
     spotLightDir.esteEsElLightsArray(lights.getArray('direction'))
+    lightAzimuth = spotLightDir.azimuth;
+    lightElevation = spotLightDir.elevation;
 
     //para todas las luces
     lightAmbient = [0.1, 0.1, 0.1, 1.0];
     lightSpecular = [1.0, 1.0, 1.0, 1.0];
 
-    // console.log(lights.getArray('direction'))
     gl.uniform3fv(program.uLightPosition, lights.getArray('position'));
     gl.uniform3fv(program.uLightDirection, lights.getArray('direction'));
     gl.uniform4fv(program.uLightDiffuse, lights.getArray('diffuse'));
@@ -201,29 +186,16 @@ function cargarTexturas() {
 
     gl.uniform1i(program.uLuzSolarEncendida, luzSolarEncendida);
 
-
     gl.uniform1f(program.uOuterCutOff, lightOuterCutOff);
     gl.uniform1f(program.uLerpOuterCutOff, lightLerpOuterCutOff);
     gl.uniform1f(program.uLightRadius, lightRadius);
     gl.uniform1f(program.uLightDecay, lightDecay);
     gl.uniform1f(program.uMinLambertTerm, minLambertTerm);
 
-
-    gl.uniform1f(program.uExponentFactor, exponentFactor);
-
-    cargarTexturasCubemap(random);
+    cubeMap.cargarTexturasCubemap(random);
 
     // Textures
-    textureMap = {}
-    textureMap["UV"] = {
-        diffuse: new Texture(gl, UVdiffuse),
-        normal: new Texture(gl, UVnormal),
-    }
-    textureMap["bloque"] = {
-        diffuse: new Texture(gl, 'bloque/1/diffuse.jpg'),
-        normal: new Texture(gl, 'bloque/1/normal.jpg'),
-        specular: new Texture(gl, 'bloque/1/specular.jpg')
-    }
+    textureLoader = new TextureLoader(gl);
 
     //Asignando unidades de texturas
     const cubeMapTextureUnit = 0;
@@ -246,100 +218,6 @@ function cargarTexturas() {
     // console.log("normal",program.getUniform(program.uNormalSampler))
 
 
-}
-
-function cargarTexturasCubemap(random) {
-
-    switch (random) {
-        case 0:
-            import ('./images/skyBox/1/Left_1K_TEX.png')
-                .then((url) => {
-                    loadCubemapFace(gl, gl.TEXTURE_CUBE_MAP_POSITIVE_X, cubeTexture, url.default);
-                });
-            import ('./images/skyBox/1/Right_1K_TEX.png')
-                .then((url) => {
-                    loadCubemapFace(gl, gl.TEXTURE_CUBE_MAP_NEGATIVE_X, cubeTexture, url.default);
-                });
-            import ('./images/skyBox/1/Up_1K_TEX.png')
-                .then((url) => {
-                    loadCubemapFace(gl, gl.TEXTURE_CUBE_MAP_POSITIVE_Y, cubeTexture, url.default);
-                });
-            import ('./images/skyBox/1/Down_1K_TEX.png')
-                .then((url) => {
-                    loadCubemapFace(gl, gl.TEXTURE_CUBE_MAP_NEGATIVE_Y, cubeTexture, url.default);
-                });
-            import ('./images/skyBox/1/Front_1K_TEX.png')
-                .then((url) => {
-                    loadCubemapFace(gl, gl.TEXTURE_CUBE_MAP_POSITIVE_Z, cubeTexture, url.default);
-                });
-            import ('./images/skyBox/1/Back_1K_TEX.png')
-                .then((url) => {
-                    loadCubemapFace(gl, gl.TEXTURE_CUBE_MAP_NEGATIVE_Z, cubeTexture, url.default);
-                });
-            break;
-        case 1:
-            import('./images/skyBox/2/Left_1K_TEX.png')
-                .then((url) => {
-                    loadCubemapFace(gl, gl.TEXTURE_CUBE_MAP_POSITIVE_X, cubeTexture, url.default);
-                });
-            import('./images/skyBox/2/Right_1K_TEX.png')
-                .then((url) => {
-                    loadCubemapFace(gl, gl.TEXTURE_CUBE_MAP_NEGATIVE_X, cubeTexture, url.default);
-                });
-            import('./images/skyBox/2/Up_1K_TEX.png')
-                .then((url) => {
-                    loadCubemapFace(gl, gl.TEXTURE_CUBE_MAP_POSITIVE_Y, cubeTexture, url.default);
-                });
-            import('./images/skyBox/2/Down_1K_TEX.png')
-                .then((url) => {
-                    loadCubemapFace(gl, gl.TEXTURE_CUBE_MAP_NEGATIVE_Y, cubeTexture, url.default);
-                });
-            import('./images/skyBox/2/Front_1K_TEX.png')
-                .then((url) => {
-                    loadCubemapFace(gl, gl.TEXTURE_CUBE_MAP_POSITIVE_Z, cubeTexture, url.default);
-                });
-            import('./images/skyBox/2/Back_1K_TEX.png')
-                .then((url) => {
-                    loadCubemapFace(gl, gl.TEXTURE_CUBE_MAP_NEGATIVE_Z, cubeTexture, url.default);
-                });
-            break;
-        case 2:
-            import('./images/skyBox/3/Left_1K_TEX.png')
-                .then((url) => {
-                    loadCubemapFace(gl, gl.TEXTURE_CUBE_MAP_POSITIVE_X, cubeTexture, url.default);
-                });
-            import('./images/skyBox/3/Right_1K_TEX.png')
-                .then((url) => {
-                    loadCubemapFace(gl, gl.TEXTURE_CUBE_MAP_NEGATIVE_X, cubeTexture, url.default);
-                });
-            import('./images/skyBox/3/Up_1K_TEX.png')
-                .then((url) => {
-                    loadCubemapFace(gl, gl.TEXTURE_CUBE_MAP_POSITIVE_Y, cubeTexture, url.default);
-                });
-            import('./images/skyBox/3/Down_1K_TEX.png')
-                .then((url) => {
-                    loadCubemapFace(gl, gl.TEXTURE_CUBE_MAP_NEGATIVE_Y, cubeTexture, url.default);
-                });
-            import('./images/skyBox/3/Front_1K_TEX.png')
-                .then((url) => {
-                    loadCubemapFace(gl, gl.TEXTURE_CUBE_MAP_POSITIVE_Z, cubeTexture, url.default);
-                });
-            import('./images/skyBox/3/Back_1K_TEX.png')
-                .then((url) => {
-                    loadCubemapFace(gl, gl.TEXTURE_CUBE_MAP_NEGATIVE_Z, cubeTexture, url.default);
-                });
-            break;
-    }
-}
-
-function loadCubemapFace(gl, target, texture, url) {
-    const image = new Image();
-    image.src = url;
-    image.onload = () => {
-        gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture);
-        gl.texImage2D(target, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
-        gl.bindTexture(gl.TEXTURE_CUBE_MAP, null);
-    };
 }
 
 // Se carga todos los objetos a la escena
@@ -423,11 +301,7 @@ function cargarEsferaEnElEscenario() {
     luna.diffuse = colores.Textura.diffuse
     luna.ambient = colores.Textura.ambient
 
-    luna.texture = 'esferaEscenario'
-    textureMap[luna.texture] = {
-        diffuse: new Texture(gl, 'moon/diffuse1080.jpg'),
-        normal: new Texture(gl, 'moon/normal1080.jpg')
-    }
+    luna.texture = 'luna'
     scene.add(luna)
 
 
@@ -608,85 +482,6 @@ function cargarEscenario() {
 
 }
 
-class DireccionSpotLight {
-    constructor(azimuth, elevation) {
-        this.vector = [0, 0, 0];
-        this.azimuth = azimuth;
-        this.elevation = elevation;
-        this.azimuthElevationToVector();
-    }
-
-    validarAngulos() {
-        if (this.azimuth < 0 || this.azimuth > 360) {
-            this.azimuth = this.azimuth % 360;
-        }
-        if (this.elevation < 0 || this.elevation > 360) {
-            this.elevation = this.elevation % 360;
-        }
-    }
-
-    azimuthElevationToVector() {
-        this.validarAngulos();
-        const {azimuth, elevation} = this;
-        const theta = azimuth * Math.PI / 180;
-        const phi = elevation * Math.PI / 180;
-        const x = Math.cos(phi) * Math.cos(theta);
-        const z = Math.cos(phi) * Math.sin(theta);
-        const y = Math.sin(phi);
-        this.vector = [x, y, z];
-        // this.printNewVector();
-    }
-
-    printNewVector() {
-        console.clear()
-        console.log(`${this.azimuth.toFixed(1)}° azimuth, ${this.elevation.toFixed(1)}° elevation`);
-        console.log(`-> ${this.vector[0].toFixed(2)}, ${this.vector[1].toFixed(2)}, ${this.vector[2].toFixed(2)}`);
-    }
-
-    cambiarAzimuth(incremento, valor = null) {
-        if(valor === null){
-            this.azimuth += incremento;
-        }else{
-            this.azimuth = valor;
-        }
-
-        this.azimuth += incremento;
-        this.azimuthElevationToVector();
-        this.actualizarEnLaEscena();
-    }
-
-    cambiarElevation(incremento, valor = null) {
-        if(valor === null){
-            this.elevation += incremento;
-        }else{
-            this.elevation = valor;
-        }
-
-        this.elevation += incremento;
-        this.azimuthElevationToVector();
-        this.actualizarEnLaEscena();
-    }
-
-    actualizarEnLaEscena() {
-        this.lightArray[3] = this.vector[0];
-        this.lightArray[4] = this.vector[1];
-        this.lightArray[5] = this.vector[2];
-
-        this.lightArray[6] = this.vector[0];
-        this.lightArray[7] = this.vector[1];
-        this.lightArray[8] = this.vector[2];
-
-        // console.log(this.lightArray)
-        gl.uniform3fv(program.uLightDirection, this.lightArray);
-    }
-
-    esteEsElLightsArray(lightsArrayDirection) {
-        this.lightArray = lightsArrayDirection;
-    }
-
-}
-
-
 function cargarALaTierra() {
     const pasoDiscretoRecorrido = 50
     const divisionesForma = 50 //precision en la forma
@@ -729,14 +524,6 @@ function cargarALaTierra() {
     tierra.ambient = [gray, gray, gray, 1]
 
     tierra.texture = 'tierra'
-    textureMap[tierra.texture] = {
-        diffuse: new Texture(gl, 'earth/Earth.Diffuse.3840.jpg'),
-        normal: new Texture(gl, 'earth/Earth.Normal.3840.jpg'),
-        specular: new Texture(gl, 'earth/Earth.Specular.3840.jpg')
-    }
-
-    textureEarthClouds = new Texture(gl, 'earth/Earth.Clouds.3840.jpg')
-
     scene.add(tierra)
 
 }
@@ -783,13 +570,7 @@ function cargarALaLuna() {
     luna.ambient = colores.Textura.ambient
 
     luna.texture = 'luna'
-    textureMap[luna.texture] = {
-        diffuse: new Texture(gl, 'moon/diffuse1080.jpg'),
-        normal: new Texture(gl, 'moon/normal1080.jpg')
-    }
     scene.add(luna)
-
-
 }
 
 function cargarCapsula() {
@@ -918,7 +699,7 @@ function cargarCapsula() {
         radioInferior: 0.4,
         altura: 2.9 - 2.51,
     }, dimensionesCapsulaCilindro))
-    scene.add(capsulaCuerpoCilindroD, {diffuse: colorGenerico})
+    scene.add(capsulaCuerpoCilindroD, {diffuse: colores.RojoMetalico})
 
     const capsulaCuerpoCilindroE = (new Cilindro('capsulaCuerpoCilindroE', {
         radioSuperior: 0.4,
@@ -1087,12 +868,14 @@ function cargarEsfera() {
     const cuerpo_NEW_indices = []
     const tapaAtras_NEW_indices = []
     cuerpo.indices.forEach(indice => {
-        cuerpo_NEW_indices.push(indice + Math.max(...tapaAdelante.indices) + 1);
+        cuerpo_NEW_indices.push(indice + tapaAdelante.indices[tapaAdelante.indices.length - 1] + 1);
 
     });
     tapaAtras.indices.forEach(indice => {
-        tapaAtras_NEW_indices.push(indice + Math.max(...cuerpo_NEW_indices) + 1);
+        tapaAtras_NEW_indices.push(indice + cuerpo_NEW_indices[cuerpo_NEW_indices.length - 1] + 1);
     });
+
+
     /*
      * Asignacion al objeto final: esfera
      */
@@ -1141,7 +924,7 @@ function cargarEsfera() {
 }
 
 function moduloVioleta() {
-    const pasoDiscretoRecorrido = 1;
+    const pasoDiscretoRecorrido = 10;
     const divisionesForma = 8
     const curvaRecorrido = new CurvaCubicaDeBezier(
         [0, 0],
@@ -1165,6 +948,47 @@ function moduloVioleta() {
 
     const datosDelRecorrido = utils.crearRecorrido(pasoDiscretoRecorrido, curvaRecorrido)
     const datosDeLaForma = utils.crearForma(divisionesForma, formaSuperficie)
+
+    // Añado puntos extras manualmente
+    datosDeLaForma.puntos.splice(9, 0, [0, 1])
+    datosDeLaForma.puntos.splice(19, 0, [-1, 0])
+    datosDeLaForma.puntos.splice(29, 0, [0, -1])
+    datosDeLaForma.puntos.splice(39, 0, [1, 0])
+
+    datosDeLaForma.normales.splice(9, 0, [0, 1])
+    datosDeLaForma.normales.splice(19, 0, [-1, 0])
+    datosDeLaForma.normales.splice(29, 0, [0, -1])
+    datosDeLaForma.normales.splice(39, 0, [1, 0])
+
+    datosDeLaForma.tangentes.splice(9, 0, [-1, 0])
+    datosDeLaForma.tangentes.splice(19, 0, [0, -1])
+    datosDeLaForma.tangentes.splice(29, 0, [1, 0])
+    datosDeLaForma.tangentes.splice(39, 0, [0, 1])
+
+    //datosDeLaForma.puntos[9] -> datosDeLaForma.puntos[0]
+    const puntosRecorridos = []
+    const normalesRecorridas = []
+    const tangentesRecorridas = []
+
+    for (let i = 9; i < datosDeLaForma.puntos.length - 1; i++) {
+        puntosRecorridos.push(datosDeLaForma.puntos[i])
+        normalesRecorridas.push(datosDeLaForma.normales[i])
+        tangentesRecorridas.push(datosDeLaForma.tangentes[i])
+    }
+    for (let i = 0; i < 9; i++) {
+        puntosRecorridos.push(datosDeLaForma.puntos[i])
+        normalesRecorridas.push(datosDeLaForma.normales[i])
+        tangentesRecorridas.push(datosDeLaForma.tangentes[i])
+    }
+    puntosRecorridos.push(puntosRecorridos[0])
+    normalesRecorridas.push(normalesRecorridas[0])
+    tangentesRecorridas.push(tangentesRecorridas[0])
+
+    datosDeLaForma.puntos = puntosRecorridos
+    datosDeLaForma.normales = normalesRecorridas
+    datosDeLaForma.tangentes = tangentesRecorridas
+
+
     const pasoDiscretoForma = datosDeLaForma.puntos.length - 1
 
     const dim = {
@@ -1191,12 +1015,16 @@ function moduloVioleta() {
     newUTexture.push(0)
     distanciaEntrePtos.map(distancia => {
         p += distancia
-        newUTexture.push(p / perimetroDeLaForma)
+        newUTexture.push(p / (perimetroDeLaForma / 4))
     })
 
-    const newVTexture = []
 
-    newVTexture.push(0, 0.5)
+    const newVTexture = [];
+
+    for (let i = 0; i < dim.columnas; i++) {
+        newVTexture.push(i / dim.filas)
+    }
+
     const nuevasUV = []
     for (let i = 0; i < newVTexture.length; i++) {
         for (let j = 0; j < newUTexture.length; j++) {
@@ -1212,7 +1040,8 @@ function moduloVioleta() {
     moduloVioletaPS.textureCoords = nuevasUV
     moduloVioletaPS.diffuse = colores.Textura.diffuse
     moduloVioletaPS.ambient = colores.Textura.ambient
-    moduloVioletaPS.texture = "UV";
+
+    moduloVioletaPS.texture = "moduloVioleta"
 
     const moduloVioletaAnillo = Object.assign({}, moduloVioletaPS)
     moduloVioletaAnillo.alias = "moduloVioletaAnillo"
@@ -1526,13 +1355,6 @@ function cargarTorus() {
     torus.diffuse = colores.Textura.diffuse
     torus.ambient = colores.Textura.ambient
     torus.texture = "torus"
-
-    textureMap[torus.texture] = {
-        diffuse: new Texture(gl, 'torus/diffuse.jpg'),
-        normal: new Texture(gl, 'torus/normal.jpg'),
-        specular: new Texture(gl, 'torus/specular.jpg'),
-    }
-
     scene.add(torus)
 }
 
@@ -1738,13 +1560,13 @@ function dibujarMallaDeObjeto(object) {
         gl.uniform1i(program.uIsTheCubeMapShader, true);
         // Activate cube map
         gl.activeTexture(gl.TEXTURE0);
-        gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubeTexture);
+        gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubeMap.cubeTexture);
 
     } else if (object.texture) {
 
         gl.uniform1i(program.uHasTexture, true);
 
-        const texture = textureMap[object.texture]
+        const texture = textureLoader.textureMap[object.texture];
 
         gl.activeTexture(gl.TEXTURE1);
         gl.bindTexture(gl.TEXTURE_2D, texture.diffuse.glTexture);
@@ -1757,7 +1579,7 @@ function dibujarMallaDeObjeto(object) {
             gl.uniform1i(program.uActivateEarthTextures, true);
             //nubes
             gl.activeTexture(gl.TEXTURE3);
-            gl.bindTexture(gl.TEXTURE_2D, textureEarthClouds.glTexture);
+            gl.bindTexture(gl.TEXTURE_2D, texture.clouds.glTexture);
         }
         if (texture.specular) {
             gl.uniform1i(program.uActivateSpecularTexture, SpecularMap);
@@ -1817,7 +1639,7 @@ function render() {
 
 function init() {
     configure();
-    cargarTexturas();
+    cargarTexturasLuces();
     load();
     render();
     initControls();
@@ -1840,7 +1662,28 @@ function initControls() {
 
 
 
-   'PanelesSolares': {
+
+
+
+
+
+
+
+
+
+
+
+
+    */
+
+            'Bloques': {
+                value: bloque.type,
+                options: [Bloque.BLOQUES_4, Bloque.BLOQUES_5, Bloque.BLOQUES_6, Bloque.BLOQUES_7, Bloque.BLOQUES_8],
+                onChange: v => {
+                    bloque.setType(v);
+                }
+            },
+            'PanelesSolares': {
                 'Filas': {
                     value: panelSolar.cantidadDeFilas,
                     min: 1, max: 10, step: 1,
@@ -1869,27 +1712,6 @@ function initControls() {
                     onChange: v => transformar.panelSolar.animar = v
                 },
             },
-
-
-
-
-
-
-
-
-
-
-
-    */
-
-             'Bloques': {
-                 value: bloque.type,
-                 options: [Bloque.BLOQUES_4, Bloque.BLOQUES_5, Bloque.BLOQUES_6, Bloque.BLOQUES_7, Bloque.BLOQUES_8],
-                 onChange: v => {
-                     bloque.setType(v);
-                 }
-             },
-
 
 
             ...lightsData.reduce((controls, light) => {
@@ -1936,38 +1758,18 @@ function initControls() {
             },
             'azimuth': {
                 value: lightAzimuth,
-                min: 0, max: 360, step: 1,
+                min: -0, max: 360, step: 1,
                 onChange: v => {
-                    spotLightDir.cambiarAzimuth(null,v)
-
+                    spotLightDir.cambiarAzimuth(null, v)
                 }
             },
             'elevation': {
                 value: lightElevation,
-                min: 0, max: 360, step: 1,
+                min: -0, max: 360, step: 1,
                 onChange: v => {
-                    spotLightDir.cambiarElevation(null,v)
+                    spotLightDir.cambiarElevation(null, v)
                 }
             },
-
-
-            /*
-                        'Exponent Factor': {
-                            value: exponentFactor,
-                            min: 1, max: 100, step: 0.01,
-                            onChange: v => gl.uniform1f(program.uExponentFactor, v)
-                        },
-
-
-             */
-
-            /*
-                        'Light Color': {
-                            value: utils.denormalizeColor(sunLightColor),
-                            onChange: v => gl.uniform4fv(program.uLightDiffuse, utils.normalizeColor(v))
-                        },
-
-             */
             'Light Ambient Term': {
                 value: lightAmbient[0],
                 min: 0, max: 1, step: 0.01,
@@ -1998,15 +1800,6 @@ function initControls() {
                     CubeTexture.hidden = !v;
                 }
             },
-
-
-            /*
-                        'Static Light Position': {
-                            value: fixedLight,
-                            onChange: v => fixedLight = v
-                        },
-
-             */
             'SpecularMap': {
                 value: SpecularMap,
                 // min: -2.0, max: 2.0, step: 0.1,

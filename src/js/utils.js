@@ -422,7 +422,6 @@ export const utils = {
         //// Orthonormalize each tangent and calculate the handedness.
         const TAN = []
         const BITAN = []
-        const signArray = []
         let posCounter = 0
         let negCounter = 0
 
@@ -431,7 +430,6 @@ export const utils = {
             const b = bitangentes[i];
             const n = normalesArray[i];
             const sign = (utils.Dot(utils.Cross(t, b), n) > 0.0) ? 1.0 : -1.0;
-            signArray[i] = sign
             if (sign < 0) {
                 t = utils.MultiplyVector(t, -1) //actualizo el signo de las tangentes
                 negCounter++;

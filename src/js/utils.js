@@ -473,6 +473,14 @@ export const utils = {
             vector[2] * a
         ]
     },
+    crearVectorEntre(limiteSuperior, limiteInferior, n){
+        const div = (limiteSuperior - limiteInferior)/(n-1)
+        const vector = []
+        for (let i = 0; i<= n-1; i++){
+            vector.push(limiteInferior + i*div)
+        }
+        return vector
+    }
 };
 
 

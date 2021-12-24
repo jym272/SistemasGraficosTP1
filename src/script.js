@@ -113,8 +113,8 @@ function configure() {
 
     // Configure `camera` and `controls`
     camera = new Camera(Camera.ORBITING_TYPE, 70, 0);
-    camera.goTo([0, 0, 40], 0, -30, [0, 0, 0])
-    droneCam = new DroneCameraControl([0, 0, -10], camera);
+    camera.goTo([0, 0, 36], 149, -22, [0, 0, 0])
+    droneCam = new DroneCameraControl([0, 0, -10], camera); //intialPos: [0,0,-10]
     //Luz SpotLight
     spotLightDir = new DireccionSpotLight(gl, program);
 
@@ -222,17 +222,8 @@ function cargarTexturasLuces() {
 
 // Se carga todos los objetos a la escena
 function load() {
-    // Sphere.alias = "light"
-    // scene.add(Sphere);
-
     // scene.add(new Floor(80, 1));
     // scene.add(new Axis(82));
-
-
-    scene.add(CubeTexture, {
-        alias: "cubeMap"
-    });
-
 
     //luces puntual y las dos spotlight
     lightsData.forEach(({id}) => {
@@ -241,7 +232,12 @@ function load() {
         scene.add(SphereClone);
     });
 
+    //CubeMaps
+    scene.add(CubeTexture, {
+        alias: "cubeMap"
+    });
 
+    //Estacion Espacial
     scene.add(new Superficie(null, 'nave'))
     cargarNucleo()
     panelSolar = new PanelSolar(scene);
@@ -250,7 +246,12 @@ function load() {
     bloque.setType(Bloque.BLOQUES_4);
     moduloVioleta()
     cargarEsfera()
+
+
     cargarCapsula()
+
+
+    //Planetas
     cargarALaLuna()
     cargarALaTierra()
 
@@ -581,8 +582,8 @@ function cargarCapsula() {
      *->El recorrido va ser circular con radio 0, mientras mas puntos pasoDiscretoRecorrido
      *  mas se parece a una circunferencia en lugar de un poligono -> tomar en cuenta para la tapa
      */
-    const pasoDiscretoRecorrido = 30
-    const divisionesForma = 10 //precision en la forma,
+    const pasoDiscretoRecorrido = 60
+    const divisionesForma = 16 //precision en la forma,
     //Azul Polenta [0,4/255,1,1],
     const arraycolores = [
         [247, 144 / 255, 0 / 255, 1],//fuegoCuerpo
@@ -593,16 +594,6 @@ function cargarCapsula() {
         filas: 1, //segmentosRadiales
         columnas: pasoDiscretoRecorrido, //segmentosDeAltura
     };
-    /*
-     * Abstraccion de la capsula
-     * -> transformando la matriz relacionada de este objeto muevo a la capsula
-     */
-    const capsula = new Superficie(null, 'capsula')
-    scene.add(capsula)
-
-    /*
-     *Cola
-     */
     Capsula.curvaColav0x = -1.99
     const curvaCola = new CurvaCubicaDeBezier(
         [Capsula.curvaColav0x, 0.78],
@@ -610,7 +601,6 @@ function cargarCapsula() {
         [-0.66, 0.52],
         [-0.14, 0.18]
     );
-
     const puntosBezierCola = curvaCola.extraerPuntos(divisionesForma)
     const datosDeLaForma = {
         puntos: puntosBezierCola.puntos,
@@ -618,33 +608,14 @@ function cargarCapsula() {
             return [-p[1], p[0]]
         }),
     }
-
-
     //Creo una Superficie de Revolucion
     const pasoDiscretoForma = datosDeLaForma.puntos.length - 1
     const dimensiones = {
         filas: pasoDiscretoRecorrido, //paso discreto del recorrido
         columnas: pasoDiscretoForma, //divisiones de la forma
     }
-
     //Klave para la sup de Rev -> radio 0
     const datosDelRecorrido = utils.crearRecorridoCircular(0, 1, dimensiones["filas"])
-
-    const capsulaCola = new SuperficieParametrica("capsulaCola", datosDeLaForma, datosDelRecorrido, dimensiones, true)
-    scene.add(capsulaCola, {
-        diffuse: arraycolores[1],
-    });
-
-    const capsulaFuegoCola = (new Cilindro('capsulaFuegoCola', {
-        radioSuperior: 0.78,
-        radioInferior: 0.05,
-        altura: 0.5,
-    }, dimensionesCapsulaCilindro, true))
-    scene.add(capsulaFuegoCola, {
-        diffuse: arraycolores[2],
-    });
-
-
     /*
      * Cuerpo de la Capsula
      */
@@ -669,45 +640,266 @@ function cargarCapsula() {
         filas: pasoDiscretoRecorrido, //paso discreto del recorrido
         columnas: pasoDiscretoCuerpo, //divisiones de la forma
     }
-    const cuerpo = new SuperficieParametrica("capsulaCuerpoBezierA", datosDeLaFormaCuerpo, datosDelRecorrido, dimensionesCuerpo, true)
-    scene.add(cuerpo)
 
+    ///////////////////////////////////CAPSULA//////////////////////////////////////////////
+    const capsula = new Superficie(null, 'capsula')
+
+    //CilindroA
     Capsula.CilAaltura = 0.1
     const capsulaCuerpoCilindroA = (new Cilindro('capsulaCuerpoCilindroA', {
         radioSuperior: 0.4,
         radioInferior: 1.2,
         altura: Capsula.CilAaltura,
     }, dimensionesCapsulaCilindro))
-    scene.add(capsulaCuerpoCilindroA)
-
+    //CilindroB
     const capsulaCuerpoCilindroB = (new Cilindro('capsulaCuerpoCilindroB', {
         radioSuperior: 1.2,
         radioInferior: 1.5,
         altura: 0.2,
     }, dimensionesCapsulaCilindro))
-    scene.add(capsulaCuerpoCilindroB)
-
+    //Cuerpo
+    const cuerpo = new SuperficieParametrica("capsulaCuerpoBezierA", datosDeLaFormaCuerpo, datosDelRecorrido, dimensionesCuerpo, true)
+    //CilindroC
     const capsulaCuerpoCilindroC = (new Cilindro('capsulaCuerpoCilindroC', {
         radioSuperior: 0.7,
         radioInferior: 0.6,
         altura: 0.01,
     }, dimensionesCapsulaCilindro))
-    scene.add(capsulaCuerpoCilindroC)
-
+    //CilindroD
     const capsulaCuerpoCilindroD = (new Cilindro('capsulaCuerpoCilindroD', {
         radioSuperior: 0.6,
         radioInferior: 0.4,
         altura: 2.9 - 2.51,
     }, dimensionesCapsulaCilindro))
-    scene.add(capsulaCuerpoCilindroD, {diffuse: colores.RojoMetalico})
 
+    //CilindroE
     const capsulaCuerpoCilindroE = (new Cilindro('capsulaCuerpoCilindroE', {
         radioSuperior: 0.4,
         radioInferior: 0,
         altura: 0.001,
     }, dimensionesCapsulaCilindro))
-    scene.add(capsulaCuerpoCilindroE)
+    /*
+     * Transformaciones
+     */
+    //Cilindro A
+    const cilindroATyN = mat4.identity(mat4.create());
+    mat4.rotate(cilindroATyN, cilindroATyN, -Math.PI / 2, [1, 0, 0]);
 
+    const cilindroATransf = mat4.identity(mat4.create());
+    mat4.translate(cilindroATransf, cilindroATransf, [0, 0, 0.1]);
+    mat4.multiply(cilindroATransf, cilindroATransf, cilindroATyN);
+
+    const nuevasTanBitCilindroA = utils.calcularTanYBiTan(capsulaCuerpoCilindroA)
+    capsulaCuerpoCilindroA.tangentes = nuevasTanBitCilindroA.tangentes
+
+    const cilindroA_NEW_AUX = utils.nuevasCoordenadas(cilindroATyN, capsulaCuerpoCilindroA, false)
+    const cilindroA_NEW = utils.nuevasCoordenadas(cilindroATransf, capsulaCuerpoCilindroA, false)
+    cilindroA_NEW.normales = cilindroA_NEW_AUX.normales
+    cilindroA_NEW.tangentes = cilindroA_NEW_AUX.tangentes
+
+    //Cilindro B
+    const cilindroBTyN = mat4.identity(mat4.create());
+    mat4.rotate(cilindroBTyN, cilindroBTyN, -Math.PI / 2, [1, 0, 0]);
+
+    const cilindroBTransf = mat4.identity(mat4.create());
+    mat4.translate(cilindroBTransf, cilindroBTransf, [0, 0, 0.3]);
+    mat4.multiply(cilindroBTransf, cilindroBTransf, cilindroBTyN);
+
+    const nuevasTanBitCilindroB = utils.calcularTanYBiTan(capsulaCuerpoCilindroB)
+    capsulaCuerpoCilindroB.tangentes = nuevasTanBitCilindroB.tangentes
+
+    const cilindroB_NEW_AUX = utils.nuevasCoordenadas(cilindroBTyN, capsulaCuerpoCilindroB, false)
+    const cilindroB_NEW = utils.nuevasCoordenadas(cilindroBTransf, capsulaCuerpoCilindroB, false)
+    cilindroB_NEW.normales = cilindroB_NEW_AUX.normales
+    cilindroB_NEW.tangentes = cilindroB_NEW_AUX.tangentes
+
+    //Cuerpo
+    const cuerpoTyN = mat4.identity(mat4.create());
+    mat4.rotate(cuerpoTyN, cuerpoTyN, Math.PI / 2, [0, 0, 1]);
+
+    const nuevasTanBitCuerpo = utils.calcularTanYBiTan(cuerpo)
+    cuerpo.tangentes = nuevasTanBitCuerpo.tangentes
+
+    const cuerpo_NEW = utils.nuevasCoordenadas(cuerpoTyN, cuerpo, false)
+
+    //CilindroC
+    const cilindroCTyN = mat4.identity(mat4.create());
+    mat4.rotate(cilindroCTyN, cilindroCTyN, -Math.PI / 2, [1, 0, 0]);
+
+    const cilindroCTransf = mat4.identity(mat4.create());
+    mat4.translate(cilindroCTransf, cilindroCTransf, [0, 0, 2.51]);
+    mat4.multiply(cilindroCTransf, cilindroCTransf, cilindroCTyN);
+
+    const nuevasTanBitCilindroC = utils.calcularTanYBiTan(capsulaCuerpoCilindroC)
+    capsulaCuerpoCilindroC.tangentes = nuevasTanBitCilindroC.tangentes
+
+    const cilindroC_NEW_AUX = utils.nuevasCoordenadas(cilindroCTyN, capsulaCuerpoCilindroC, false)
+    const cilindroC_NEW = utils.nuevasCoordenadas(cilindroCTransf, capsulaCuerpoCilindroC, false)
+    cilindroC_NEW.normales = cilindroC_NEW_AUX.normales
+    cilindroC_NEW.tangentes = cilindroC_NEW_AUX.tangentes
+
+    //CilindroD
+    const cilindroDTyN = mat4.identity(mat4.create());
+    mat4.rotate(cilindroDTyN, cilindroDTyN, -Math.PI / 2, [1, 0, 0]);
+
+    const cilindroDTransf = mat4.identity(mat4.create());
+    mat4.translate(cilindroDTransf, cilindroDTransf, [0, 0, 2.9]);
+    mat4.multiply(cilindroDTransf, cilindroDTransf, cilindroDTyN);
+
+    const nuevasTanBitCilindroD = utils.calcularTanYBiTan(capsulaCuerpoCilindroD)
+    capsulaCuerpoCilindroD.tangentes = nuevasTanBitCilindroD.tangentes
+
+    const cilindroD_NEW_AUX = utils.nuevasCoordenadas(cilindroDTyN, capsulaCuerpoCilindroD, false)
+    const cilindroD_NEW = utils.nuevasCoordenadas(cilindroDTransf, capsulaCuerpoCilindroD, false)
+    cilindroD_NEW.normales = cilindroD_NEW_AUX.normales
+    cilindroD_NEW.tangentes = cilindroD_NEW_AUX.tangentes
+
+    //CilindroE
+    const cilindroETyN = mat4.identity(mat4.create());
+    mat4.rotate(cilindroETyN, cilindroETyN, -Math.PI / 2, [1, 0, 0]);
+
+    const cilindroETransf = mat4.identity(mat4.create());
+    mat4.translate(cilindroETransf, cilindroETransf, [0, 0, (2.9 + 0.001)]);
+    mat4.multiply(cilindroETransf, cilindroETransf, cilindroETyN);
+
+    const nuevasTanBitCilindroE = utils.calcularTanYBiTan(capsulaCuerpoCilindroE)
+    capsulaCuerpoCilindroE.tangentes = nuevasTanBitCilindroE.tangentes
+
+    const cilindroE_NEW_AUX = utils.nuevasCoordenadas(cilindroETyN, capsulaCuerpoCilindroE, false)
+    const cilindroE_NEW = utils.nuevasCoordenadas(cilindroETransf, capsulaCuerpoCilindroE, false)
+    cilindroE_NEW.normales = cilindroE_NEW_AUX.normales
+    cilindroE_NEW.tangentes = cilindroE_NEW_AUX.tangentes
+    /*
+     * Nuevas UV texture
+     */
+
+    const uvVectorCilA = utils.I2(capsulaCuerpoCilindroA.textureCoords, 'noImprimir')
+
+    const V_CIL_A = [];
+    V_CIL_A.push(0.1, 0)
+    const V_CIL_B = [];
+    V_CIL_B.push(0.2, 0.1)
+    const V_CIL_C = [];
+    V_CIL_C.push(0.82, 0.8)
+    const V_CIL_D = [];
+    V_CIL_D.push(0.9, 0.82)
+    const V_CIL_E = [];
+    V_CIL_E.push(1.0, 0.9)
+
+    const newUVCilindroA = []
+    const newUVCilindroB = []
+    const newUVCilindroC = []
+    const newUVCilindroD = []
+    const newUVCilindroE = []
+    //en la columna se repite el set dos veces
+    const U_LENGTH = uvVectorCilA.columna1.length / 2
+    const new_U_4Texturas = utils.crearVectorEntre(4.0, 0.0, U_LENGTH)
+
+    for (let i = 0; i < V_CIL_A.length; i++) {
+        for (let j = 0; j < U_LENGTH; j++) {
+            newUVCilindroA.push(new_U_4Texturas[j], V_CIL_A[i])
+            newUVCilindroB.push(new_U_4Texturas[j], V_CIL_B[i])
+            newUVCilindroC.push(new_U_4Texturas[j], V_CIL_C[i])
+            newUVCilindroD.push(new_U_4Texturas[j], V_CIL_D[i])
+            newUVCilindroE.push(new_U_4Texturas[j], V_CIL_E[i])
+        }
+    }
+    //Cuerpo Textures
+    const newUVCuerpo = []
+    const V_CUERPO = utils.crearVectorEntre(0.8, 0.2, divisionesForma + 1)
+
+    for (let i = 0; i < U_LENGTH; i++) {
+        for (let j = 0; j < V_CUERPO.length; j++) {
+            newUVCuerpo.push(1 - new_U_4Texturas[i], V_CUERPO[j])
+        }
+    }
+    /*
+     * Asignando propiedades a la capsula
+     */
+    //indices
+    const cilindroB_NEW_indices = []
+    capsulaCuerpoCilindroB.indices.forEach(indice => {
+        cilindroB_NEW_indices.push(indice + capsulaCuerpoCilindroA.indices[capsulaCuerpoCilindroA.indices.length - 1] + 1);
+    });
+    const cuerpo_NEW_indices = []
+    cuerpo.indices.forEach(indice => {
+        cuerpo_NEW_indices.push(indice + cilindroB_NEW_indices[cilindroB_NEW_indices.length - 1] + 1);
+    });
+    const cilindroC_NEW_indices = []
+    capsulaCuerpoCilindroC.indices.forEach(indice => {
+        cilindroC_NEW_indices.push(indice + cuerpo_NEW_indices[cuerpo_NEW_indices.length - 1] + 1);
+    });
+    const cilindroD_NEW_indices = []
+    capsulaCuerpoCilindroD.indices.forEach(indice => {
+        cilindroD_NEW_indices.push(indice + cilindroC_NEW_indices[cilindroC_NEW_indices.length - 1] + 1);
+    });
+    const cilindroE_NEW_indices = []
+    capsulaCuerpoCilindroE.indices.forEach(indice => {
+        cilindroE_NEW_indices.push(indice + cilindroD_NEW_indices[cilindroD_NEW_indices.length - 1] + 1);
+    });
+    capsula.indices.push(
+        ...capsulaCuerpoCilindroA.indices, capsulaCuerpoCilindroA.indices[capsulaCuerpoCilindroA.indices.length - 1], cilindroB_NEW_indices[0], //121,122
+        ...cilindroB_NEW_indices, cilindroB_NEW_indices[cilindroB_NEW_indices.length - 1], cuerpo_NEW_indices[0], //243,244
+        ...cuerpo_NEW_indices, cuerpo_NEW_indices[cuerpo_NEW_indices.length - 1], cilindroC_NEW_indices[0],
+        ...cilindroC_NEW_indices, cilindroC_NEW_indices[cilindroC_NEW_indices.length - 1], cilindroD_NEW_indices[0],
+        ...cilindroD_NEW_indices, cilindroD_NEW_indices[cilindroD_NEW_indices.length - 1], cilindroE_NEW_indices[0],
+        ...cilindroE_NEW_indices
+    )
+    //Vertices
+    capsula.vertices.push(
+        ...cilindroA_NEW.vertices,
+        ...cilindroB_NEW.vertices,
+        ...cuerpo_NEW.vertices,
+        ...cilindroC_NEW.vertices,
+        ...cilindroD_NEW.vertices,
+        ...cilindroE_NEW.vertices,
+    );
+    //normales
+    capsula.normales.push(
+        ...cilindroA_NEW.normales,
+        ...cilindroB_NEW.normales,
+        ...cuerpo_NEW.normales,
+        ...cilindroC_NEW.normales,
+        ...cilindroD_NEW.normales,
+        ...cilindroE_NEW.normales,
+    );
+    //UV
+    capsula.textureCoords.push(
+        ...newUVCilindroA,
+        ...newUVCilindroB,
+        ...newUVCuerpo,
+        ...newUVCilindroC,
+        ...newUVCilindroD,
+        ...newUVCilindroE,
+    );
+    capsula.tangentes.push(
+        ...cilindroA_NEW.tangentes,
+        ...cilindroB_NEW.tangentes,
+        ...cuerpo_NEW.tangentes,
+        ...cilindroC_NEW.tangentes,
+        ...cilindroD_NEW.tangentes,
+        ...cilindroE_NEW.tangentes,
+    )
+    //Se carga a la escena
+    capsula.diffuse = colores.Textura.diffuse
+    capsula.ambient = colores.Textura.ambient
+    capsula.texture = "capsula";
+    scene.add(capsula)
+    /*
+     * Cola
+     */
+    const capsulaCola = new SuperficieParametrica("capsulaCola", datosDeLaForma, datosDelRecorrido, dimensiones, true)
+    scene.add(capsulaCola, {
+        diffuse: arraycolores[1],
+    });
+    const capsulaFuegoCola = (new Cilindro('capsulaFuegoCola', {
+        radioSuperior: 0.78,
+        radioInferior: 0.05,
+        altura: 0.5,
+    }, dimensionesCapsulaCilindro, true))
+    scene.add(capsulaFuegoCola, {
+        diffuse: arraycolores[2],
+    });
     Capsula.FuegoCuerpoAltura = 0.5;
     const capsulaFuegoCuerpo = (new Cilindro('capsulaFuegoCuerpo', {
         radioSuperior: 1.2,
@@ -717,7 +909,6 @@ function cargarCapsula() {
     scene.add(capsulaFuegoCuerpo, {
         diffuse: arraycolores[0],
     });
-
 }
 
 function cargarEsfera() {
@@ -1675,6 +1866,8 @@ function initControls() {
 
 
     */
+
+
 
             'Bloques': {
                 value: bloque.type,

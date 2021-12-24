@@ -170,7 +170,6 @@ export class TransformacionesAfin {
     capsula() {
         const {transforms, droneCam, controles, camera} = this;
         if (this.alias === 'capsula') {
-
             Capsula.capsulaTransform = transforms.modelViewMatrix
 
             const {
@@ -210,44 +209,10 @@ export class TransformacionesAfin {
 
             mat4.translate(Capsula.capsulaTransform, Capsula.capsulaTransform, position);
             mat4.multiply(Capsula.capsulaTransform, Capsula.capsulaTransform, rotationMatrix);
-            //mat4.translate(Capsula.capsulaTransform, Capsula.capsulaTransform, posicionRespectoLaNave);
             mat4.rotate(Capsula.capsulaTransform, Capsula.capsulaTransform, Math.PI, [1, 0, 0]);
 
 
-        } else if (this.alias === 'capsulaCuerpoCilindroA') {
-            const capsulaCuerpoCilindroATransform = transforms.modelViewMatrix;
-
-            mat4.translate(capsulaCuerpoCilindroATransform, Capsula.capsulaTransform, [0, 0, 0.1]);
-            mat4.rotate(capsulaCuerpoCilindroATransform, capsulaCuerpoCilindroATransform, -Math.PI / 2, [1, 0, 0]);
-
-        } else if (this.alias === 'capsulaCuerpoCilindroB') {
-            const capsulaCuerpoCilindroBTransform = transforms.modelViewMatrix;
-
-            mat4.translate(capsulaCuerpoCilindroBTransform, Capsula.capsulaTransform, [0, 0, 0.3]);
-            mat4.rotate(capsulaCuerpoCilindroBTransform, capsulaCuerpoCilindroBTransform, -Math.PI / 2, [1, 0, 0]);
-        } else if (this.alias === 'capsulaCuerpoBezierA') {
-
-            const capsulaCuerpoBezierATransform = transforms.modelViewMatrix;
-            mat4.rotate(capsulaCuerpoBezierATransform, Capsula.capsulaTransform, Math.PI / 2, [0, 0, 1]);
-        } else if (this.alias === 'capsulaCuerpoCilindroC') {
-
-            const capsulaCuerpoCilindroCTransform = transforms.modelViewMatrix;
-            mat4.translate(capsulaCuerpoCilindroCTransform, Capsula.capsulaTransform, [0, 0, 2.51]);
-
-            mat4.rotate(capsulaCuerpoCilindroCTransform, capsulaCuerpoCilindroCTransform, -Math.PI / 2, [1, 0, 0]);
-        } else if (this.alias === 'capsulaCuerpoCilindroD') {
-
-            const capsulaCuerpoCilindroDTransform = transforms.modelViewMatrix;
-            mat4.translate(capsulaCuerpoCilindroDTransform, Capsula.capsulaTransform, [0, 0, 2.9]);
-
-            mat4.rotate(capsulaCuerpoCilindroDTransform, capsulaCuerpoCilindroDTransform, -Math.PI / 2, [1, 0, 0]);
-        } else if (this.alias === 'capsulaCuerpoCilindroE') {
-
-            const capsulaCuerpoCilindroETransform = transforms.modelViewMatrix;
-            mat4.translate(capsulaCuerpoCilindroETransform, Capsula.capsulaTransform, [0, 0, 2.9 + 0.001]);
-
-            mat4.rotate(capsulaCuerpoCilindroETransform, capsulaCuerpoCilindroETransform, -Math.PI / 2, [1, 0, 0]);
-        } else if (this.alias === 'capsulaCola') {
+        }else if (this.alias === 'capsulaCola') {
 
             const capsulaColaTransform = transforms.modelViewMatrix;
             mat4.translate(capsulaColaTransform, Capsula.capsulaTransform, [0, 0, 0.2]);

@@ -21,6 +21,8 @@ import {TextureLoader} from "./js/TextureLoader.js";
 import CubeTexture from './geometries/cube-texture.json5'
 import Sphere from './geometries/sphere.json5'
 import {CubeMap} from "./js/CubeMap";
+import {Floor} from "./js/Floor";
+import {Axis} from "./js/Axis";
 
 let
     gl, scene, program, camera, transforms, transformar, bloque, panelSolar, controles, droneCam,
@@ -231,12 +233,10 @@ function load() {
         SphereClone.alias = id;
         scene.add(SphereClone);
     });
-
     //CubeMaps
     scene.add(CubeTexture, {
         alias: "cubeMap"
     });
-
     //Estacion Espacial
     scene.add(new Superficie(null, 'nave'))
     cargarNucleo()
@@ -246,16 +246,10 @@ function load() {
     bloque.setType(Bloque.BLOQUES_4);
     moduloVioleta()
     cargarEsfera()
-
-
     cargarCapsula()
-
-
     //Planetas
     cargarALaLuna()
     cargarALaTierra()
-
-
     // cargarEscenario();
     // cargarEsferaEnElEscenario();
 }
@@ -1426,26 +1420,134 @@ function cargarAnillo() {
         altura: 0.10,
     };
     const dimensionesTriangulosPastilla = {
-        filas: 1, //segmentosRadiales
-        columnas: 30, //segmentosDeAltura
+        filas: 8, //segmentosRadiales
+        columnas: 55, //segmentosDeAltura
     };
     //pastilla
+    const pastilla = new Superficie(null, 'pastillaCuerpo')
 
-    scene.add(new Tubo('pastillaCuerpo', dimensiones.pastillas.cuerpo, dimensionesTriangulosPastilla), {
-        diffuse: colores.Pastilla,
+    const cuerpo = new Tubo('pastillaCuerpo1', dimensiones.pastillas.cuerpo, dimensionesTriangulosPastilla)
+    const cilindroSup =  new Cilindro('pastillaCilindroSup1', dimensionesCilindroPastilla, dimensionesTriangulosPastilla)
+    const tapaSup = new Tapa('pastillaTapaSup1', dimensionesCilindroPastilla.radioSuperior, dimensionesTriangulosPastilla)
+    const cilindroInf = new Cilindro('pastillaCilindroInf1', dimensionesCilindroPastilla, dimensionesTriangulosPastilla)
+    const tapaInf = new Tapa('pastillaTapaInf1', dimensionesCilindroPastilla.radioSuperior, dimensionesTriangulosPastilla)
+
+    //CilindroSup
+    const cilindroSupTyN = mat4.identity(mat4.create());
+    mat4.rotate(cilindroSupTyN, cilindroSupTyN, Math.PI / 2, [0, 1, 0]);
+
+    const cilindroSupTransf = mat4.identity(mat4.create());
+    mat4.translate(cilindroSupTransf, cilindroSupTransf, [0, dimensiones.pastillas.cuerpo.altura, 0]);
+    mat4.multiply(cilindroSupTransf, cilindroSupTransf, cilindroSupTyN);
+
+    const nuevasTanBitCilindroSup = utils.calcularTanYBiTan(cilindroSup)
+    cilindroSup.tangentes = nuevasTanBitCilindroSup.tangentes
+
+    const cilindroSup_NEW_AUX = utils.nuevasCoordenadas(cilindroSupTyN, cilindroSup, false)
+    const cilindroSup_NEW = utils.nuevasCoordenadas(cilindroSupTransf, cilindroSup, false)
+    cilindroSup_NEW.normales = cilindroSup_NEW_AUX.normales
+    cilindroSup_NEW.tangentes = cilindroSup_NEW_AUX.tangentes
+
+    //TapaSup
+    const tapaSupTransf = mat4.identity(mat4.create());
+    mat4.translate(tapaSupTransf, tapaSupTransf, [0, Anillo.alturaTapaSuperior, 0]);
+
+    const nuevasTanBitTapaSup = utils.calcularTanYBiTan(tapaSup)
+    tapaSup.tangentes = nuevasTanBitTapaSup.tangentes
+
+    const tapaSup_NEW = utils.nuevasCoordenadas(tapaSupTransf, tapaSup, false)
+    tapaSup_NEW.normales = tapaSup.normales
+    tapaSup_NEW.tangentes = tapaSup.tangentes
+
+    //CilindroInf
+    const cilindroInfCTyN = mat4.identity(mat4.create());
+    mat4.rotate(cilindroInfCTyN, cilindroInfCTyN, -Math.PI, [1, 0, 0]);
+    mat4.rotate(cilindroInfCTyN, cilindroInfCTyN, Math.PI / 2, [0, 1, 0]);
+
+    const nuevasTanBitCilindroInf = utils.calcularTanYBiTan(cilindroInf)
+    cilindroInf.tangentes = nuevasTanBitCilindroInf.tangentes
+
+    const cilindroInf_NEW = utils.nuevasCoordenadas(cilindroInfCTyN, cilindroInf, false)
+
+    //TapaInf
+    const tapaInfTyN = mat4.identity(mat4.create());
+    mat4.rotate(tapaInfTyN, tapaInfTyN, -Math.PI, [1, 0, 0]);
+
+    const tapaInfTransf = mat4.identity(mat4.create());
+    mat4.translate(tapaInfTransf, tapaInfTransf, [0, -Anillo.alturaTapaInferior, 0]);
+    mat4.multiply(tapaInfTransf, tapaInfTransf, tapaInfTyN);
+
+    const nuevasTanBitTapaInf = utils.calcularTanYBiTan(tapaInf)
+    tapaInf.tangentes = nuevasTanBitTapaInf.tangentes
+
+    const tapaInf_NEW_AUX = utils.nuevasCoordenadas(tapaInfTyN, tapaInf, false)
+    const tapaInf_NEW = utils.nuevasCoordenadas(tapaInfTransf, tapaInf, false)
+    tapaInf_NEW.normales = tapaInf_NEW_AUX.normales
+    tapaInf_NEW.tangentes = tapaInf_NEW_AUX.tangentes
+
+    //nuevos indices
+    const cilindroSup_NEW_indices = []
+    cilindroSup.indices.forEach(indice => {
+        cilindroSup_NEW_indices.push(indice + cuerpo.indices[cuerpo.indices.length - 1] + 1);
     });
-    scene.add(new Cilindro('pastillaCilindroSup', dimensionesCilindroPastilla, dimensionesTriangulosPastilla), {
-        diffuse: colores.Pastilla,
+
+    const tapaSup_NEW_indices = []
+    tapaSup.indices.forEach(indice => {
+        tapaSup_NEW_indices.push(indice + cilindroSup_NEW_indices[cilindroSup_NEW_indices.length - 1] + 1);
     });
-    scene.add(new Cilindro('pastillaCilindroInf', dimensionesCilindroPastilla, dimensionesTriangulosPastilla), {
-        diffuse: colores.Pastilla,
+
+    const cilindroInf_NEW_indices = []
+    cilindroInf.indices.forEach(indice => {
+        cilindroInf_NEW_indices.push(indice + tapaSup_NEW_indices[tapaSup_NEW_indices.length - 1] + 1);
     });
-    scene.add(new Tapa('pastillaTapaSup', dimensionesCilindroPastilla.radioSuperior, dimensionesTriangulosPastilla), {
-        diffuse: colores.Pastilla,
+
+    const tapaInf_NEW_indices = []
+    tapaInf.indices.forEach(indice => {
+        tapaInf_NEW_indices.push(indice + cilindroInf_NEW_indices[cilindroInf_NEW_indices.length - 1] + 1);
     });
-    scene.add(new Tapa('pastillaTapaInf', dimensionesCilindroPastilla.radioSuperior, dimensionesTriangulosPastilla), {
-        diffuse: colores.Pastilla,
-    });
+
+
+    pastilla.indices.push(
+        ...cuerpo.indices, cuerpo.indices[cuerpo.indices.length - 1], cilindroSup_NEW_indices[0],
+        ...cilindroSup_NEW_indices,cilindroSup_NEW_indices[cilindroSup_NEW_indices.length - 1], tapaSup_NEW_indices[0],
+        ...tapaSup_NEW_indices, tapaSup_NEW_indices[tapaSup_NEW_indices.length - 1], cilindroInf_NEW_indices[0],
+        ...cilindroInf_NEW_indices, cilindroInf_NEW_indices[cilindroInf_NEW_indices.length - 1], tapaInf_NEW_indices[0],
+        ...tapaInf_NEW_indices,
+    )
+    //Vertices
+    pastilla.vertices.push(
+        ...cuerpo.vertices,
+        ...cilindroSup_NEW.vertices,
+        ...tapaSup_NEW.vertices,
+        ...cilindroInf_NEW.vertices,
+        ...tapaInf_NEW.vertices,
+    );
+    //normales
+    pastilla.normales.push(
+        ...cuerpo.normales,
+        ...cilindroSup_NEW.normales,
+        ...tapaSup_NEW.normales,
+        ...cilindroInf_NEW.normales,
+        ...tapaInf_NEW.normales,
+    );
+    //UV --> calularlas si se necesitan luego, por ahora solo las de defecto
+    pastilla.textureCoords.push(
+        ...cuerpo.textureCoords,
+        ...cilindroSup.textureCoords,
+        ...tapaSup.textureCoords,
+        ...cilindroInf.textureCoords,
+        ...tapaInf.textureCoords,
+    );
+    pastilla.tangentes.push(
+        ...cuerpo.tangentes,
+        ...cilindroSup_NEW.tangentes,
+        ...tapaSup_NEW.tangentes,
+        ...cilindroInf_NEW.tangentes,
+        ...tapaInf_NEW.tangentes,
+    )
+    //Se carga a la escena
+    pastilla.diffuse = colores.Pastilla
+    scene.add(pastilla)
 
     //anillo y tubos interiores
     cargarTorus()
@@ -1460,7 +1562,6 @@ function cargarAnillo() {
     for (let i = 0; i < cantidadDeAnillosInteriores; i++) {
         scene.add(new Tubo('anillo_tuboInterior', dimensiones.anillo.tuboInterior, dimTriangulosTuboAnillo))
     }
-
 
 }
 
@@ -1868,7 +1969,6 @@ function initControls() {
     */
 
 
-
             'Bloques': {
                 value: bloque.type,
                 options: [Bloque.BLOQUES_4, Bloque.BLOQUES_5, Bloque.BLOQUES_6, Bloque.BLOQUES_7, Bloque.BLOQUES_8],
@@ -1905,7 +2005,6 @@ function initControls() {
                     onChange: v => transformar.panelSolar.animar = v
                 },
             },
-
 
             ...lightsData.reduce((controls, light) => {
                 const positionKeys = [

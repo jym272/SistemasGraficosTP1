@@ -377,27 +377,7 @@ export class TransformacionesAfin {
             if (this.panelSolar.animar) //la animacion del panel solar esta vinculada con el anillo
                 animacion.empezarEn(anguloRad, this.panelSolar)
 
-        } else if (this.alias === 'pastillaCilindroSup') {
-            const pastillaCilindroSupTransform = transforms.modelViewMatrix;
-            mat4.rotate(pastillaCilindroSupTransform, Anillo.pastillaTransform, Math.PI / 2, [0, 1, 0]);
-            mat4.translate(pastillaCilindroSupTransform, pastillaCilindroSupTransform, [0, dimensiones.pastillas.cuerpo.altura, 0]);
-
-        } else if (this.alias === 'pastillaCilindroInf') {
-            const pastillaCilindroInfTransform = transforms.modelViewMatrix;
-            mat4.rotate(pastillaCilindroInfTransform, Anillo.pastillaTransform, -Math.PI, [1, 0, 0]);
-            mat4.rotate(pastillaCilindroInfTransform, pastillaCilindroInfTransform, Math.PI / 2, [0, 1, 0]);
-
-        } else if (this.alias === 'pastillaTapaSup') {
-            const pastillaTapaSupTransform = transforms.modelViewMatrix;
-            mat4.rotate(pastillaTapaSupTransform, Anillo.pastillaTransform, 0, [1, 0, 0]);
-            mat4.translate(pastillaTapaSupTransform, pastillaTapaSupTransform, [0, Anillo.alturaTapaSuperior, 0]);
-
-        } else if (this.alias === 'pastillaTapaInf') {
-            const pastillaTapaInfTransform = transforms.modelViewMatrix;
-            mat4.rotate(pastillaTapaInfTransform, Anillo.pastillaTransform, -Math.PI, [1, 0, 0]);
-            mat4.translate(pastillaTapaInfTransform, pastillaTapaInfTransform, [0, Anillo.alturaTapaInferior, 0]);
-
-        } else if (this.alias === 'torus') { //ANILLO
+        }else if (this.alias === 'torus') { //ANILLO
             Anillo.torusTransform = transforms.modelViewMatrix;
             mat4.translate(Anillo.torusTransform, Anillo.pastillaTransform, [0, dimensiones.pastillas.cuerpo.altura / 2, 0]);
             mat4.rotate(Anillo.torusTransform, Anillo.torusTransform, Math.PI / 2, [1, 0, 0]);

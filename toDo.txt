@@ -23,6 +23,11 @@ ideas ->
             -> depende del modulo de la direccion de la luz, si es mas grande que la normal, testearlo
             -> colocar una esfera en el escenario
    -> darle mas triangulos al anillo amarillo
+   ->modificar el fov, hacer este test en pantalla completa, creo que ahora esta en 40
+
+   ->COLOR DEL ANILLO DE ACUERDO AL COLOR DE LA LUZ SOLAR, CREARLO EN UN SOLO OBJETO CON MAS TRIANGULOS
+   -> DRONES CON LUCES ALREDEDOR DE LA NAVE QUE LA ILUMINEN CON LUZ BLANCA
+   -> VER EL VIDEO DE LA MINA DONDE ENSEÑA LERP
 
 camara -> el update solo sirve cuando se mueve la camara, sino, no revisar
 

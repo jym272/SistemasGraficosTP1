@@ -36,7 +36,7 @@ let
     dxAnillo = 0.01,
     lightsData = [],
     lightLerpOuterCutOff = 0.5,
-    lightOuterCutOff = 17.5,
+    lightOuterCutOff = 38,
     lightRadius = 100.0,
     lightDecay = 0.5,
     spotLightDir,
@@ -115,7 +115,7 @@ function configure() {
 
     // Configure `camera` and `controls`
     camera = new Camera(Camera.ORBITING_TYPE, 70, 0);
-    camera.goTo([0, 0, 36], 149, -22, [0, 0, 0])
+    camera.goTo([0, 0, 16], -90, -0, [0, 0, 0])
     droneCam = new DroneCameraControl([0, 0, -10], camera); //intialPos: [0,0,-10]
     //Luz SpotLight
     spotLightDir = new DireccionSpotLight(gl, program);
@@ -156,11 +156,11 @@ function cargarTexturasLuces() {
         },
         {
             id: 'greenLight', name: 'Green Light',
-            position: [0, 10.0, 5], diffuse: [0, 1, 0, 1], direction: [0, -1, 0]
+            position: [0, 10.0, 5], diffuse: [1, 1, 1, 1], direction: [0, -1, 0]
         },
         {
             id: 'blueLight', name: 'Blue Light',
-            position: [0, 10.0, -5], diffuse: [0, 0, 1, 1], direction: [0, -1, 0]
+            position: [0, 10.0, -5], diffuse: [1, 1, 1, 1], direction: [0, -1, 0]
         },
     ];
     lightsData.forEach(({id, position, diffuse, direction}) => {
@@ -234,9 +234,7 @@ function load() {
         scene.add(SphereClone);
     });
     //CubeMaps
-    scene.add(CubeTexture, {
-        alias: "cubeMap"
-    });
+    scene.add(CubeTexture, {      alias: "cubeMap"            });
     //Estacion Espacial
     scene.add(new Superficie(null, 'nave'))
     cargarNucleo()
@@ -246,10 +244,12 @@ function load() {
     bloque.setType(Bloque.BLOQUES_4);
     moduloVioleta()
     cargarEsfera()
+
     cargarCapsula()
     //Planetas
     cargarALaLuna()
     cargarALaTierra()
+
     // cargarEscenario();
     // cargarEsferaEnElEscenario();
 }
@@ -1011,11 +1011,13 @@ function cargarEsfera() {
     */
     const {columna1, _} = utils.I2(tapaAdelante.textureCoords, "noImprimir")
 
-    const UTextureCoord = columna1.slice(0, -31)
+    const UTextureCoord =  utils.crearVectorEntre(3, 0, 31)
     const VTextureCoord = [];
 
-    VTextureCoord.push(0, 0.2)
+    const limiteSuperiorCuerpo = 0.9
+    const limiteInferiorCuerpo = 0.1
 
+    VTextureCoord.push(0, limiteInferiorCuerpo)
     const newTextureCoords = []
 
     for (let i = 0; i < VTextureCoord.length; i++) {
@@ -1026,7 +1028,7 @@ function cargarEsfera() {
     //UV tapa de atras
     const VTextureCoordAtras = [];
     const newTextureCoordsAtras = []
-    VTextureCoordAtras.push(0.8, 1.0)
+    VTextureCoordAtras.push(limiteSuperiorCuerpo, 1.3)
     for (let i = 0; i < VTextureCoordAtras.length; i++) {
         for (let j = 0; j < UTextureCoord.length; j++) {
             newTextureCoordsAtras.push(1 - UTextureCoord[j], VTextureCoordAtras[i]);
@@ -1035,13 +1037,8 @@ function cargarEsfera() {
 
     //UV del cuerpo, las UV de la tapa van con v = (0,0.1), las del v del cuerpo van con v = (0.2,0.8)
     const newTextureCoordsCuerpo = []
-    const newVTextureCoordsCuerpo = []
+    const newVTextureCoordsCuerpo = utils.crearVectorEntre(limiteSuperiorCuerpo, limiteInferiorCuerpo, pasoDiscretoForma+1)
 
-    //divide the interval [0.2, 0.8] into 20 equal parts
-    const distance = 0.6 / (pasoDiscretoForma)
-    for (let i = 0; i <= pasoDiscretoForma; i++) {
-        newVTextureCoordsCuerpo.push(0.2 + distance * i)
-    }
     for (let i = 0; i < UTextureCoord.length; i++) {
         for (let j = 0; j < newVTextureCoordsCuerpo.length; j++) {
             newTextureCoordsCuerpo.push(UTextureCoord[i], newVTextureCoordsCuerpo[j]);
@@ -1102,7 +1099,7 @@ function cargarEsfera() {
     //Se carga a la escena
     esfera.diffuse = colores.Textura.diffuse
     esfera.ambient = colores.Textura.ambient
-    esfera.texture = "UV";
+    esfera.texture = "nucleo";
     scene.add(esfera)
 
 
@@ -1255,7 +1252,8 @@ function cargarNucleo() {
     const b = dimensiones.CilindroNucleoPS.altura;
     const C2 = Math.sqrt(a * a + b * b)
     const C3 = dimensiones.NucleoPS.altura
-    const L = C1 + C2 + C3 + C2 + C1
+    let L = C1 + C2 + C3 + C2 + C1
+    L = L / 2; //longitud del cuerpo completo divido dos para 2 texturas en v
     const v = []
     //repito dos veces en las uniones, ahi tengo 2 vertices en la misma posicion
     v.push(0, C1 / L, C1 / L,
@@ -1263,20 +1261,24 @@ function cargarNucleo() {
         (C1 + C2 + C3) / L, (C1 + C2 + C3) / L,
         (C1 + C2 + C3 + C2) / L, (C1 + C2 + C3 + C2) / L,
         (C1 + C2 + C3 + C2 + C1) / L)
-    // console.log(v)
 
-    const u = []
-    for (let i = 0; i <= dimensionesTriangulosNucleo.columnas; i++) {
-        u.unshift(i / dimensionesTriangulosNucleo.columnas)
-    }
-    // console.log(u)
+    const u = utils.crearVectorEntre(0, 3, 31) //limite 2 para 2 texturas en u
+/*
+    const v = [];
+    v.push(
+    0
+    ,0.081561281895704
+    ,0.181561281895704
+    ,0.27304839763037003
+    ,0.27304839763037003
+    ,0.72695160236963
+    ,0.72695160236963
+    ,0.818438718104296
+    ,0.918438718104296
+    ,1)
+*/
+
     const nuevasUV = []
-    // ...tapaSup_NEW_indices,
-    // ...cilindroSup_NEW_indices,
-// ...tubo.indices, (C1+C2)/L, (C1+C2+C3)/L,  -> 5,6
-// ...cilindroInf_NEW_indices,
-// ...tapaInf_NEW_indices
-    //
 
     for (let i = 0; i < v.length; i++) {
         for (let j = 0; j < u.length; j++) {
@@ -1289,8 +1291,6 @@ function cargarNucleo() {
             }
         }
     }
-    // console.log(nuevasUV.length)
-    // console.log(tubo.textureCoords.length + cilindroSup.textureCoords.length + tapaSup.textureCoords.length + cilindroInf.textureCoords.length + tapaInf.textureCoords.length)
 
     //transformaciones
     const cilidroSupTransformacion = mat4.identity(mat4.create());
@@ -1397,7 +1397,7 @@ function cargarNucleo() {
 
     nucleoPS.diffuse = colores.Textura.diffuse
     nucleoPS.ambient = colores.Textura.ambient
-    nucleoPS.texture = "UV"
+    nucleoPS.texture = "torus"
 
     //clone object nucleoPS
     const nucleoAnillo = Object.assign({}, nucleoPS);
@@ -1968,7 +1968,7 @@ function initControls() {
 
     */
 
-
+/*
             'Bloques': {
                 value: bloque.type,
                 options: [Bloque.BLOQUES_4, Bloque.BLOQUES_5, Bloque.BLOQUES_6, Bloque.BLOQUES_7, Bloque.BLOQUES_8],
@@ -2005,7 +2005,7 @@ function initControls() {
                     onChange: v => transformar.panelSolar.animar = v
                 },
             },
-
+*/
             ...lightsData.reduce((controls, light) => {
                 const positionKeys = [
                     `X - ${light.name}`,

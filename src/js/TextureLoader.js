@@ -22,9 +22,9 @@ import torusSpecular from '../images/texturas/torus/specular.jpg';
 import capsulaDiffuse from '../images/texturas/capsula/diffuse.jpg';
 import capsulaNormal from '../images/texturas/capsula/normal.jpg';
 import capsulaSpecular from '../images/texturas/capsula/specular.jpg';
-import nucleoDiffuse from '../images/texturas/nucleo/diffuse.jpg';
-import nucleoNormal from '../images/texturas/nucleo/normal.jpg';
-// import nucleoSpecular from '../images/texturas/nucleo/specular.jpg';
+import esferaDiffuse from '../images/texturas/esfera/diffuse.jpg';
+import esferaNormal from '../images/texturas/esfera/normal.jpg';
+import nucleoSpecular from '../images/texturas/esfera/specular.jpg';
 
 
 export class TextureLoader{
@@ -72,10 +72,10 @@ export class TextureLoader{
             normal: new Texture(gl, capsulaNormal),
             specular: new Texture(gl, capsulaSpecular)
         };
-        this.textureMap['nucleo'] = {
-            diffuse: new Texture(gl, nucleoDiffuse),
-            normal: new Texture(gl, nucleoNormal),
-            // specular: new Texture(gl, nucleoSpecular)
+        this.textureMap['esfera'] = {
+            diffuse: new Texture(gl, esferaDiffuse),
+            normal: new Texture(gl, esferaNormal),
+            specular: new Texture(gl, nucleoSpecular)
         };
     }
 }

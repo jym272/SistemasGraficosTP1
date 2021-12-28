@@ -126,8 +126,11 @@ export class DireccionSpotLight {
         this.actualizarEnLaEscena();
     }
 
-    actualizarEnLaEscena() {
+    actualizarEnLaEscena(newVector = null) {
         const {gl, program} = this;
+
+        if(newVector != null)
+            this.vector = newVector;
 
         this.lightArray[3] = this.vector[0];
         this.lightArray[4] = this.vector[1];

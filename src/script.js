@@ -1,5 +1,7 @@
 'use strict';
 import './style.css'
+import './toastr.css'
+
 import {dimensiones} from "./js/dimensiones";
 import {utils} from './js/utils';
 import {Program} from "./js/Program";
@@ -7,7 +9,7 @@ import {Scene} from "./js/Scene";
 import {Camera} from "./js/Camera";
 import {Controls} from "./js/Controls";
 import {Transforms} from "./js/Transforms";
-import {AnimacionPanelesSolares, PanelSolar} from "./js/PanelSolar";
+import {AnimacionPanelesSolares} from "./js/PanelSolar";
 import {Cilindro, Plano, Superficie, Tapa, Tubo,} from "./js/Superficies";
 import {Forma, SuperficieParametrica, SuperficieParametrica1} from "./js/SuperficiesDeBarrido";
 import {Bloque} from "./js/Bloque";
@@ -21,8 +23,10 @@ import {TextureLoader} from "./js/TextureLoader.js";
 import CubeTexture from './geometries/cube-texture.json5'
 import Sphere from './geometries/sphere.json5'
 import {CubeMap} from "./js/CubeMap";
-import {Floor} from "./js/Floor";
-import {Axis} from "./js/Axis";
+
+
+
+
 
 let
     gl, scene, program, camera, transforms, transformar, bloque, panelSolar, controles, droneCam,
@@ -35,8 +39,8 @@ let
     SpecularMap = true,//8.0,  //para ajustar posiciones de los objetos, se usa en el diseño
     dxAnillo = 0.01,
     lightsData = [],
-    lightLerpOuterCutOff = 0.5,
-    lightOuterCutOff = 38,
+    lightLerpOuterCutOff = 1,//0.5
+    lightOuterCutOff = 13.5,//38
     lightRadius = 100.0,
     lightDecay = 0.5,
     spotLightDir,
@@ -47,6 +51,7 @@ let
     textureLoader,
     cubeMap,
     lightElevation,
+    scaleLights = [0.1, 0.26, 0.18],
     animationRate; //ms
 
 
@@ -115,8 +120,8 @@ function configure() {
 
     // Configure `camera` and `controls`
     camera = new Camera(Camera.ORBITING_TYPE, 70, 0);
-    camera.goTo([0, 0, 16], -90, -0, [0, 0, 0])
-    droneCam = new DroneCameraControl([0, 0, -10], camera); //intialPos: [0,0,-10]
+    camera.goTo([0, 0, 16], 0, -30, [0, 0, 0])
+    droneCam = new DroneCameraControl([0, 0, 0], camera); //intialPos: [0,0,-10]
     //Luz SpotLight
     spotLightDir = new DireccionSpotLight(gl, program);
 
@@ -130,8 +135,10 @@ function configure() {
 
     const intervaloEnGrados = 30; //cada 15,30, 45, 60, 75, 90 grados del giro del anillo
     //Transformaciones afines
+    lights = new LightsManager();
+
     transformar = new TransformacionesAfin(transforms, droneCam, controles, camera, bloque,
-        new AnimacionPanelesSolares(300, intervaloEnGrados)
+        new AnimacionPanelesSolares(300, intervaloEnGrados), lights, spotLightDir
     );
 }
 
@@ -145,7 +152,6 @@ function cargarTexturasLuces() {
     transformar.tierraLunaEnElMundo(random) //seteo transformaciones predeterminadas
     sunLightColor = utils.normalizeColor(colores.sunLightColor[random])
 
-    lights = new LightsManager();
     // Lights data
     lightsData = [
         {
@@ -156,11 +162,11 @@ function cargarTexturasLuces() {
         },
         {
             id: 'greenLight', name: 'Green Light',
-            position: [0, 10.0, 5], diffuse: [1, 1, 1, 1], direction: [0, -1, 0]
+            position: [-0.65, 0, -2.48], diffuse: [0, 1, 0, 1], direction: [0, 0, -1]
         },
         {
-            id: 'blueLight', name: 'Blue Light',
-            position: [0, 10.0, -5], diffuse: [1, 1, 1, 1], direction: [0, -1, 0]
+            id: 'redLight', name: 'Red Light',
+            position: [0.65, 0, -2.48], diffuse: [1, 0, 0, 1], direction: [0, 0, -1]
         },
     ];
     lightsData.forEach(({id, position, diffuse, direction}) => {
@@ -227,12 +233,19 @@ function load() {
     // scene.add(new Floor(80, 1));
     // scene.add(new Axis(82));
 
+    cargarCapsula()
+
+
     //luces puntual y las dos spotlight
-    lightsData.forEach(({id}) => {
+    lightsData.forEach(({id, diffuse}) => {
         const SphereClone = Object.assign({}, Sphere);
+        if(id ==='sunLight')
+            SphereClone.hidden = true; //escondo el objeto de la luz solar, solo sire para debug
         SphereClone.alias = id;
+        SphereClone.diffuse = diffuse;
         scene.add(SphereClone);
     });
+    /*
     //CubeMaps
     scene.add(CubeTexture, {      alias: "cubeMap"            });
     //Estacion Espacial
@@ -244,13 +257,15 @@ function load() {
     bloque.setType(Bloque.BLOQUES_4);
     moduloVioleta()
     cargarEsfera()
+*/
 
-    cargarCapsula()
+
+    /*
     //Planetas
     cargarALaLuna()
     cargarALaTierra()
-
-    // cargarEscenario();
+*/
+    cargarEscenario();
     // cargarEsferaEnElEscenario();
 }
 
@@ -321,8 +336,8 @@ function cargarEscenario() {
     */
     //El escenario tiene 3 planos
     const dimensionesTriangulos = {
-        filas: 30,
-        columnas: 30,
+        filas: 90,
+        columnas: 90,
     }
     const dimensiones = {
         ancho: 50,
@@ -1011,7 +1026,7 @@ function cargarEsfera() {
     */
     const {columna1, _} = utils.I2(tapaAdelante.textureCoords, "noImprimir")
 
-    const UTextureCoord =  utils.crearVectorEntre(3, 0, 31)
+    const UTextureCoord = utils.crearVectorEntre(3, 0, 31)
     const VTextureCoord = [];
 
     const limiteSuperiorCuerpo = 0.9
@@ -1037,7 +1052,7 @@ function cargarEsfera() {
 
     //UV del cuerpo, las UV de la tapa van con v = (0,0.1), las del v del cuerpo van con v = (0.2,0.8)
     const newTextureCoordsCuerpo = []
-    const newVTextureCoordsCuerpo = utils.crearVectorEntre(limiteSuperiorCuerpo, limiteInferiorCuerpo, pasoDiscretoForma+1)
+    const newVTextureCoordsCuerpo = utils.crearVectorEntre(limiteSuperiorCuerpo, limiteInferiorCuerpo, pasoDiscretoForma + 1)
 
     for (let i = 0; i < UTextureCoord.length; i++) {
         for (let j = 0; j < newVTextureCoordsCuerpo.length; j++) {
@@ -1099,7 +1114,7 @@ function cargarEsfera() {
     //Se carga a la escena
     esfera.diffuse = colores.Textura.diffuse
     esfera.ambient = colores.Textura.ambient
-    esfera.texture = "nucleo";
+    esfera.texture = "esfera";
     scene.add(esfera)
 
 
@@ -1263,20 +1278,20 @@ function cargarNucleo() {
         (C1 + C2 + C3 + C2 + C1) / L)
 
     const u = utils.crearVectorEntre(0, 3, 31) //limite 2 para 2 texturas en u
-/*
-    const v = [];
-    v.push(
-    0
-    ,0.081561281895704
-    ,0.181561281895704
-    ,0.27304839763037003
-    ,0.27304839763037003
-    ,0.72695160236963
-    ,0.72695160236963
-    ,0.818438718104296
-    ,0.918438718104296
-    ,1)
-*/
+    /*
+        const v = [];
+        v.push(
+        0
+        ,0.081561281895704
+        ,0.181561281895704
+        ,0.27304839763037003
+        ,0.27304839763037003
+        ,0.72695160236963
+        ,0.72695160236963
+        ,0.818438718104296
+        ,0.918438718104296
+        ,1)
+    */
 
     const nuevasUV = []
 
@@ -1427,7 +1442,7 @@ function cargarAnillo() {
     const pastilla = new Superficie(null, 'pastillaCuerpo')
 
     const cuerpo = new Tubo('pastillaCuerpo1', dimensiones.pastillas.cuerpo, dimensionesTriangulosPastilla)
-    const cilindroSup =  new Cilindro('pastillaCilindroSup1', dimensionesCilindroPastilla, dimensionesTriangulosPastilla)
+    const cilindroSup = new Cilindro('pastillaCilindroSup1', dimensionesCilindroPastilla, dimensionesTriangulosPastilla)
     const tapaSup = new Tapa('pastillaTapaSup1', dimensionesCilindroPastilla.radioSuperior, dimensionesTriangulosPastilla)
     const cilindroInf = new Cilindro('pastillaCilindroInf1', dimensionesCilindroPastilla, dimensionesTriangulosPastilla)
     const tapaInf = new Tapa('pastillaTapaInf1', dimensionesCilindroPastilla.radioSuperior, dimensionesTriangulosPastilla)
@@ -1509,7 +1524,7 @@ function cargarAnillo() {
 
     pastilla.indices.push(
         ...cuerpo.indices, cuerpo.indices[cuerpo.indices.length - 1], cilindroSup_NEW_indices[0],
-        ...cilindroSup_NEW_indices,cilindroSup_NEW_indices[cilindroSup_NEW_indices.length - 1], tapaSup_NEW_indices[0],
+        ...cilindroSup_NEW_indices, cilindroSup_NEW_indices[cilindroSup_NEW_indices.length - 1], tapaSup_NEW_indices[0],
         ...tapaSup_NEW_indices, tapaSup_NEW_indices[tapaSup_NEW_indices.length - 1], cilindroInf_NEW_indices[0],
         ...cilindroInf_NEW_indices, cilindroInf_NEW_indices[cilindroInf_NEW_indices.length - 1], tapaInf_NEW_indices[0],
         ...tapaInf_NEW_indices,
@@ -1666,33 +1681,17 @@ function draw() {
             transformar.setAlias(object.alias)
             gl.uniform1i(program.uLightSource, false); //solo las fuentes de luz tendran un color de materialDiffuse
 
-            const light = lightsData.find(({id}) => object.alias === id);
-            if (light) {
-
-                const {position, diffuse} = lights.get(light.id);
+            // const light = lightsData.find(({id}) => object.alias === id);
+            // if (light) {
+            if (object.alias === "greenLight" || object.alias === "redLight") {
+                // const {position, diffuse} = lights.get(light.id);
                 //talves sea mejor crear una constante con transforms.modelViewMatrix
-                mat4.translate(transforms.modelViewMatrix, transforms.modelViewMatrix, position);
-                object.diffuse = diffuse;
+                // mat4.translate(transforms.modelViewMatrix, transforms.modelViewMatrix, position);
+                // object.diffuse = diffuse;
                 gl.uniform1i(program.uLightSource, true);
             }
 
-            //                   this.camera.getViewTransform() * (las distintas transformaciones a los objetos)
-            // modelViewMatrix = camera.matrixWorldInverse      * object.matrixWorld
-            //ahora cade vez que llamemos a transforms.modelViewMatrix * object.matrixWorld, obtenemos la matriz de modelView
-            //de cada objeto, y la multiplicamos por la matriz de la camara para obtener la matriz de modelView de cada objeto
-
             transformar.esferaEscenario();
-
-
-            //luz
-            // If object is the light, we update its position
-            if (object.alias === 'light') {
-                const lightTransform = transforms.modelViewMatrix
-                const lightPosition_ = program.getUniform(program.uLightPosition)
-                mat4.translate(lightTransform, lightTransform, lightPosition_);
-                mat4.scale(lightTransform, lightTransform, [0.5, 0.5, 0.5]);
-            }
-
 
             //test
             if (object.alias === "planoTest1") {
@@ -1968,44 +1967,44 @@ function initControls() {
 
     */
 
-/*
-            'Bloques': {
-                value: bloque.type,
-                options: [Bloque.BLOQUES_4, Bloque.BLOQUES_5, Bloque.BLOQUES_6, Bloque.BLOQUES_7, Bloque.BLOQUES_8],
-                onChange: v => {
-                    bloque.setType(v);
-                }
-            },
-            'PanelesSolares': {
-                'Filas': {
-                    value: panelSolar.cantidadDeFilas,
-                    min: 1, max: 10, step: 1,
-                    onChange: v => {
-                        panelSolar.removerPanelesSolares(); //remuevo todos los actuales
-                        panelSolar.cantidadDeFilas = v; //nuevo valor
-                        panelSolar.cambiarAlturaDelTuboPrincipal() //actualizo con el nuevo valor
-                        //evita el parpadeo de la camara
-                        // ahora uso un foco estatico
-                        //targetPanelesSolares =  [0,0,dimensiones.panelSolar.tuboPrincipal.altura]
-                        //if(controles.focusCamera.PanelesSolares === true){
-                        //    camera.setFocus(targetPanelesSolares)
-                        //}
+            /*
+                        'Bloques': {
+                            value: bloque.type,
+                            options: [Bloque.BLOQUES_4, Bloque.BLOQUES_5, Bloque.BLOQUES_6, Bloque.BLOQUES_7, Bloque.BLOQUES_8],
+                            onChange: v => {
+                                bloque.setType(v);
+                            }
+                        },
+                        'PanelesSolares': {
+                            'Filas': {
+                                value: panelSolar.cantidadDeFilas,
+                                min: 1, max: 10, step: 1,
+                                onChange: v => {
+                                    panelSolar.removerPanelesSolares(); //remuevo todos los actuales
+                                    panelSolar.cantidadDeFilas = v; //nuevo valor
+                                    panelSolar.cambiarAlturaDelTuboPrincipal() //actualizo con el nuevo valor
+                                    //evita el parpadeo de la camara
+                                    // ahora uso un foco estatico
+                                    //targetPanelesSolares =  [0,0,dimensiones.panelSolar.tuboPrincipal.altura]
+                                    //if(controles.focusCamera.PanelesSolares === true){
+                                    //    camera.setFocus(targetPanelesSolares)
+                                    //}
 
 
-                        panelSolar.cargarPanelesSolares();
-                    }
-                },
-                'Angulo': {
-                    value: transformar.panelSolar.anguloRotacion,
-                    min: 0, max: 360, step: 1,
-                    onChange: v => transformar.panelSolar.anguloRotacion = v,
-                },
-                'AnimarPaneles': {
-                    value: transformar.panelSolar.animar,
-                    onChange: v => transformar.panelSolar.animar = v
-                },
-            },
-*/
+                                    panelSolar.cargarPanelesSolares();
+                                }
+                            },
+                            'Angulo': {
+                                value: transformar.panelSolar.anguloRotacion,
+                                min: 0, max: 360, step: 1,
+                                onChange: v => transformar.panelSolar.anguloRotacion = v,
+                            },
+                            'AnimarPaneles': {
+                                value: transformar.panelSolar.animar,
+                                onChange: v => transformar.panelSolar.animar = v
+                            },
+                        },
+            */
             ...lightsData.reduce((controls, light) => {
                 const positionKeys = [
                     `X - ${light.name}`,
@@ -2015,7 +2014,7 @@ function initControls() {
                 controls[light.name] = positionKeys.reduce((positionControls, position, i) => {
                     positionControls[position] = {
                         value: light.position[i],
-                        min: -30, max: 30, step: 0.1,
+                        min: -5, max: 5, step: 0.01,
                         onChange: (v, state) => {
                             lights.get(light.id).position = positionKeys.map(p => state[p]);
                         }
@@ -2024,6 +2023,21 @@ function initControls() {
                 }, {});
                 return controls;
             }, {}),
+            ...['Light X', 'Light Y', 'Light Z'].reduce((result, name, i) => {
+                result[name] = {
+                    value: scaleLights[i],
+                    min: 0, max: 1.0, step: 0.01,
+                    onChange(v, state) {
+                        scaleLights = [
+                            state['Light X'],
+                            state['Light Y'],
+                            state['Light Z']
+                        ];
+                    }
+                };
+                return result;
+            }, {}),
+
             'Penumbra': {
                 value: lightLerpOuterCutOff,
                 min: 0, max: 1, step: 0.01,
@@ -2107,7 +2121,7 @@ function initControls() {
                 value: triangleStrip,
                 onChange: v => triangleStrip = v
             },
-        }, {closed: false}
+        }, {closed: true}
     );
 }
 

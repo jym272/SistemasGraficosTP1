@@ -1,5 +1,5 @@
 import {Bloque} from "./Bloque";
-import {mat4} from "gl-matrix";
+import {mat4, vec3, vec4} from "gl-matrix";
 import {dimensiones} from "./dimensiones";
 
 /*
@@ -32,6 +32,8 @@ export const Nucleo = {
 }
 export const Capsula = {
     capsulaTransform: null,
+    position: [0,0,0],
+    rotationMatrix: null,
 }
 
 export const Nave = { //abstraccion de la nave
@@ -62,7 +64,9 @@ export const Teatro = {
 
 export class TransformacionesAfin {
 
-    constructor(transforms, droneCam, controles, camera, bloque, animacion) {
+    constructor(transforms, droneCam, controles, camera, bloque, animacion, lights, spotLight) {
+        this.spotLight = spotLight;
+        this.lights = lights;
         this.animacion = animacion;
         this.bloque = bloque;
         this.transforms = transforms;
@@ -176,6 +180,22 @@ export class TransformacionesAfin {
                 rotationMatrix,
                 position,
             } = droneCam.update()
+            //Se actualizar la posicion de las luces
+            const greenPosition = vec3.create();
+            const redPosition = vec3.create();
+            const directionLight = vec3.create();
+            vec3.set(directionLight, 0, 0, -1);
+            vec3.set(greenPosition, -0.65, 0, -2.48);
+            vec3.set(redPosition, +0.65,0, -2.48);
+            const worldDroneCamMatrix = droneCam.getMatrix()
+            vec3.transformMat4(redPosition, redPosition, worldDroneCamMatrix);
+            vec3.transformMat4(greenPosition, greenPosition, worldDroneCamMatrix);
+            vec3.transformMat4(directionLight, directionLight, rotationMatrix);
+
+            this.spotLight.actualizarEnLaEscena([directionLight[0], directionLight[1], directionLight[2]]);
+            this.lights.get('redLight').setPosition([redPosition[0], redPosition[1], redPosition[2]]);
+            this.lights.get('greenLight').setPosition([greenPosition[0], greenPosition[1], greenPosition[2]]);
+
 
             controles.setFocusCapsula(position) //evita un parpadeo en la camara
             if (controles.focusCamera.Capsula === true) {
@@ -187,7 +207,7 @@ export class TransformacionesAfin {
             camera.setRotationMatrix(rotationMatrix)
 
 
-            /*
+/*
 
             console.log(`rotMatrix:
             ${rotationMatrix[0].toFixed(2)}, ${rotationMatrix[1].toFixed(2)}, ${rotationMatrix[2].toFixed(2)}, ${rotationMatrix[3].toFixed(2)}, '\n'
@@ -196,19 +216,21 @@ export class TransformacionesAfin {
             ${rotationMatrix[12].toFixed(2)}, ${rotationMatrix[13].toFixed(2)}, ${rotationMatrix[14].toFixed(2)}, ${rotationMatrix[15].toFixed(2)}
             `);
 
-            console.log(`camMatrix:
-            ${camera.matrix[0].toFixed(2)}, ${camera.matrix[1].toFixed(2)}, ${camera.matrix[2].toFixed(2)}, ${camera.matrix[3].toFixed(2)}, '\n'
-            ${camera.matrix[4].toFixed(2)}, ${camera.matrix[5].toFixed(2)}, ${camera.matrix[6].toFixed(2)}, ${camera.matrix[7].toFixed(2)}, '\n'
-            ${camera.matrix[8].toFixed(2)}, ${camera.matrix[9].toFixed(2)}, ${camera.matrix[10].toFixed(2)}, ${camera.matrix[11].toFixed(2)}, '\n'
-            ${camera.matrix[12].toFixed(2)}, ${camera.matrix[13].toFixed(2)}, ${camera.matrix[14].toFixed(2)}, ${camera.matrix[15].toFixed(2)}
-            `);
+            /*
 
 
-             */
+         console.log(`camMatrix:
+         ${camera.matrix[0].toFixed(2)}, ${camera.matrix[1].toFixed(2)}, ${camera.matrix[2].toFixed(2)}, ${camera.matrix[3].toFixed(2)}, '\n'
+         ${camera.matrix[4].toFixed(2)}, ${camera.matrix[5].toFixed(2)}, ${camera.matrix[6].toFixed(2)}, ${camera.matrix[7].toFixed(2)}, '\n'
+         ${camera.matrix[8].toFixed(2)}, ${camera.matrix[9].toFixed(2)}, ${camera.matrix[10].toFixed(2)}, ${camera.matrix[11].toFixed(2)}, '\n'
+         ${camera.matrix[12].toFixed(2)}, ${camera.matrix[13].toFixed(2)}, ${camera.matrix[14].toFixed(2)}, ${camera.matrix[15].toFixed(2)}
+         `);
 
 
-            mat4.translate(Capsula.capsulaTransform, Capsula.capsulaTransform, position);
-            mat4.multiply(Capsula.capsulaTransform, Capsula.capsulaTransform, rotationMatrix);
+          */
+
+            // mat4.translate(Capsula.capsulaTransform, Capsula.capsulaTransform, position);
+            mat4.multiply(Capsula.capsulaTransform, Capsula.capsulaTransform, worldDroneCamMatrix);
             mat4.rotate(Capsula.capsulaTransform, Capsula.capsulaTransform, Math.PI, [1, 0, 0]);
 
 
@@ -223,10 +245,19 @@ export class TransformacionesAfin {
             mat4.translate(capsulaCuerpoFuegoColaTransform, capsulaCuerpoFuegoColaTransform, [0, 0, (Capsula.curvaColav0x + 0.5) + 0.2]);
             mat4.rotate(capsulaCuerpoFuegoColaTransform, capsulaCuerpoFuegoColaTransform, -Math.PI / 2, [1, 0, 0]);
         } else if (this.alias === 'capsulaFuegoCuerpo') {
-
             const capsulaCuerpoFuegoColaTransform = transforms.modelViewMatrix;
             mat4.translate(capsulaCuerpoFuegoColaTransform, Capsula.capsulaTransform, [0, 0, Capsula.CilAaltura + Capsula.FuegoCuerpoAltura]);
             mat4.rotate(capsulaCuerpoFuegoColaTransform, capsulaCuerpoFuegoColaTransform, -Math.PI / 2, [1, 0, 0]);
+        } else if (this.alias === 'redLight'){
+            const blueLightTransform = transforms.modelViewMatrix;
+            const scaleBlueLight = [0.1,0.26,0.18];
+            mat4.translate(blueLightTransform, Capsula.capsulaTransform, [0.65, 0, 2.48]);
+            mat4.scale(blueLightTransform, blueLightTransform, scaleBlueLight);
+        }else if (this.alias === 'greenLight'){
+            const greenLightTransform = transforms.modelViewMatrix;
+            const scaleGreenLight = [0.1,0.26,0.18];
+            mat4.translate(greenLightTransform, Capsula.capsulaTransform, [-0.65, 0, 2.48]);
+            mat4.scale(greenLightTransform, greenLightTransform, scaleGreenLight);
         }
     }
 
@@ -493,7 +524,6 @@ export class TransformacionesAfin {
     scale(transform, x, y) {
         mat4.scale(transform, transform, [x, 0, y]);
     }
-
 
     esferaEscenario(){
         const {transforms} = this;

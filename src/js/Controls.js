@@ -3,6 +3,27 @@
 // Abstraction over common controls for user interaction with a 3D scene
 import {vec3} from "gl-matrix";
 
+import toastr from 'toastr'
+toastr.options = {
+  "closeButton": false,
+  "debug": false,
+  "newestOnTop": false,
+  "progressBar": false,
+  "positionClass": "toast-bottom-right",
+  "preventDuplicates": true,
+  "onclick": null,
+  "showDuration": "300",
+  "hideDuration": "1000",
+  "timeOut": "2000",
+  "extendedTimeOut": "1000",
+  "showEasing": "swing",
+  "hideEasing": "linear",
+  "showMethod": "fadeIn",
+  "hideMethod": "fadeOut"
+}
+
+
+
 export class Controls {
 
   constructor(camera, canvas, droneCam, spotLightDir) {
@@ -220,15 +241,37 @@ export class Controls {
         this.droneCam.activarControlesTeclado(false);
         this.camera.borrarTimeOutIdPool(); //cualquier llamdo vigente que quede cuando la camara de la capsula se mueva se borra
         this.camera.dejarDeSeguirALaCapsula();
+        toastr["info"]("Camara: Estación Espacial")
+
         return this.configurarCamaraDe("Nave");
       case 50:
         this.droneCam.activarControlesTeclado(false);
         this.camera.borrarTimeOutIdPool();
         this.camera.dejarDeSeguirALaCapsula();
+        toastr["info"]("Camara: Paneles Solares")
+
         return this.configurarCamaraDe("PanelesSolares");
       case 51:
         this.droneCam.activarControlesTeclado();
         this.camera.seguirALaCapsula() //activa la matrix de rotacion que se calcula con los controles de la capsula
+        toastr["info"]("<span style=\"color: black!important;font-size:100%;font-family:'Courier New',monospace \">Camara: cápsula</span>")
+/*
+        -webkit-text-size-adjust: 100%;
+        line-height: 1.5;
+        color: #000!important;
+        border-collapse: collapse;
+        border-spacing: 0;
+        text-align: left;
+        box-sizing: inherit;
+        font-size: 150%;
+        font-family: 'Lucida Console',monospace;
+
+ */
+
+
+
+
+
         return this.configurarCamaraDe("Capsula");
       case 88: //z zoom out
         return this.dollyHelper(-1);
@@ -241,7 +284,7 @@ export class Controls {
       case 104:
         return this.spotLightDir.cambiarElevation(this.keyIncrement);
       case 98:
-        return this.spotLightDir.cambiarElevation(-this.keyIncrement);
+        return this.spotLightDir.cambiarEleCopperplatevation(-this.keyIncrement);
 
 
 

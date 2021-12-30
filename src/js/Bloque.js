@@ -386,6 +386,8 @@ export class Bloque {
     }
 }
 
+// cargarParametrosBloques mantener el orden de los tipos, esta hardcodeado
+// el metodo cargarParametrosBloques de TransformacionesAfin.js
 Bloque.TYPES = ['BLOQUES_8', 'BLOQUES_7', 'BLOQUES_6', 'BLOQUES_5', 'BLOQUES_4'];
 Bloque.TYPES.forEach(type => Bloque[type] = type)
 

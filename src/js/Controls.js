@@ -2,35 +2,20 @@
 
 // Abstraction over common controls for user interaction with a 3D scene
 import {vec3} from "gl-matrix";
-
-import toastr from 'toastr' //para los mensajes flotantes
-toastr.options = {
-    "closeButton": false,
-    "debug": false,
-    "newestOnTop": false,
-    "progressBar": false,
-    "positionClass": "toast-bottom-right",
-    "preventDuplicates": true,
-    "onclick": null,
-    "showDuration": "300",
-    "hideDuration": "1000",
-    "timeOut": "2000",
-    "extendedTimeOut": "1000",
-    "showEasing": "swing",
-    "hideEasing": "linear",
-    "showMethod": "slideDown",
-    "hideMethod": "fadeOut"
-}
+import {Bloque} from "./Bloque";
+import {Mensajes} from "./Mensajes"; //para los mensajes flotantes
 
 
 export class Controls {
 
-    constructor(camera, canvas, droneCam, spotLightDir) {
+    constructor(camera, canvas, droneCam, spotLightDir, bloque) {
+        this.bloque = bloque;
         this.camera = camera;
         this.canvas = canvas;
         this.droneCam = droneCam;
         this.spotLightDir = spotLightDir;
         this.picker = null;
+        this.msg = new Mensajes();
 
         this.dragging = false;
         this.picking = false;
@@ -48,6 +33,7 @@ export class Controls {
         this.motionFactor = 10;
         this.keyIncrement = 2;
         this.spotLightTypeOptions = 0;
+        this.bloqueTypeOptions = Bloque.TYPES.length - 1;
 
         this.controlesCapsula = false;
 
@@ -278,21 +264,20 @@ export class Controls {
                 this.droneCam.activarControlesTeclado(false);
                 this.camera.borrarTimeOutIdPool(); //cualquier llamdo vigente que quede cuando la camara de la capsula se mueva se borra
                 this.camera.dejarDeSeguirALaCapsula();
-                toastr["info"]("<span style=\"color: black!important;font-size:100%;font-family:'Courier New',monospace \">Estación Espacial</span>")
+                this.msg["info"]("Estación Espacial");
                 return this.configurarCamaraDe("Nave");
             case 50:
                 this.controlesCapsula = false;
                 this.droneCam.activarControlesTeclado(false);
                 this.camera.borrarTimeOutIdPool();
                 this.camera.dejarDeSeguirALaCapsula();
-                toastr["info"]("<span style=\"color: black!important;font-size:100%;font-family:'Courier New',monospace \">Paneles Solares</span>")
+                this.msg["info"]("Paneles Solares");
                 return this.configurarCamaraDe("PanelesSolares");
             case 51:
                 this.controlesCapsula = true;
                 this.droneCam.activarControlesTeclado();
                 this.camera.seguirALaCapsula() //activa la matrix de rotacion que se calcula con los controles de la capsula
-                toastr["info"]("<span style=\"color: black!important;font-size:100%;font-family:'Courier New',monospace \">Cápsula</span>")
-
+                this.msg["info"]("Capsula");
                 return this.configurarCamaraDe("Capsula");
             case 88: //z zoom out
                 return this.dollyHelper(-1);
@@ -300,7 +285,7 @@ export class Controls {
                 return this.dollyHelper(1);
 
 
-            case 70:
+            case 70: //f
                 if(!this.controlesCapsula)
                     return;
                 this.spotLightTypeOptions++;
@@ -308,20 +293,28 @@ export class Controls {
                     case 1:
                         this.spotLightDir.activarLuces();
                         this.spotLightDir.lucesBlancas();
-                        toastr["info"]("<span style=\"color: black!important;font-size:100%;font-family:'Courier New',monospace \">Luces Blancas</span>")
+                        this.msg["success"]("Luces Blancas");
                         break;
                     case 2:
                         this.spotLightDir.apagarLuces();
-                        toastr["info"]("<span style=\"color: black!important;font-size:100%;font-family:'Courier New',monospace \">Luces Apagadas</span>")
+                        this.msg["success"]("Luces Apagadas");
                         break;
                     default:
                         this.spotLightDir.activarLuces();
                         this.spotLightDir.lucesRG();
-                        toastr["info"]("<span style=\"color: black!important;font-size:100%;font-family:'Courier New',monospace \">Luces RG</span>")
+                        this.msg["success"]("Luces Rojas y Verdes");
                         this.spotLightTypeOptions = 0; //reset
                         break;
                 }
                 return;
+                case 66: //b
+                    this.bloqueTypeOptions--;
+                    if(this.bloqueTypeOptions < 0)
+                        this.bloqueTypeOptions = Bloque.TYPES.length - 1;
+                    const type = Bloque.TYPES[this.bloqueTypeOptions]
+                    this.msg["warning"](type);
+                    this.bloque.setType(type);
+                    return ;
         }
     }
 

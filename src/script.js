@@ -126,13 +126,14 @@ function configure() {
     //Luz SpotLight
 
 
-    controles = new Controls(camera, canvas, droneCam, spotLightDir);
 
     // Configure `transforms`
     transforms = new Transforms(gl, program, camera, canvas);
 
     //Bloques del anillo
     bloque = new Bloque(dimensiones.anillo.radio, scene)
+    controles = new Controls(camera, canvas, droneCam, spotLightDir, bloque);
+
 
     const intervaloEnGrados = 30; //cada 15,30, 45, 60, 75, 90 grados del giro del anillo
     //Transformaciones afines

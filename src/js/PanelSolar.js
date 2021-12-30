@@ -16,7 +16,7 @@ const dimensionesPanelSolarLadoLargo = {
 }
 
 const dimensionesTriangulosTubo = {
-    filas: 1,
+    filas: 20,
     columnas: 10,
 }
 

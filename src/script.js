@@ -9,7 +9,7 @@ import {Scene} from "./js/Scene";
 import {Camera} from "./js/Camera";
 import {Controls} from "./js/Controls";
 import {Transforms} from "./js/Transforms";
-import {AnimacionPanelesSolares} from "./js/PanelSolar";
+import {AnimacionPanelesSolares, PanelSolar} from "./js/PanelSolar";
 import {Cilindro, Plano, Superficie, Tapa, Tubo,} from "./js/Superficies";
 import {Forma, SuperficieParametrica, SuperficieParametrica1} from "./js/SuperficiesDeBarrido";
 import {Bloque} from "./js/Bloque";
@@ -23,9 +23,6 @@ import {TextureLoader} from "./js/TextureLoader.js";
 import CubeTexture from './geometries/cube-texture.json5'
 import Sphere from './geometries/sphere.json5'
 import {CubeMap} from "./js/CubeMap";
-
-
-
 
 
 let
@@ -42,11 +39,12 @@ let
     lightLerpOuterCutOff = 1,//0.5
     lightOuterCutOff = 13.5,//38
     lightRadius = 100.0,
-    lightDecay = 0.5,
+    lightDecay = 1,
     spotLightDir,
     minLambertTerm = 0.1,
     cubeMapInScene = true,
     luzSolarEncendida = true,
+    luzSpotLightEncendida = true,
     lightAzimuth,
     textureLoader,
     cubeMap,
@@ -109,7 +107,8 @@ function configure() {
         'uLightRadius',
         'uLightDecay',
         'uMinLambertTerm',
-        'uLuzSolarEncendida'
+        'uLuzSolarEncendida',
+        'uLuzSpotLightEncendida'
     ];
 
     // Load attributes and uniforms
@@ -121,9 +120,11 @@ function configure() {
     // Configure `camera` and `controls`
     camera = new Camera(Camera.ORBITING_TYPE, 70, 0);
     camera.goTo([0, 0, 16], 0, -30, [0, 0, 0])
-    droneCam = new DroneCameraControl([0, 0, 0], camera); //intialPos: [0,0,-10]
+    lights = new LightsManager();
+    spotLightDir = new DireccionSpotLight(lights);
+    droneCam = new DroneCameraControl([0, 0, -10], camera, spotLightDir); //intialPos: [0,0,-10]
     //Luz SpotLight
-    spotLightDir = new DireccionSpotLight(gl, program);
+
 
     controles = new Controls(camera, canvas, droneCam, spotLightDir);
 
@@ -135,7 +136,6 @@ function configure() {
 
     const intervaloEnGrados = 30; //cada 15,30, 45, 60, 75, 90 grados del giro del anillo
     //Transformaciones afines
-    lights = new LightsManager();
 
     transformar = new TransformacionesAfin(transforms, droneCam, controles, camera, bloque,
         new AnimacionPanelesSolares(300, intervaloEnGrados), lights, spotLightDir
@@ -153,6 +153,7 @@ function cargarTexturasLuces() {
     sunLightColor = utils.normalizeColor(colores.sunLightColor[random])
 
     // Lights data
+    const spotLights = Capsula.spotLights;
     lightsData = [
         {
             id: 'sunLight', name: 'Luz solar',
@@ -162,11 +163,11 @@ function cargarTexturasLuces() {
         },
         {
             id: 'greenLight', name: 'Green Light',
-            position: [-0.65, 0, -2.48], diffuse: [0, 1, 0, 1], direction: [0, 0, -1]
+            position: spotLights.green.position, diffuse: spotLights.green.diffuse, direction: spotLights.direction
         },
         {
             id: 'redLight', name: 'Red Light',
-            position: [0.65, 0, -2.48], diffuse: [1, 0, 0, 1], direction: [0, 0, -1]
+            position: spotLights.red.position, diffuse: spotLights.red.diffuse, direction: spotLights.direction
         },
     ];
     lightsData.forEach(({id, position, diffuse, direction}) => {
@@ -188,11 +189,14 @@ function cargarTexturasLuces() {
     gl.uniform3fv(program.uLightDirection, lights.getArray('direction'));
     gl.uniform4fv(program.uLightDiffuse, lights.getArray('diffuse'));
 
+    gl.uniform1i(program.uLuzSolarEncendida, luzSolarEncendida);
+    gl.uniform1i(program.uLuzSpotLightEncendida, spotLightDir.luzSpotLightEncendida);
+
+
     gl.uniform4fv(program.uLightAmbient, lightAmbient);
     gl.uniform4fv(program.uLightSpecular, lightSpecular);
     gl.uniform1f(program.uShininess, 230.0);
 
-    gl.uniform1i(program.uLuzSolarEncendida, luzSolarEncendida);
 
     gl.uniform1f(program.uOuterCutOff, lightOuterCutOff);
     gl.uniform1f(program.uLerpOuterCutOff, lightLerpOuterCutOff);
@@ -233,21 +237,11 @@ function load() {
     // scene.add(new Floor(80, 1));
     // scene.add(new Axis(82));
 
-    cargarCapsula()
+    // cargarEscenario();
 
 
-    //luces puntual y las dos spotlight
-    lightsData.forEach(({id, diffuse}) => {
-        const SphereClone = Object.assign({}, Sphere);
-        if(id ==='sunLight')
-            SphereClone.hidden = true; //escondo el objeto de la luz solar, solo sire para debug
-        SphereClone.alias = id;
-        SphereClone.diffuse = diffuse;
-        scene.add(SphereClone);
-    });
-    /*
     //CubeMaps
-    scene.add(CubeTexture, {      alias: "cubeMap"            });
+    scene.add(CubeTexture, {alias: "cubeMap"});
     //Estacion Espacial
     scene.add(new Superficie(null, 'nave'))
     cargarNucleo()
@@ -257,15 +251,20 @@ function load() {
     bloque.setType(Bloque.BLOQUES_4);
     moduloVioleta()
     cargarEsfera()
-*/
 
-
-    /*
+    cargarCapsula()
+    //luces puntual y las dos spotlight
+    lightsData.forEach(({id, diffuse}) => {
+        const SphereClone = Object.assign({}, Sphere);
+        if (id === 'sunLight')
+            SphereClone.hidden = true; //escondo el objeto de la luz solar, solo sire para debug
+        SphereClone.alias = id;
+        SphereClone.diffuse = diffuse;
+        scene.add(SphereClone);
+    });
     //Planetas
     cargarALaLuna()
     cargarALaTierra()
-*/
-    cargarEscenario();
     // cargarEsferaEnElEscenario();
 }
 
@@ -928,7 +927,7 @@ function cargarEsfera() {
      */
     //El recorrido va ser circular con radio 0, mientras mas puntos mas se parece a
     //una circunferencia en lugar de un poligono -> tomar en cuenta para la tapa
-    const pasoDiscretoRecorrido = 30
+    const pasoDiscretoRecorrido = 50;
     const divisionesForma = 20 //precision en la forma,
     ///////////////////////////////////////////////////////////////////
     const porcionDeCircunferencia = 2 / 8 //la forma va de pi/4 a (pi-pi/4) -> 25% del circulo
@@ -1025,8 +1024,7 @@ function cargarEsfera() {
     * Nuevas UVs
     */
     const {columna1, _} = utils.I2(tapaAdelante.textureCoords, "noImprimir")
-
-    const UTextureCoord = utils.crearVectorEntre(3, 0, 31)
+    const UTextureCoord = utils.crearVectorEntre(3, 0, Math.floor(columna1.length / 2))
     const VTextureCoord = [];
 
     const limiteSuperiorCuerpo = 0.9
@@ -1080,7 +1078,7 @@ function cargarEsfera() {
     esfera.indices.push(
         ...tapaAdelante.indices, 61, 62,
         ...cuerpo_NEW_indices, 712, 713,
-        ...tapaAtras_NEW_indices
+        ...tapaAtras_NEW_indices  //-> tapa de atras donde sale la nave habilitar , para tapar la esfera
     )
     //Vertices
     esfera.vertices.push(
@@ -1249,9 +1247,13 @@ function moduloVioleta() {
 
 function cargarNucleo() {
     const dimensionesTriangulosNucleo = { //iguales a la pastilla
-        filas: 1, //segmentosRadiales
-        columnas: 30, //segmentosDeAltura
+        filas: 16, //segmentosRadiales
+        columnas: 50, //segmentosDeAltura
     };
+    const cantidadTexturas = {
+        u: 4,
+        v: 5
+    }
     const nucleoPS = new Superficie(null, "nucleoPS");
 
     //partes
@@ -1268,36 +1270,56 @@ function cargarNucleo() {
     const C2 = Math.sqrt(a * a + b * b)
     const C3 = dimensiones.NucleoPS.altura
     let L = C1 + C2 + C3 + C2 + C1
-    L = L / 2; //longitud del cuerpo completo divido dos para 2 texturas en v
+    L = L / cantidadTexturas.v; //longitud del cuerpo completo divido dos para 2 texturas en v
     const v = []
     //repito dos veces en las uniones, ahi tengo 2 vertices en la misma posicion
-    v.push(0, C1 / L, C1 / L,
+    /*
+    v.push(0,
+        C1 / L, C1 / L,
         (C1 + C2) / L, (C1 + C2) / L,
         (C1 + C2 + C3) / L, (C1 + C2 + C3) / L,
         (C1 + C2 + C3 + C2) / L, (C1 + C2 + C3 + C2) / L,
-        (C1 + C2 + C3 + C2 + C1) / L)
+        (C1 + C2 + C3 + C2 + C1) / L) //->1
 
-    const u = utils.crearVectorEntre(0, 3, 31) //limite 2 para 2 texturas en u
+     */
     /*
-        const v = [];
-        v.push(
-        0
-        ,0.081561281895704
-        ,0.181561281895704
-        ,0.27304839763037003
-        ,0.27304839763037003
-        ,0.72695160236963
-        ,0.72695160236963
-        ,0.818438718104296
-        ,0.918438718104296
-        ,1)
-    */
+    v.push(0,
+        C1/2 / L, C1 / L,  C1 / L,
+        (C1 + C2/2) / L,(C1 + C2) / L, (C1 + C2) / L,
+        (C1 + C2 + C3/2) / L, (C1 + C2 + C3) / L,(C1 + C2 + C3) / L,
+        (C1 + C2 + C3 + C2/2) / L, (C1 + C2 + C3 + C2) / L,(C1 + C2 + C3 + C2) / L,
+        (C1 + C2 + C3 + C2 + C1/2) / L,(C1 + C2 + C3 + C2 + C1) / L);
+
+     */
+
+
+    v.push(0)
+    const divisiones = utils.crearVectorEntre(1, 0, dimensionesTriangulosNucleo.filas + 1).slice(1)
+    divisiones.push(1)
+    const intervalos = [C1 / L, C2 / L, C3 / L, C2 / L, C1 / L];
+    const suma = []
+    suma.push(0)
+    intervalos.reduce(function (valorAnterior, valorActual) {
+        suma.push(valorAnterior)
+        return valorAnterior + valorActual
+    })
+    intervalos.map(function (element, index) {
+        v.push(...divisiones.map(punto => punto * element + suma[index]))
+    });
+    v.pop()
+
+    const u = utils.crearVectorEntre(0, cantidadTexturas.u, dimensionesTriangulosNucleo.columnas + 1) //limite inferior 2 para 2 texturas en u
+
+    const texTuboFix = []
+    for (let i = 0; i <= dimensionesTriangulosNucleo.filas; i++) {
+        texTuboFix.push(4 + (dimensionesTriangulosNucleo.filas - 1) * 2 + i)
+    }
 
     const nuevasUV = []
 
     for (let i = 0; i < v.length; i++) {
         for (let j = 0; j < u.length; j++) {
-            if (i === 4 || i === 5) { //arregla las texturas del tubo
+            if (texTuboFix.includes(i)) { //arregla las texturas del cuerpo del tubo
                 nuevasUV.push(1 - u[j], v[i])
 
             } else {
@@ -1306,6 +1328,7 @@ function cargarNucleo() {
             }
         }
     }
+
 
     //transformaciones
     const cilidroSupTransformacion = mat4.identity(mat4.create());
@@ -1352,35 +1375,34 @@ function cargarNucleo() {
     tapaSup.indices.forEach(indice => {
         tapaSup_NEW_indices.push(indice);
     });
-    //tapaSup_NEW_indices.push(tapaSup_NEW_indices[tapaSup_NEW_indices.length - 1]);
 
 
     const cilindroSup_NEW_indices = []
     cilindroSup.indices.forEach(indice => {
-        cilindroSup_NEW_indices.push(indice + tapaSup_NEW_indices.length);
+        cilindroSup_NEW_indices.push(indice + tapaSup_NEW_indices[tapaSup_NEW_indices.length - 1] + 1);
 
     });
 
     const tubo_NEW_indices = []
     tubo.indices.forEach(indice => {
-        tubo_NEW_indices.push(indice + cilindroSup_NEW_indices.length + tapaSup_NEW_indices.length);
+        tubo_NEW_indices.push(indice + cilindroSup_NEW_indices[cilindroSup_NEW_indices.length - 1] + 1);
     });
 
     const cilindroInf_NEW_indices = []
     cilindroInf.indices.forEach(indice => {
-        cilindroInf_NEW_indices.push(indice + tubo_NEW_indices.length + cilindroSup_NEW_indices.length + tapaSup_NEW_indices.length);
+        cilindroInf_NEW_indices.push(indice + tubo_NEW_indices[tubo_NEW_indices.length - 1] + 1);
     });
 
     const tapaInf_NEW_indices = []
     tapaInf.indices.forEach(indice => {
-        tapaInf_NEW_indices.push(indice + cilindroInf_NEW_indices.length + tubo_NEW_indices.length + cilindroSup_NEW_indices.length + tapaSup_NEW_indices.length);
+        tapaInf_NEW_indices.push(indice + cilindroInf_NEW_indices[cilindroInf_NEW_indices.length - 1] + 1);
     });
     // repito las uniones para que se dibujen lineas y no triangulos
     nucleoPS.indices.push(
-        ...tapaSup_NEW_indices, 61, 62,
-        ...cilindroSup_NEW_indices, 123, 124,
-        ...tubo_NEW_indices, 185, 186,
-        ...cilindroInf_NEW_indices, 247, 248,
+        ...tapaSup_NEW_indices, tapaSup_NEW_indices[tapaSup_NEW_indices.length - 1], cilindroSup_NEW_indices[0],
+        ...cilindroSup_NEW_indices, cilindroSup_NEW_indices[cilindroSup_NEW_indices.length - 1], tubo_NEW_indices[0],
+        ...tubo_NEW_indices, tubo_NEW_indices[tubo_NEW_indices.length - 1], cilindroInf_NEW_indices[0],
+        ...cilindroInf_NEW_indices, cilindroInf_NEW_indices[cilindroInf_NEW_indices.length - 1], tapaInf_NEW_indices[0],
         ...tapaInf_NEW_indices
     );
 
@@ -1412,7 +1434,7 @@ function cargarNucleo() {
 
     nucleoPS.diffuse = colores.Textura.diffuse
     nucleoPS.ambient = colores.Textura.ambient
-    nucleoPS.texture = "torus"
+    nucleoPS.texture = "UV"
 
     //clone object nucleoPS
     const nucleoAnillo = Object.assign({}, nucleoPS);
@@ -1426,8 +1448,15 @@ function cargarNucleo() {
 function cargarAnillo() {
 
     const dimTriangulosTuboAnillo = {
-        filas: 1,
-        columnas: 8,
+        interior: {
+            filas: 8,
+            columnas: 12,
+        },
+        mastil: {
+            filas: 80,
+            columnas: 12,
+        },
+
     };
     const dimensionesCilindroPastilla = {
         radioSuperior: 2.30,
@@ -1566,16 +1595,16 @@ function cargarAnillo() {
 
     //anillo y tubos interiores
     cargarTorus()
-    scene.add(new Tubo('anillo_tuboH1', dimensiones.anillo.tubo, dimTriangulosTuboAnillo))
-    scene.add(new Tubo('anillo_tuboH2', dimensiones.anillo.tubo, dimTriangulosTuboAnillo))
+    scene.add(new Tubo('anillo_tuboH1', dimensiones.anillo.tubo, dimTriangulosTuboAnillo.mastil))
+    scene.add(new Tubo('anillo_tuboH2', dimensiones.anillo.tubo, dimTriangulosTuboAnillo.mastil))
 
-    scene.add(new Tubo('anillo_tuboV1', dimensiones.anillo.tubo, dimTriangulosTuboAnillo))
-    scene.add(new Tubo('anillo_tuboV2', dimensiones.anillo.tubo, dimTriangulosTuboAnillo))
+    scene.add(new Tubo('anillo_tuboV1', dimensiones.anillo.tubo, dimTriangulosTuboAnillo.mastil))
+    scene.add(new Tubo('anillo_tuboV2', dimensiones.anillo.tubo, dimTriangulosTuboAnillo.mastil))
 
     const cantidadDeAnillosInteriores = 2 * Math.ceil(dimensiones.anillo.tubo.altura / (dimensiones.anillo.distanciaEntreTubos * 2))
 
     for (let i = 0; i < cantidadDeAnillosInteriores; i++) {
-        scene.add(new Tubo('anillo_tuboInterior', dimensiones.anillo.tuboInterior, dimTriangulosTuboAnillo))
+        scene.add(new Tubo('anillo_tuboInterior', dimensiones.anillo.tuboInterior, dimTriangulosTuboAnillo.interior))
     }
 
 }
@@ -1584,7 +1613,7 @@ function cargarTorus() {
 
     const dimensionesTriangulosTorus = {
         filas: 30, //segmentosTubulares   //para el deploy 30
-        columnas: 80, //segmentosRadiales  //para el deploy 80
+        columnas: 200, //segmentosRadiales  // par!!!
     };
     /*
     Dimensiones de la esfera
@@ -1629,9 +1658,10 @@ function cargarTorus() {
     }
 
     const arrayDePuntos = []
-    const divisiones = 4
-    const cant_UVTexture = 19 //se copia la misma textura en el torus, se tiene (can_UVTexture +1 ) texturas
+    const divisiones = 8
+    const cant_UVTexture = dimensionesTriangulosTorus.columnas / divisiones - 1 //se copia la misma textura en el torus, se tiene (can_UVTexture +1 ) texturas
     //recordar -> para llenar el torus completo necesito 81 puntos, ya pusheo el cero, asi que el indiceU debe ser 80
+    //dimenTrTorus.columnas = divisiones * (cant_UVTexture + 1)
     //80 = divisiones * (can_UVTexture + 1)
     //80 = 5 * (15 + 1)
     //80 = 4 * (19 + 1)
@@ -1679,17 +1709,7 @@ function draw() {
             transforms.calculateModelView();
             transforms.push(); //pusheamos la matriz de Vista -->this.camera.getViewTransform() -->camera.matrixWorldInverse
             transformar.setAlias(object.alias)
-            gl.uniform1i(program.uLightSource, false); //solo las fuentes de luz tendran un color de materialDiffuse
 
-            // const light = lightsData.find(({id}) => object.alias === id);
-            // if (light) {
-            if (object.alias === "greenLight" || object.alias === "redLight") {
-                // const {position, diffuse} = lights.get(light.id);
-                //talves sea mejor crear una constante con transforms.modelViewMatrix
-                // mat4.translate(transforms.modelViewMatrix, transforms.modelViewMatrix, position);
-                // object.diffuse = diffuse;
-                gl.uniform1i(program.uLightSource, true);
-            }
 
             transformar.esferaEscenario();
 
@@ -1797,7 +1817,10 @@ function draw() {
             transforms.pop();
 
             //para actualizar la posicion de la luz en la escena
+            gl.uniform3fv(program.uLightDirection, lights.getArray('direction'));
             gl.uniform3fv(program.uLightPosition, lights.getArray('position'));
+            gl.uniform4fv(program.uLightDiffuse, lights.getArray('diffuse'));
+
 
 
             // Originalmente transforms.modelViewMatrix es la matriz de vista.
@@ -1824,10 +1847,23 @@ function draw() {
 }
 
 function dibujarMallaDeObjeto(object) {
+    gl.uniform1i(program.uLuzSpotLightEncendida, spotLightDir.luzSpotLightEncendida);
 
-    // console.log("cubeSampler",program.getUniform(program.uCubeSampler))
-    // console.log("sampler",program.getUniform(program.uSampler))
-    // console.log("normal",program.getUniform(program.uNormalSampler))
+
+    if (object.alias === "greenLight" || object.alias === "redLight") {
+
+        (object.alias === "greenLight") ?
+        object.diffuse = lights.get('redLight').diffuse:null;
+        (object.alias === "redLight") ?
+        object.diffuse = lights.get('greenLight').diffuse:null;
+
+        (spotLightDir.luzSpotLightEncendida)?
+        gl.uniform1i(program.uLightSource, true):
+        gl.uniform1i(program.uLightSource, false);
+
+    }
+    else
+        gl.uniform1i(program.uLightSource, false);
 
 
     gl.uniform4fv(program.uMaterialDiffuse, object.diffuse);

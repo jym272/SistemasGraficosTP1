@@ -1,6 +1,9 @@
 'use strict';
 
 // Encapsulates common light functionality
+import {vec3} from "gl-matrix";
+import {Capsula} from "./TransformacionesAfin";
+
 export class Light {
 
     constructor(id) {
@@ -13,6 +16,11 @@ export class Light {
         this.ambient = [0, 0, 0, 0];
         this.diffuse = [0, 0, 0, 0];
         this.specular = [0, 0, 0, 0];
+        // this.direction = [0,0,0] se inicia al inicio con setProperty
+    }
+
+    setDirection(direction){
+        this.direction = direction.slice(0);
     }
 
     setPosition(position) {
@@ -68,15 +76,39 @@ export class LightsManager {
     }
 }
 export class DireccionSpotLight {
-    constructor(gl, program) {
+    constructor(lights) {
+        this.lights = lights;
+        this.stack = [];
+        this.originalDirection={
+            vector: [0,0,0],
+            azimuth: 0,
+            elevation: 0
+        }
+        this.umbralDeDireccion = 30;
+        this.luzSpotLightEncendida = true
 
-        this.gl = gl;
-        this.program = program;
+    }
+    activarLuces(){
+        this.luzSpotLightEncendida = true
+    }
+    lucesBlancas(){
+        const luzBlanca = Capsula.spotLights.blanca.diffuse;
 
-        // this.vector = [0, 0, 0];
-        // this.azimuth = azimuth;
-        // this.elevation = elevation;
-        // this.azimuthElevationToVector();
+        this.lights.get('redLight').setDiffuse(luzBlanca);
+        this.lights.get('greenLight').setDiffuse(luzBlanca);
+
+
+    }
+    lucesRG(){
+        const greenDiffuse = Capsula.spotLights.green.diffuse;
+        const redDiffuse = Capsula.spotLights.red.diffuse;
+
+        this.lights.get('redLight').setDiffuse(redDiffuse);
+        this.lights.get('greenLight').setDiffuse(greenDiffuse);
+
+    }
+    apagarLuces(){
+        this.luzSpotLightEncendida = false
     }
 
     validarAngulos() {
@@ -85,6 +117,10 @@ export class DireccionSpotLight {
         }
         if (this.elevation < 0 || this.elevation > 360) {
             this.elevation = this.elevation % 360;
+        }
+        return {
+            azimuth: this.azimuth,
+            elevation: this.elevation
         }
     }
 
@@ -97,7 +133,7 @@ export class DireccionSpotLight {
         const z = Math.cos(phi) * Math.sin(theta);
         const y = Math.sin(phi);
         this.vector = [x, y, z];
-        this.printNewVector();
+        // this.printNewVector();
     }
 
     printNewVector() {
@@ -109,38 +145,67 @@ export class DireccionSpotLight {
     cambiarAzimuth(incremento, valor = null) {
         if(valor === null){
             this.azimuth += incremento;
+            if(Math.abs(this.azimuth+90) > this.umbralDeDireccion){
+                this.azimuth -= incremento;
+                return;
+            }
         }else{
             this.azimuth = valor;
         }
         this.azimuthElevationToVector();
-        this.actualizarEnLaEscena();
     }
 
     cambiarElevation(incremento, valor = null) {
         if(valor === null){
             this.elevation += incremento;
+            if(Math.abs(this.elevation) > this.umbralDeDireccion){ //valor hardcodeado tomando en cuanta la direccion inicial de la spotlight
+                this.elevation -= incremento;
+                return;
+            }
         }else{
             this.elevation = valor;
         }
         this.azimuthElevationToVector();
-        this.actualizarEnLaEscena();
     }
 
     actualizarEnLaEscena(newVector = null) {
-        const {gl, program} = this;
 
-        if(newVector != null)
-            this.vector = newVector;
+       const {vector} = this;
+/*
+        this.lightArray[3] = vector[0];
+        this.lightArray[4] = vector[1];
+        this.lightArray[5] = vector[2];
 
-        this.lightArray[3] = this.vector[0];
-        this.lightArray[4] = this.vector[1];
-        this.lightArray[5] = this.vector[2];
+        this.lightArray[6] = vector[0];
+        this.lightArray[7] = vector[1];
+        this.lightArray[8] = vector[2];
 
-        this.lightArray[6] = this.vector[0];
-        this.lightArray[7] = this.vector[1];
-        this.lightArray[8] = this.vector[2];
+ */
 
-        gl.uniform3fv(program.uLightDirection, this.lightArray);
+        this.lights.get('redLight').setDirection(vector);
+        this.lights.get('greenLight').setDirection(vector);
+
+
+        this.pop();
+
+    }
+    cambiarDireccionCon(rotationMatrix){
+
+        this.push(); //guardo el vector direccion original
+        vec3.transformMat4(this.vector, this.vector, rotationMatrix);
+        this.actualizarEnLaEscena();
+    }
+    // Pushes  direction vector onto the stack
+    push() {
+        const copyVector = this.vector.slice(0);
+        this.stack.push(copyVector);
+    }
+
+    // Pops and returns diretion vector off the stack
+    pop() {
+        return this.stack.length
+            ? this.vector = this.stack.pop()
+            : null;
     }
 
     esteEsElLightsArray(lightsArrayDirection) {
@@ -152,9 +217,21 @@ export class DireccionSpotLight {
 
         this.vector = [this.lightArray[3], this.lightArray[4], this.lightArray[5]];
 
+        this.originalDirection.vector = this.vector.slice(0);
+        this.calculateAzimuthElevation();
+    }
+    calculateAzimuthElevation() {
         this.azimuth = Math.atan2(this.vector[2], this.vector[0]) * 180 / Math.PI;
         this.elevation = Math.atan2(this.vector[1], Math.sqrt(this.vector[0] * this.vector[0] + this.vector[2] * this.vector[2])) * 180 / Math.PI;
-        this.validarAngulos();
+        const {azimuth,elevation} = this.validarAngulos();
+        this.originalDirection.azimuth = azimuth;
+        this.originalDirection.elevation = elevation;
+    }
+    setOriginalDirectionVector(){
+        this.pop();
+        this.vector = this.originalDirection.vector.slice(0);
+        this.elevation = this.originalDirection.elevation;
+        this.azimuth = this.originalDirection.azimuth;
     }
 
 }

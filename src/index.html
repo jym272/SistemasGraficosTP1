@@ -131,6 +131,7 @@
         uniform bool uActivateEarthTextures;
         uniform bool uActivateSpecularTexture;
         uniform bool uLuzSolarEncendida;
+        uniform bool uLuzSpotLightEncendida;
 
         in vec3 vNormal[numLights];
         in vec4 vLightRay[numLights];
@@ -179,6 +180,12 @@
                 if (uLuzSolarEncendida != true){
                     iterador = 1;
                 }
+                int maxLights = numLights;
+                if(uLuzSpotLightEncendida != true){
+                    maxLights = 1;
+                }
+
+
                 if (uHasTexture){
                     //Si tengo un mapa especular se agregar el termino al calculo final
                     float specularTexture = 1.0;//vec4(1.0);
@@ -195,7 +202,7 @@
                     // Unpack tangent-space normal from texture
                     vec3 normal = normalize((texture(uNormalSampler, vTextureCoords).rgb - 0.5) * 2.0);
 
-                    for (int i = iterador; i < numLights; i++) {
+                    for (int i = iterador; i < maxLights; i++) {
                         // Normalize the light direction and determine how much light is hitting this point
                         vec3 lightDirection = normalize(vTangentLightDirection[i]);
 
@@ -231,7 +238,7 @@
                     // Ambient
                     vec4 Ia = uLightAmbient * uMaterialAmbient;
 
-                    for (int i = iterador; i < numLights; i++) {
+                    for (int i = iterador; i < maxLights; i++) {
 
                         vec3 L = normalize(vLightRay[i].xyz);
                         vec3 N = normalize(vNormal[i]);

@@ -134,7 +134,7 @@ button.toast-close-button {
     cursor: pointer;
 }
 #toast-container > .toast-info {
-    background-image: url("camera.png")!important;
+    background-image: url("camera30.png")!important;
 }
 
 
@@ -175,7 +175,7 @@ button.toast-close-button {
     background-color: #BD362F;
 }
 .toast-info {
-    background-color: #2F96B4;
+    background-color: rgba(225, 107, 9, 0.78);
 }
 .toast-warning {
     background-color: #F89406;

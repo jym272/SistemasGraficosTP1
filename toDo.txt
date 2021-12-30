@@ -18,7 +18,6 @@ controles de la capsula, adaptarlos a el nuevo skybox
 ideas ->
     -> se pueden mover las nubes,
     -> rotacion de la tierra, luna,
-    -> reemplazar las funciones de maximo en el indice, reemplazarlos porr index[index.length-1]
     -> crear controles para controlar la direccion de spotlights
             -> depende del modulo de la direccion de la luz, si es mas grande que la normal, testearlo
             -> colocar una esfera en el escenario
@@ -27,9 +26,12 @@ ideas ->
 
    -> mas triangulos para la esfera, asi mejora las texturas donde se ecnlava con al nave
 
-   ->COLOR DEL ANILLO DE ACUERDO AL COLOR DE LA LUZ SOLAR, CREARLO EN UN SOLO OBJETO CON MAS TRIANGULOS
    -> DRONES CON LUCES ALREDEDOR DE LA NAVE QUE LA ILUMINEN CON LUZ BLANCA
    -> VER EL VIDEO DE LA MINA DONDE ENSEÑA LERP
+
+   -> nuevos paneeles solares -> una sola unidad,
+   -> la conexion con los paneles solares y los tubos es defectuosas
+   -> triangulos de los tubos y de las demas partes en general
 
 camara -> el update solo sirve cuando se mueve la camara, sino, no revisar
 

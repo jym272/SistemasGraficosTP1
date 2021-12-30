@@ -206,20 +206,20 @@ export class Bloque {
         const cuerpo_NEW_indices = []
         //cuerpo_4 y cuerpo 5 tienes los mismo indices
         cuerpo_4.indices.forEach(indice => {
-            cuerpo_NEW_indices.push(indice + Math.max(...TapaAdelante.indices) + 1);
+            cuerpo_NEW_indices.push(indice + TapaAdelante.indices[TapaAdelante.indices.length - 1]+ 1);
 
         });
 
         const TapaAtras_NEW_indices = []
         TapaAtras.indices.forEach(indice => {
-            TapaAtras_NEW_indices.push(indice + Math.max(...cuerpo_NEW_indices) + 1);
+            TapaAtras_NEW_indices.push(indice + cuerpo_NEW_indices[cuerpo_NEW_indices.length - 1] + 1);
         });
 
         //Indices
         const indices = []
         indices.push(
-            ...TapaAdelante.indices, 81, 82,
-            ...cuerpo_NEW_indices, 778, 779,
+            ...TapaAdelante.indices, TapaAdelante.indices[TapaAdelante.indices.length - 1],  cuerpo_NEW_indices[0],
+            ...cuerpo_NEW_indices, cuerpo_NEW_indices[cuerpo_NEW_indices.length - 1], TapaAtras_NEW_indices[0],
             ...TapaAtras_NEW_indices )
         bloque4.indices.push(...indices);
         bloque5.indices.push(...indices);

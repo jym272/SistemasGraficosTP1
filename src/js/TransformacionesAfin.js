@@ -32,8 +32,23 @@ export const Nucleo = {
 }
 export const Capsula = {
     capsulaTransform: null,
-    position: [0,0,0],
-    rotationMatrix: null,
+    spotLights:{
+        red:{
+            position: [0.65,0,-2.48],
+            diffuse: [1,0,0,1],
+            translateFactor : [0.65,0,2.48],
+        },
+        green:{
+            position : [-0.65,0,-2.48],
+            diffuse: [0,1,0,1],
+            translateFactor : [-0.65,0,2.48],
+        },
+        direction : [0,0,-1],
+        scaleFactor: [0.1,0.26,0.18],
+        blanca: {
+            diffuse: [1,1,1,1],
+        },
+    },
 }
 
 export const Nave = { //abstraccion de la nave
@@ -183,19 +198,16 @@ export class TransformacionesAfin {
             //Se actualizar la posicion de las luces
             const greenPosition = vec3.create();
             const redPosition = vec3.create();
-            const directionLight = vec3.create();
-            vec3.set(directionLight, 0, 0, -1);
-            vec3.set(greenPosition, -0.65, 0, -2.48);
-            vec3.set(redPosition, +0.65,0, -2.48);
+
+            vec3.set(greenPosition, ...Capsula.spotLights.green.position);
+            vec3.set(redPosition, ...Capsula.spotLights.red.position);
             const worldDroneCamMatrix = droneCam.getMatrix()
             vec3.transformMat4(redPosition, redPosition, worldDroneCamMatrix);
             vec3.transformMat4(greenPosition, greenPosition, worldDroneCamMatrix);
-            vec3.transformMat4(directionLight, directionLight, rotationMatrix);
 
-            this.spotLight.actualizarEnLaEscena([directionLight[0], directionLight[1], directionLight[2]]);
+            this.spotLight.cambiarDireccionCon(rotationMatrix)
             this.lights.get('redLight').setPosition([redPosition[0], redPosition[1], redPosition[2]]);
             this.lights.get('greenLight').setPosition([greenPosition[0], greenPosition[1], greenPosition[2]]);
-
 
             controles.setFocusCapsula(position) //evita un parpadeo en la camara
             if (controles.focusCamera.Capsula === true) {
@@ -250,15 +262,15 @@ export class TransformacionesAfin {
             mat4.rotate(capsulaCuerpoFuegoColaTransform, capsulaCuerpoFuegoColaTransform, -Math.PI / 2, [1, 0, 0]);
         } else if (this.alias === 'redLight'){
             const blueLightTransform = transforms.modelViewMatrix;
-            const scaleBlueLight = [0.1,0.26,0.18];
-            mat4.translate(blueLightTransform, Capsula.capsulaTransform, [0.65, 0, 2.48]);
-            mat4.scale(blueLightTransform, blueLightTransform, scaleBlueLight);
+            mat4.translate(blueLightTransform, Capsula.capsulaTransform, Capsula.spotLights.red.translateFactor);
+            mat4.scale(blueLightTransform, blueLightTransform, Capsula.spotLights.scaleFactor);
         }else if (this.alias === 'greenLight'){
             const greenLightTransform = transforms.modelViewMatrix;
-            const scaleGreenLight = [0.1,0.26,0.18];
-            mat4.translate(greenLightTransform, Capsula.capsulaTransform, [-0.65, 0, 2.48]);
-            mat4.scale(greenLightTransform, greenLightTransform, scaleGreenLight);
+            mat4.translate(greenLightTransform, Capsula.capsulaTransform, Capsula.spotLights.green.translateFactor);
+            mat4.scale(greenLightTransform, greenLightTransform, Capsula.spotLights.scaleFactor);
         }
+
+
     }
 
     esfera() {

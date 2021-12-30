@@ -2,11 +2,12 @@
 
 import { vec3, mat4 } from 'gl-matrix';
 
-export function DroneCameraControl(initialPos, camera){
+export function DroneCameraControl(initialPos, camera, spotLightDir){
 
     let DELTA_TRASLACION=0.3;        // velocidad de traslacion
     let DELTA_ROTACION=0.01;         // velocidad de rotacion
     let FACTOR_INERCIA=0.05;
+    const keyIncrement = 2;
 
     if (!initialPos) initialPos=[0,0,0];
 
@@ -86,18 +87,44 @@ export function DroneCameraControl(initialPos, camera){
                 camState.zRotVelTarget=-DELTA_ROTACION;break;
 
 
-
             case "r":
                 rotation=vec3.create();
                 position=vec3.fromValues(initialPos[0],initialPos[1],initialPos[2]);
                 camState=Object.assign({},camInitialState);
                 rotationMatrix=mat4.create();
+                spotLightDir.setOriginalDirectionVector();
                 break;
 
             case "t":
                 rotation=vec3.create();
                 camState=Object.assign({},camInitialState);
                 break;
+        }
+        switch (e.keyCode){
+            case 102:
+                return spotLightDir.cambiarAzimuth(keyIncrement);
+            case 100:
+                return spotLightDir.cambiarAzimuth(-keyIncrement);
+            case 104:
+                return spotLightDir.cambiarElevation(keyIncrement);
+            case 103:
+                spotLightDir.cambiarAzimuth(-keyIncrement);
+                return spotLightDir.cambiarElevation(keyIncrement);
+            case 97:
+                spotLightDir.cambiarElevation(-keyIncrement);
+                return spotLightDir.cambiarAzimuth(-keyIncrement);
+
+            case 99:
+                spotLightDir.cambiarElevation(-keyIncrement);
+                return spotLightDir.cambiarAzimuth(keyIncrement);
+            case 105:
+                spotLightDir.cambiarAzimuth(keyIncrement);
+                return spotLightDir.cambiarElevation(keyIncrement);
+
+            case 98:
+                return spotLightDir.cambiarElevation(-keyIncrement);
+            case 101:
+                return spotLightDir.setOriginalDirectionVector();
 
         }
 
@@ -150,6 +177,17 @@ export function DroneCameraControl(initialPos, camera){
             document.removeEventListener("keydown", this.listener);
 
         }
+
+
+    }
+    this.updateWithMouseReset=function(){
+        camState.xRotVelTarget = 0;
+        camState.yRotVelTarget=0
+    }
+    this.updateWithMouse=function(dy, dx){
+        // console.log(dy,dx )
+        camState.xRotVelTarget = dy;
+        camState.yRotVelTarget=-dx;
 
 
     }

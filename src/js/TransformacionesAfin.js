@@ -30,6 +30,7 @@ export const Nucleo = {
     nucleoPSTransform: null,
     nucleoAnilloTransform: null,
 }
+
 export const Capsula = {
     capsulaTransform: null,
     spotLights:{
@@ -69,10 +70,12 @@ export const Esfera = {
     angulo: Math.PI / 4,
     posRelativaALaNave: 8.8,
 }
+
 export const Cubo = {
     transform: null,
     lado: 5
 }
+
 export const Teatro = {
     transform: null,
 }

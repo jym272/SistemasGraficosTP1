@@ -23,6 +23,8 @@ import {TextureLoader} from "./js/TextureLoader.js";
 import CubeTexture from './geometries/cube-texture.json5'
 import Sphere from './geometries/sphere.json5'
 import {CubeMap} from "./js/CubeMap";
+import {Floor} from "./js/Floor";
+import {Axis} from "./js/Axis";
 
 
 let
@@ -158,7 +160,7 @@ function cargarTexturasLuces() {
     lightsData = [
         {
             id: 'sunLight', name: 'Luz solar',
-            position: dimensiones.lightPosition[random],
+            position: [10,10,10], //dimensiones.lightPosition[random],
             diffuse: sunLightColor,
             direction: dimensiones.lightPosition[random] //la luz solar no tiene direccion, este valor no se termina usando
         },
@@ -235,12 +237,12 @@ function cargarTexturasLuces() {
 
 // Se carga todos los objetos a la escena
 function load() {
-    // scene.add(new Floor(80, 1));
-    // scene.add(new Axis(82));
+    scene.add(new Floor(80, 1));
+    scene.add(new Axis(82));
 
     // cargarEscenario();
 
-
+/*
     //CubeMaps
     scene.add(CubeTexture, {alias: "cubeMap"});
     //Estacion Espacial
@@ -266,7 +268,256 @@ function load() {
     //Planetas
     cargarALaLuna()
     cargarALaTierra()
+
+
+ */
+
+        cargarNuevosPaneles()
     // cargarEsferaEnElEscenario();
+}
+function cargarNuevosPaneles(){
+
+    const dimensionesTriangulosPlano = {
+        filas: 36,
+        columnas: 8,
+    }
+    const dimensionesTriangulosLadoA = {
+        filas: 8,
+        columnas: 1,
+    }
+    const dimensionesTriangulosLadoB = {
+        filas: 36,
+        columnas: 1,
+    }
+
+    const dimensionesPanelSolarLadoLargo = {
+        ancho: 0.1,
+        largo: 6,
+    }
+    const panelSolar = new Superficie(null, 'panelSolar1a');
+
+    const tapaSuperior = new Plano('tapaSuperior', dimensiones.panelSolar.tapa, dimensionesTriangulosPlano);
+    const ladoA = new Plano('LadoA', dimensiones.panelSolar.lado, dimensionesTriangulosLadoA);
+    const ladoB = new Plano('LadoB', dimensionesPanelSolarLadoLargo, dimensionesTriangulosLadoB);
+    const ladoA1 =  new Plano('LadoA1', dimensiones.panelSolar.lado, dimensionesTriangulosLadoA);
+    const ladoB1 = new Plano('LadoB1', dimensionesPanelSolarLadoLargo, dimensionesTriangulosLadoB);
+    const tapaInferior = new Plano('tapaInferior', dimensiones.panelSolar.tapa, dimensionesTriangulosPlano);
+
+    //Transformaciones
+    //->tapa Superior
+    const tapaSuperiorTransform = mat4.identity(mat4.create());
+    mat4.translate(tapaSuperiorTransform, tapaSuperiorTransform, [0, dimensiones.panelSolar.lado.ancho, 0]);
+
+    const nuevasTanBitTapaSuperior = utils.calcularTanYBiTan(tapaSuperior)
+    tapaSuperior.tangentes = nuevasTanBitTapaSuperior.tangentes
+
+    const tapaSuperior_NEW = utils.nuevasCoordenadas(tapaSuperiorTransform, tapaSuperior, false)
+    tapaSuperior_NEW.normales = tapaSuperior.normales
+    tapaSuperior_NEW.tangentes = tapaSuperior.tangentes
+
+    //tapa inferior
+    const tapaInferiorTransform = mat4.identity(mat4.create());
+    mat4.rotate(tapaInferiorTransform, tapaInferiorTransform, Math.PI, [1, 0, 0]);
+
+
+    const nuevasTanBitTapaInferior = utils.calcularTanYBiTan(tapaInferior)
+    tapaInferior.tangentes = nuevasTanBitTapaInferior.tangentes
+
+    const tapaInferior_NEW = utils.nuevasCoordenadas(tapaInferiorTransform, tapaInferior, false)
+    tapaInferior_NEW.normales = tapaInferior.normales
+    tapaInferior_NEW.tangentes = tapaInferior.tangentes
+
+    //lado A
+    const ladoATyN = mat4.identity(mat4.create());
+    mat4.rotate(ladoATyN, ladoATyN, Math.PI / 2, [0, 0, 1]);
+    mat4.rotate(ladoATyN, ladoATyN, Math.PI, [0, 1, 1]);
+
+    const ladoATransform = mat4.identity(mat4.create());
+    mat4.translate(ladoATransform, ladoATransform, [0, dimensiones.panelSolar.lado.ancho / 2, dimensiones.panelSolar.tapa.largo / 2]);
+    mat4.multiply(ladoATransform, ladoATransform, ladoATyN);
+
+    const nuevasTanBitLadoA = utils.calcularTanYBiTan(ladoA)
+    ladoA.tangentes = nuevasTanBitLadoA.tangentes
+
+    const ladoA_NEW_AUX = utils.nuevasCoordenadas(ladoATyN, ladoA, false)
+    const ladoA_NEW = utils.nuevasCoordenadas(ladoATransform, ladoA, false)
+    ladoA_NEW.normales = ladoA_NEW_AUX.normales
+    ladoA_NEW.tangentes = ladoA_NEW_AUX.tangentes
+
+    //lado B
+    const ladoBTyN = mat4.identity(mat4.create());
+    mat4.rotate(ladoBTyN, ladoBTyN, Math.PI, [1, 1, 0]);
+
+    const ladoBTransform = mat4.identity(mat4.create());
+    mat4.translate(ladoBTransform, ladoBTransform, [dimensiones.panelSolar.lado.largo / 2, dimensiones.panelSolar.lado.ancho / 2, 0]);
+    mat4.multiply(ladoBTransform, ladoBTransform, ladoBTyN);
+
+    const nuevasTanBitLadoB = utils.calcularTanYBiTan(ladoB)
+    ladoB.tangentes = nuevasTanBitLadoB.tangentes
+
+    const ladoB_NEW_AUX = utils.nuevasCoordenadas(ladoBTyN, ladoB, false)
+    const ladoB_NEW = utils.nuevasCoordenadas(ladoBTransform, ladoB, false)
+    ladoB_NEW.normales = ladoB_NEW_AUX.normales
+    ladoB_NEW.tangentes = ladoB_NEW_AUX.tangentes
+
+    //lado A1
+
+    const ladoA1TyN = mat4.identity(mat4.create());
+    mat4.rotate(ladoA1TyN, ladoA1TyN, Math.PI / 2, [1, 0, 0]);
+    mat4.rotate(ladoA1TyN, ladoA1TyN, -Math.PI, [1, 0, 1]);
+
+    const ladoA1Transform = mat4.identity(mat4.create());
+    mat4.translate(ladoA1Transform, ladoA1Transform, [0, dimensiones.panelSolar.lado.ancho / 2, -dimensiones.panelSolar.tapa.largo / 2]);
+
+    mat4.multiply(ladoA1Transform, ladoA1Transform, ladoA1TyN);
+
+    const nuevasTanBitLadoA1 = utils.calcularTanYBiTan(ladoA1)
+    ladoA1.tangentes = nuevasTanBitLadoA1.tangentes
+
+    const ladoA1_NEW_AUX = utils.nuevasCoordenadas(ladoA1TyN, ladoA1, false)
+    const ladoA1_NEW = utils.nuevasCoordenadas(ladoA1Transform, ladoA1, false)
+    ladoA1_NEW.normales = ladoA1_NEW_AUX.normales
+    ladoA1_NEW.tangentes = ladoA1_NEW_AUX.tangentes
+
+    //lado B1
+    const ladoB1TyN = mat4.identity(mat4.create());
+    mat4.rotate(ladoB1TyN, ladoB1TyN, -Math.PI, [0, 0, 1]);
+    mat4.rotate(ladoB1TyN, ladoB1TyN, -Math.PI, [1, 1, 0]);
+
+    const ladoB1Transform = mat4.identity(mat4.create());
+    mat4.translate(ladoB1Transform, ladoB1Transform, [-dimensiones.panelSolar.lado.largo / 2, dimensiones.panelSolar.lado.ancho / 2, 0]);
+    mat4.multiply(ladoB1Transform, ladoB1Transform, ladoB1TyN);
+
+    const nuevasTanBitLadoB1 = utils.calcularTanYBiTan(ladoB1)
+    ladoB1.tangentes = nuevasTanBitLadoB1.tangentes
+
+    const ladoB1_NEW_AUX = utils.nuevasCoordenadas(ladoB1TyN, ladoB1, false)
+    const ladoB1_NEW = utils.nuevasCoordenadas(ladoB1Transform, ladoB1, false)
+    ladoB1_NEW.normales = ladoB1_NEW_AUX.normales
+    ladoB1_NEW.tangentes = ladoB1_NEW_AUX.tangentes
+
+
+
+    //Nuevas coordenadas de texturas
+    //Tapa Superior 36/8 -> 9/4
+    const U_tapaS = utils.crearVectorEntre(4.5,0,dimensionesTriangulosPlano.filas + 1)
+    const V_tapaS = utils.crearVectorEntre(1,0,dimensionesTriangulosPlano.columnas + 1)
+
+    const UV_tapaS = []
+
+    for (let i = 0; i < U_tapaS.length; i++) {
+        for (let j = 0; j < V_tapaS.length; j++) {
+            UV_tapaS.push(V_tapaS[j],U_tapaS[i])
+        }
+    }
+    tapaSuperior_NEW.textureCoords = UV_tapaS
+
+    //Lado A
+    const U_LadoA = utils.crearVectorEntre(2,0,dimensionesTriangulosLadoA.filas + 1)
+    const V_LadoA = utils.crearVectorEntre(0.5,0,dimensionesTriangulosLadoA.columnas + 1)
+
+    const UV_LadoA = []
+
+    for (let i = 0; i < U_LadoA.length; i++) {
+        for (let j = 0; j < V_LadoA.length; j++) {
+            UV_LadoA.push(V_LadoA[j],U_LadoA[i])
+        }
+    }
+    ladoA_NEW.textureCoords = UV_LadoA
+
+    //Lado B
+    const U_LadoB = utils.crearVectorEntre(4.5 * 2,0,dimensionesTriangulosLadoB.filas + 1)
+    const V_LadoB = utils.crearVectorEntre(0.5,0,dimensionesTriangulosLadoB.columnas + 1)
+
+    const UV_LadoB = []
+
+    for (let i = 0; i < U_LadoB.length; i++) {
+        for (let j = 0; j < V_LadoB.length; j++) {
+            UV_LadoB.push(V_LadoB[j],U_LadoB[i])
+        }
+    }
+    ladoB_NEW.textureCoords = UV_LadoB
+
+
+    //Calculo de nuevos indices
+    const ladoA_NEW_indices = []
+    ladoA.indices.forEach(indice => {
+        ladoA_NEW_indices.push(indice + tapaSuperior.indices[tapaSuperior.indices.length - 1] + 1);
+    });
+
+    const ladoB_NEW_indices = []
+    ladoB.indices.forEach(indice => {
+        ladoB_NEW_indices.push(indice + ladoA_NEW_indices[ladoA_NEW_indices.length - 1] + 1);
+    });
+
+    const ladoA1_NEW_indices = []
+    ladoA1.indices.forEach(indice => {
+        ladoA1_NEW_indices.push(indice + ladoB_NEW_indices[ladoB_NEW_indices.length - 1] + 1);
+    });
+
+    const ladoB1_NEW_indices = []
+    ladoB1.indices.forEach(indice => {
+        ladoB1_NEW_indices.push(indice + ladoA1_NEW_indices[ladoA1_NEW_indices.length - 1] + 1);
+    });
+
+    const tapaInferior_NEW_indices = []
+    tapaInferior.indices.forEach(indice => {
+        tapaInferior_NEW_indices.push(indice + ladoB1_NEW_indices[ladoB1_NEW_indices.length - 1] + 1);
+    });
+
+    //Indices
+    panelSolar.indices.push(
+        ...tapaSuperior.indices, tapaSuperior.indices[tapaSuperior.indices.length - 1],ladoA_NEW_indices[0],
+        ...ladoA_NEW_indices, ladoA_NEW_indices[ladoA_NEW_indices.length - 1], ladoB_NEW_indices[0],
+        ...ladoB_NEW_indices, ladoB_NEW_indices[ladoB_NEW_indices.length - 1], ladoA1_NEW_indices[0],
+        ...ladoA1_NEW_indices, ladoA1_NEW_indices[ladoA1_NEW_indices.length-1], ladoB1_NEW_indices[0],
+        ...ladoB1_NEW_indices, ladoB1_NEW_indices[ladoB1_NEW_indices.length-1], tapaInferior_NEW_indices[0],
+        ...tapaInferior_NEW_indices,
+    )
+    //Vertices
+    panelSolar.vertices.push(
+        ...tapaSuperior_NEW.vertices,
+        ...ladoA_NEW.vertices,
+        ...ladoB_NEW.vertices,
+        ...ladoA1_NEW.vertices,
+        ...ladoB1_NEW.vertices,
+        ...tapaInferior_NEW.vertices,
+    );
+    //normales
+    panelSolar.normales.push(
+        ...tapaSuperior_NEW.normales,
+        ...ladoA_NEW.normales,
+        ...ladoB_NEW.normales,
+        ...ladoA1_NEW.normales,
+        ...ladoB1_NEW.normales,
+        ...tapaInferior_NEW.normales
+    );
+    //UV
+    panelSolar.textureCoords.push(
+        ...tapaSuperior_NEW.textureCoords,
+        ...ladoA_NEW.textureCoords,
+        ...ladoB_NEW.textureCoords,
+        ...ladoA_NEW.textureCoords,
+        ...ladoB_NEW.textureCoords,
+        ...tapaSuperior_NEW.textureCoords,
+    );
+    //tangentes
+    panelSolar.tangentes.push(
+        ...tapaSuperior_NEW.tangentes,
+        ...ladoA_NEW.tangentes,
+        ...ladoB_NEW.tangentes,
+        ...ladoA1_NEW.tangentes,
+        ...ladoB1_NEW.tangentes,
+        ...tapaInferior_NEW.tangentes
+
+    )
+
+    panelSolar.diffuse = colores.Textura.diffuse
+    panelSolar.ambient = colores.Textura.ambient
+    panelSolar.texture = "panelSolar";
+
+    scene.add(panelSolar)
+
 }
 
 function cargarEsferaEnElEscenario() {

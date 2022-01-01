@@ -22,7 +22,7 @@
 
         uniform bool uWireframe;
         uniform bool uLightSource;
-
+        uniform bool uIsTheCubeMapShader;
 
         in vec3 aVertexPosition;
         in vec3 aVertexNormal;
@@ -92,10 +92,24 @@
 
                 vTextureCoords = aVertexTextureCoords;
                 //para el cubemaps
-                // vVertexNormal = normalize((uNormalMatrix * vec4(-aVertexPosition, 1.0)).xyz);
-                vVertexNormal = normalize(aVertexPosition);
+                //mat4 normalViewMatrix = transpose(inverse(uViewMatrix)); //usar este para el mapa de reflectividad
+                //mat4 normalViewMatrix2 = mat4(mat3(normalViewMatrix)); //este esta en test, es parecido al anterior, remueve la traslacion de normalViewMatrix
+                //vVertexNormal = normalize((normalViewMatrix * vec4(aVertexPosition, 1.0)).xyz);
+
+                vVertexNormal = aVertexPosition; //se podria normalizar aVertexPosition
             }
-            gl_Position = uProjectionMatrix * uModelViewMatrix * vec4(aVertexPosition, 1.0);
+            if(uIsTheCubeMapShader){
+                //remove translation from modelViewMatrix, we only need rotation-> no importa cuanto me traslade, el cubemap siempre esta en el origen y lejano
+                //a todos los demas objetos
+                mat4 modelViewMatrix = mat4(mat3(uModelViewMatrix));
+                vec4 pos = uProjectionMatrix * modelViewMatrix * vec4(aVertexPosition, 1.0);
+                // el vertex depth value es la compente z_ = z/w, que se usa en el depth testing, se desea que el cubemap se renderize al final
+                // y solo los fragmentos que pasen el depth test luego que toda la escena este construida
+                gl_Position = pos.xyww;  // z_ =1.0 ->the maximum depth value.
+            }else{
+                gl_Position = uProjectionMatrix * uModelViewMatrix * vec4(aVertexPosition, 1.0);
+            }
+//            gl_Position = uProjectionMatrix * uModelViewMatrix * vec4(aVertexPosition, 1.0);
         }
     </script>
 
@@ -168,7 +182,7 @@
 
             if (uIsTheCubeMapShader){
                 //fragColor = texture(uSampler, vTextureCoords) * texture(uCubeSampler, vVertexNormal);
-                fragColor = texture(uCubeSampler, normalize(vVertexNormal));
+                fragColor = texture(uCubeSampler, vVertexNormal); //se podria normalizar vVertexNormal
             }
             else if (uWireframe || uLightSource) {
                 fragColor = vFinalColor;

@@ -18,7 +18,7 @@ export class Camera {
     this.steps = 0;
     this.azimuth = 0;
     this.elevation = 0;
-    this.fov = 45;
+    this.fov = 45 * Math.PI/180;
     this.minZ = 0.1;
     this.maxZ = 10000;
     /*

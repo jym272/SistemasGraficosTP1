@@ -168,6 +168,10 @@ export class Scene {
   // Removes an item from the scene with a given alias
   remove(alias) {
     const object = this.get(alias);
+    if(typeof object === 'undefined') {
+      console.warn(`Object with alias ${alias} does not exist`);
+      return;
+    }
     const index = this.objects.indexOf(object);
     this.objects.splice(index, 1);
   }

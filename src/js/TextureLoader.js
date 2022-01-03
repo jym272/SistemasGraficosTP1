@@ -27,7 +27,7 @@ import esferaNormal from '../images/texturas/esfera/normal.jpg';
 import nucleoSpecular from '../images/texturas/esfera/specular.jpg';
 import panelSolarDiffuse from '../images/texturas/panelSolar/diffuse.jpg';
 import panelSolarNormal from '../images/texturas/panelSolar/normal.jpg';
-// import panelSolarSpecular from '../images/texturas/panelSolar/specular.jpg';
+import panelSolarSpecular from '../images/texturas/panelSolar/specular.jpg';
 
 
 export class TextureLoader{
@@ -83,7 +83,7 @@ export class TextureLoader{
         this.textureMap['panelSolar'] = {
             diffuse: new Texture(gl, panelSolarDiffuse),
             normal: new Texture(gl, panelSolarNormal),
-            // specular: new Texture(gl, panelSolarSpecular)
+            specular: new Texture(gl, panelSolarSpecular)
         };
     }
 }

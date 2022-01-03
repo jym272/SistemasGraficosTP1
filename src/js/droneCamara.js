@@ -2,19 +2,25 @@
 
 import { vec3, mat4 } from 'gl-matrix';
 
-export function DroneCameraControl(initialPos, camera, spotLightDir){
+export function DroneCameraControl(initialPos, initialRotationMatrix, camera, spotLightDir){
 
     let DELTA_TRASLACION=0.3;        // velocidad de traslacion
     let DELTA_ROTACION=0.01;         // velocidad de rotacion
     let FACTOR_INERCIA=0.05;
     const keyIncrement = 2;
 
-    if (!initialPos) initialPos=[0,0,0];
-
-    let position=vec3.fromValues(initialPos[0],initialPos[1],initialPos[2]);
     let rotation=vec3.create();
+    let position;
+    if (initialPos)
+        position=vec3.fromValues(...initialPos);
+    else
+        position=vec3.create();
 
-    let rotationMatrix=mat4.create();
+    let rotationMatrix;
+    if(initialRotationMatrix)
+        rotationMatrix=mat4.fromValues(...initialRotationMatrix);
+    else
+        rotationMatrix=mat4.create();
 
     let worldMatrix=mat4.create();
 

@@ -25,6 +25,7 @@ import Sphere from './geometries/sphere.json5'
 import {CubeMap} from "./js/CubeMap";
 import {Floor} from "./js/Floor";
 import {Axis} from "./js/Axis";
+import {Mensajes} from "./js/Mensajes";
 
 
 let
@@ -38,23 +39,23 @@ let
     SpecularMap = true,//8.0,  //para ajustar posiciones de los objetos, se usa en el diseño
     dxAnillo = 0.01,
     lightsData = [],
-    lightLerpOuterCutOff = 1,//0.5
-    lightOuterCutOff = 13.5,//38
-    lightRadius = 100.0,
-    lightDecay = 1,
+    lightLerpOuterCutOff = 0.75,//0.5 penumbra
+    lightOuterCutOff = 22,
+    lightRadius = 80.0,
+    lightDecay = 0.65,
     spotLightDir,
     minLambertTerm = 0.1,
     cubeMapInScene = true,
     luzSolarEncendida = true,
-    luzSpotLightEncendida = true,
     lightAzimuth,
     textureLoader,
     cubeMap,
     lightElevation,
+    msg,
     scaleLights = [0.1, 0.26, 0.18],
     animationRate; //ms
 
-
+let random = Math.floor(Math.random() * 3);
 function configure() {
     // Configure `canvas`
     const canvas = utils.getCanvas('webgl-canvas');
@@ -121,21 +122,24 @@ function configure() {
 
     // Configure `camera` and `controls`
     camera = new Camera(Camera.ORBITING_TYPE, 70, 0);
-    camera.goTo([0, 0, 16], 0, -30, [0, 0, 0])
+
+
+    const naveInitParam = dimensiones.naveCamaraInitValues[random];
+    camera.goTo(naveInitParam.position, naveInitParam.azimuth, naveInitParam.elevation, [0, 0, 0]) //configura la pos inicial *-> es la de la nave
     lights = new LightsManager();
-    spotLightDir = new DireccionSpotLight(lights);
-    droneCam = new DroneCameraControl([0, 0, -10], camera, spotLightDir); //intialPos: [0,0,-10]
-    //Luz SpotLight
-
-
+    spotLightDir = new DireccionSpotLight(lights, lightOuterCutOff);
+    const capsulaInitParam = dimensiones.capsulaCamaraInitValues[random].droneCameraControl;
+    droneCam = new DroneCameraControl(capsulaInitParam.position, capsulaInitParam.rotationMatrix, camera, spotLightDir);
 
     // Configure `transforms`
     transforms = new Transforms(gl, program, camera, canvas);
 
     //Bloques del anillo
     bloque = new Bloque(dimensiones.anillo.radio, scene)
-    controles = new Controls(camera, canvas, droneCam, spotLightDir, bloque);
 
+    msg = new Mensajes();
+
+    controles = new Controls(camera, canvas, droneCam, spotLightDir, bloque, msg);
 
     const intervaloEnGrados = 30; //cada 15,30, 45, 60, 75, 90 grados del giro del anillo
     //Transformaciones afines
@@ -150,8 +154,8 @@ function cargarTexturasLuces() {
     //CubeMap
     cubeMap = new CubeMap(gl);
 
-    //cada vez que empieza el programa, elige aleatoriamente un set de texturas para el cubemap
-    let random = Math.floor(Math.random() * 3);
+
+    controles.setParamCamara(random);
     transformar.tierraLunaEnElMundo(random) //seteo transformaciones predeterminadas
     sunLightColor = utils.normalizeColor(colores.sunLightColor[random])
 
@@ -1205,8 +1209,8 @@ function cargarNucleo() {
         columnas: 50, //segmentosDeAltura
     };
     const cantidadTexturas = {
-        u: 4,
-        v: 5
+        u: 3,
+        v: 2
     }
     const nucleoPS = new Superficie(null, "nucleoPS");
 
@@ -1388,7 +1392,7 @@ function cargarNucleo() {
 
     nucleoPS.diffuse = colores.Textura.diffuse
     nucleoPS.ambient = colores.Textura.ambient
-    nucleoPS.texture = "UV"
+    nucleoPS.texture = "moduloVioleta"
 
     //clone object nucleoPS
     const nucleoAnillo = Object.assign({}, nucleoPS);
@@ -1699,7 +1703,7 @@ function draw() {
 
 
                  */
-
+ //cambiar las variables de globales a locales
                 targetNave = [0, 0, 0] //es el vector de posicion de la nave resultante de una futura matriz de transformacion
 
                 //los paneles solares son relativos a la nave, los configuro tambien ahora.
@@ -1762,6 +1766,8 @@ function draw() {
             gl.uniform3fv(program.uLightDirection, lights.getArray('direction'));
             gl.uniform3fv(program.uLightPosition, lights.getArray('position'));
             gl.uniform4fv(program.uLightDiffuse, lights.getArray('diffuse'));
+            //angulo de apertura de la spotLight en la escena
+            gl.uniform1f(program.uOuterCutOff, spotLightDir.anguloDeApertura);
 
 
 
@@ -1878,7 +1884,8 @@ function dibujarMallaDeObjeto(object) {
     gl.bindVertexArray(null);
     gl.bindBuffer(gl.ARRAY_BUFFER, null);
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
-
+    gl.bindTexture(gl.TEXTURE_2D, null);
+    gl.bindTexture(gl.TEXTURE_CUBE_MAP, null);
 }
 
 function animate() {
@@ -1905,13 +1912,14 @@ function render() {
     initialTime = new Date().getTime();
     setInterval(onFrame, animationRate / 1000);
 }
+configure();
+cargarTexturasLuces();
+load();
 
 function init() {
-    configure();
-    cargarTexturasLuces();
-    load();
     render();
     initControls();
+    msg["info"]("Estación Espacial");
 }
 
 window.onload = init;
@@ -1983,6 +1991,15 @@ function initControls() {
                 value: transformar.panelSolar.animar,
                 onChange: v => transformar.panelSolar.animar = v
             },
+            'Ajuste': {
+                value: transformar.ajuste,
+                min: -1, max: 1, step: 0.001,
+                onChange: v => transformar.ajuste = v
+            },
+
+
+
+
         },
             ...lightsData.reduce((controls, light) => {
                 const positionKeys = [
@@ -2023,9 +2040,11 @@ function initControls() {
                 onChange: v => gl.uniform1f(program.uLerpOuterCutOff, v)
             },
             'Angulo': {
-                value: lightOuterCutOff,
-                min: 0, max: 60, step: 0.1,
-                onChange: v => gl.uniform1f(program.uOuterCutOff, v)
+                value: spotLightDir.anguloDeApertura,
+                min: 0, max: spotLightDir.umbralAnguloDeApertura, step: 0.1,
+                onChange: v => {
+                    spotLightDir.anguloDeApertura  = v;
+                }
             },
             'LuzDistancia': {
                 value: lightRadius / 20.0,
@@ -2039,20 +2058,6 @@ function initControls() {
                     // const value = -0.4 * Math.log(1.004-v);
 
                     gl.uniform1f(program.uLightDecay, v)
-                }
-            },
-            'azimuth': {
-                value: lightAzimuth,
-                min: -0, max: 360, step: 1,
-                onChange: v => {
-                    spotLightDir.cambiarAzimuth(null, v)
-                }
-            },
-            'elevation': {
-                value: lightElevation,
-                min: -0, max: 360, step: 1,
-                onChange: v => {
-                    spotLightDir.cambiarElevation(null, v)
                 }
             },
             'Light Ambient Term': {

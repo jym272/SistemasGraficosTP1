@@ -98,11 +98,14 @@ export class TransformacionesAfin {
         this.panelSolar = {
             anguloRotacion: 310,
             animar: true,
+            posicion1 :[0, -dimensiones.panelSolar.tapa.largo / 2, 0],
+            posicion2 :[0, dimensiones.panelSolar.tuboSecundario.altura + dimensiones.panelSolar.tapa.largo / 2, 0],
         }
         this.posicionAnillo = 0;
         this.cargarParametrosBloques();
         this.cuboTransform = transforms.modelViewMatrix;
         this.cargarParametrosMundo();
+        this.ajuste = 0.0;
     }
 
     cargarParametrosMundo() {
@@ -222,7 +225,7 @@ export class TransformacionesAfin {
             camera.setRotationMatrix(rotationMatrix)
 
 
-/*
+console.log('position:', position[0].toFixed(2), position[1].toFixed(2), position[2].toFixed(2))
 
             console.log(`rotMatrix:
             ${rotationMatrix[0].toFixed(2)}, ${rotationMatrix[1].toFixed(2)}, ${rotationMatrix[2].toFixed(2)}, ${rotationMatrix[3].toFixed(2)}, '\n'
@@ -343,24 +346,28 @@ export class TransformacionesAfin {
             mat4.rotateZ(PanelesSolares.tuboSecundarioTransform, PanelesSolares.tuboSecundarioTransform, Math.PI / 2);
             PanelesSolares.distanciaRelativaConElTuboPrincipal += dimensiones.panelSolar.distanciaEntreTubosSecundarios;
 
-        } else if (this.alias === 'tapaSecundaria1') {
+        }
+/*
+        else if (this.alias === 'tapaSecundaria1') {
             const tapaSecundariaTransform = transforms.modelViewMatrix;
             mat4.translate(tapaSecundariaTransform, PanelesSolares.tuboSecundarioTransform, [0, dimensiones.panelSolar.tuboSecundario.altura, 0]);
         } else if (this.alias === 'tapaSecundaria2') {
             const tapaSecundariaTransform = transforms.modelViewMatrix;
             mat4.translate(tapaSecundariaTransform, PanelesSolares.tuboSecundarioTransform, [0, 0, 0]);
             mat4.rotateX(tapaSecundariaTransform, tapaSecundariaTransform, Math.PI);
-        } else if (this.alias === 'panelSolar1') {
-            PanelesSolares.panelTransform = transforms.modelViewMatrix;
-            mat4.translate(PanelesSolares.panelTransform, PanelesSolares.tuboSecundarioTransform, [0, -dimensiones.panelSolar.tapa.largo / 2, 0]);
-            mat4.rotateX(PanelesSolares.panelTransform, PanelesSolares.panelTransform, -Math.PI / 2);
-            mat4.rotateZ(PanelesSolares.panelTransform, PanelesSolares.panelTransform, 2 * Math.PI * this.panelSolar.anguloRotacion / 360);
+        }
 
-        } else if (this.alias === 'panelSolar2') {
+ */
+
+
+        else if (this.alias === 'panelSolar1' || this.alias === 'panelSolar2') {
             PanelesSolares.panelTransform = transforms.modelViewMatrix;
-            mat4.translate(PanelesSolares.panelTransform, PanelesSolares.tuboSecundarioTransform, [0, dimensiones.panelSolar.tuboSecundario.altura + dimensiones.panelSolar.tapa.largo / 2, 0]);
+            (this.alias ==='panelSolar1')?
+                mat4.translate(PanelesSolares.panelTransform, PanelesSolares.tuboSecundarioTransform, this.panelSolar.posicion1):
+                mat4.translate(PanelesSolares.panelTransform, PanelesSolares.tuboSecundarioTransform, this.panelSolar.posicion2);
             mat4.rotateX(PanelesSolares.panelTransform, PanelesSolares.panelTransform, -Math.PI / 2);
             mat4.rotateZ(PanelesSolares.panelTransform, PanelesSolares.panelTransform, 2 * Math.PI * this.panelSolar.anguloRotacion / 360);
+            mat4.translate(PanelesSolares.panelTransform, PanelesSolares.panelTransform, [0,-dimensiones.panelSolar.tuboSecundario.radio, 0]);
         }
     }
 
@@ -390,6 +397,8 @@ export class TransformacionesAfin {
 
             if (this.panelSolar.animar) //la animacion del panel solar esta vinculada con el anillo
                 animacion.empezarEn(anguloRad, this.panelSolar)
+            else
+                animacion.limpiarElPool()
 
         }else if (this.alias === 'torus') { //ANILLO
             Anillo.torusTransform = transforms.modelViewMatrix;
@@ -424,10 +433,12 @@ export class TransformacionesAfin {
     }
 
     luna() {
-        const {transforms, mundo} = this;
+        const {transforms, mundo, controles, camera} = this;
         if (this.alias === 'luna') {
             const lunaTransform = transforms.modelViewMatrix;
 
+
+            /*
             const x = dimensiones.ajusteLuna.coordenadas[0]
             const y = dimensiones.ajusteLuna.coordenadas[1]
             const z = dimensiones.ajusteLuna.coordenadas[2]
@@ -437,16 +448,32 @@ export class TransformacionesAfin {
             const rz = dimensiones.ajusteLuna.rotacion[2]
 
             const radio = dimensiones.ajusteLuna.radio
-            /*
+
+
+
+
             mat4.translate(lunaTransform, lunaTransform, [x, y, z]);
             mat4.scale(lunaTransform, lunaTransform, [radio, radio, radio]);
             mat4.rotateX(lunaTransform, lunaTransform, rx);
             mat4.rotateZ(lunaTransform, lunaTransform, ry);
             mat4.rotateY(lunaTransform, lunaTransform, rz);
 
+
              */
 
-            mat4.translate(lunaTransform, lunaTransform, [mundo.luna.x, mundo.luna.y, mundo.luna.z]);
+            const targetLuna = [mundo.luna.x, mundo.luna.y, mundo.luna.z] //mundo.luna.position
+            //actualizo el foco de la camara en los controles, evita un parpadeo
+            //cunado cambio las camaras, los target no se mueven pero en el futuro podrian hacerlo
+            controles.setFocusLuna(targetLuna)
+
+            if (controles.focusCamera.Luna === true) {
+                camera.setFocus(targetLuna)
+            }
+            const anguloRad = this.posicionAnillo / 20 // dividido para un factor de velocidad, el angulo se hace mas pequeño
+
+            mat4.translate(lunaTransform, lunaTransform, targetLuna);
+            mat4.rotate(lunaTransform, lunaTransform, anguloRad, [0, 1, 0]);
+
             // mat4.scale(lunaTransform, lunaTransform, [mundo.luna.radio, mundo.luna.radio, mundo.luna.radio]);
             mat4.rotateX(lunaTransform, lunaTransform, mundo.luna.rx);
             mat4.rotateZ(lunaTransform, lunaTransform, mundo.luna.ry);
@@ -457,11 +484,13 @@ export class TransformacionesAfin {
     }
 
     tierra() {
-        const {transforms, mundo} = this;
+        const {transforms, mundo, camera, controles} = this;
         if (this.alias === 'tierra') {
             const tierraTransform = transforms.modelViewMatrix;
 
 
+
+            /*
             const x = dimensiones.ajusteTierra.coordenadas[0]
             const y = dimensiones.ajusteTierra.coordenadas[1]
             const z = dimensiones.ajusteTierra.coordenadas[2]
@@ -471,7 +500,6 @@ export class TransformacionesAfin {
             const rz = dimensiones.ajusteTierra.rotacion[2]
 
             const radio = dimensiones.ajusteTierra.radio
-            /*
             mat4.translate(tierraTransform, tierraTransform, [x, y, z]);
             mat4.scale(tierraTransform, tierraTransform, [radio, radio, radio]);
             mat4.rotateX(tierraTransform, tierraTransform, rx);
@@ -480,7 +508,21 @@ export class TransformacionesAfin {
 
              */
 
-            mat4.translate(tierraTransform, tierraTransform, [mundo.tierra.x, mundo.tierra.y, mundo.tierra.z]);
+            const targetTierra = [mundo.tierra.x, mundo.tierra.y, mundo.tierra.z] //mundo.luna.position
+            //actualizo el foco de la camara en los controles, evita un parpadeo
+            //cunado cambio las camaras, los target no se mueven pero en el futuro podrian hacerlo
+            controles.setFocusTierra(targetTierra)
+
+            if (controles.focusCamera.Tierra === true) {
+                camera.setFocus(targetTierra)
+            }
+
+            const anguloRad = this.posicionAnillo / 50 // dividido para un factor de velocidad, el angulo se hace mas pequeño
+
+
+            mat4.translate(tierraTransform, tierraTransform, targetTierra);
+            mat4.rotate(tierraTransform, tierraTransform, anguloRad, [0, 1, 0]);
+
             // mat4.scale(tierraTransform, tierraTransform, [mundo.tierra.radio, mundo.tierra.radio, mundo.tierra.radio]);
             mat4.rotateX(tierraTransform, tierraTransform, mundo.tierra.rx);
             mat4.rotateZ(tierraTransform, tierraTransform, mundo.tierra.ry);

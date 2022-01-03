@@ -92,7 +92,7 @@
 
                 vTextureCoords = aVertexTextureCoords;
                 //para el cubemaps
-                //mat4 normalViewMatrix = transpose(inverse(uViewMatrix)); //usar este para el mapa de reflectividad
+                //mat4 normalViewMatrix = transpose(inverse(uViewMatrix)); //usar este para el mapa de reflectividad, realizar esta operacion en cpu para performance
                 //mat4 normalViewMatrix2 = mat4(mat3(normalViewMatrix)); //este esta en test, es parecido al anterior, remueve la traslacion de normalViewMatrix
                 //vVertexNormal = normalize((normalViewMatrix * vec4(aVertexPosition, 1.0)).xyz);
 

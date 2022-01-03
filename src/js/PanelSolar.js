@@ -25,11 +25,18 @@ const dimensionesTriangulosLadoB = {
 }
 
 const dimensionesTriangulosTubo = {
-    filas: 20,
-    columnas: 10,
+    filas: 30,
+    columnas: 15,
+}
+const dimensionesTriangulosTuboSecundario = {
+    filas: 10,
+    columnas: 8,
 }
 
-const dimensionesTriangulosTapa = dimensionesTriangulosTubo
+const dimensionesTriangulosTapa =  {
+    filas: 5,
+    columnas: dimensionesTriangulosTubo.columnas,
+}
 
 export class AnimacionPanelesSolares {
     constructor(velocidadMediaDeGiro = 300, intervaloEnGrados) {
@@ -386,6 +393,10 @@ export class PanelSolar {
         this.panelSolar1.alias = "panelSolar1";
         this.panelSolar2 = Object.assign({}, panelSolar);
         this.panelSolar2.alias = "panelSolar2";
+
+        this.tapaPrincipal = new Tapa('tapaPrincipal', dimensiones.panelSolar.tuboPrincipal.radio, dimensionesTriangulosTapa)
+        this.tapaPrincipal.diffuse = colores.Pastilla;
+        this.tuboSecundario = new Tubo('tuboSecundario', dimensiones.panelSolar.tuboSecundario, dimensionesTriangulosTuboSecundario)
     }
 
     nuevosPanelesEnEscena() {
@@ -402,8 +413,8 @@ export class PanelSolar {
 
         for (let i = 0; i < this.cantidadDeFilas; i++) {
             scene.remove('tuboSecundario');
-            scene.remove('tapaSecundaria1');
-            scene.remove('tapaSecundaria2');
+            // scene.remove('tapaSecundaria1');
+            // scene.remove('tapaSecundaria2');
             this.removerParPaneles()
         }
     }
@@ -428,14 +439,14 @@ export class PanelSolar {
 
     cargarPanelesSolares() {
         const {scene} = this
-
-        scene.add(new Tubo('tuboPrincipal', dimensiones.panelSolar.tuboPrincipal, dimensionesTriangulosTubo))
-        scene.add(new Tapa('tapaPrincipal', dimensiones.panelSolar.tuboPrincipal.radio, dimensionesTriangulosTapa))
-
+        //El tuboPrincipal cambia su longitud por lo que se necesita contruirlo nuevamente
+        this.tuboPrincipal = new Tubo('tuboPrincipal', dimensiones.panelSolar.tuboPrincipal, dimensionesTriangulosTubo)
+        scene.add(this.tuboPrincipal)
+        scene.add(this.tapaPrincipal)
         for (let i = 0; i < this.cantidadDeFilas; i++) {
-            scene.add(new Tubo('tuboSecundario', dimensiones.panelSolar.tuboSecundario, dimensionesTriangulosTubo))
-            scene.add(new Tapa('tapaSecundaria1', dimensiones.panelSolar.tuboSecundario.radio, dimensionesTriangulosTapa))
-            scene.add(new Tapa('tapaSecundaria2', dimensiones.panelSolar.tuboSecundario.radio, dimensionesTriangulosTapa))
+            scene.add(this.tuboSecundario)
+            // scene.add(new Tapa('tapaSecundaria1', dimensiones.panelSolar.tuboSecundario.radio, dimensionesTriangulosTapa))
+            // scene.add(new Tapa('tapaSecundaria2', dimensiones.panelSolar.tuboSecundario.radio, dimensionesTriangulosTapa))
             this.nuevosPanelesEnEscena()
         }
     }

@@ -113,6 +113,4 @@ export class CubeMap {
             gl.bindTexture(gl.TEXTURE_CUBE_MAP, null);
         };
     }
-
-
 }

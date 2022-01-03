@@ -3,19 +3,19 @@
 // Abstraction over common controls for user interaction with a 3D scene
 import {vec3} from "gl-matrix";
 import {Bloque} from "./Bloque";
-import {Mensajes} from "./Mensajes"; //para los mensajes flotantes
+import {dimensiones} from "./dimensiones";
 
 
 export class Controls {
 
-    constructor(camera, canvas, droneCam, spotLightDir, bloque) {
+    constructor(camera, canvas, droneCam, spotLightDir, bloque, msg) {
         this.bloque = bloque;
         this.camera = camera;
         this.canvas = canvas;
         this.droneCam = droneCam;
         this.spotLightDir = spotLightDir;
         this.picker = null;
-        this.msg = new Mensajes();
+        this.msg = msg;
 
         this.dragging = false;
         this.picking = false;
@@ -41,6 +41,8 @@ export class Controls {
             Nave: false,
             PanelesSolares: false,
             Capsula: false,
+            Luna: false,
+            Tierra: false
         }
         canvas.onmousedown = event => this.onMouseDown(event);
         canvas.onmouseup = event => this.onMouseUp(event);
@@ -76,7 +78,34 @@ export class Controls {
                 elevation: -30.8,
                 focus: vec3.create()
             },
+            Luna: { //estos valores son reemplazados inmediatamente de acuerdo al random
+                position: vec3.fromValues(0, 0, 20),
+                azimuth: 0.00,
+                elevation: -30.8,
+                focus: vec3.create()
+            },
+            Tierra: {
+                position: vec3.fromValues(0, 0, 20),
+                azimuth: 0.00,
+                elevation: -30.8,
+                focus: vec3.create()
+            },
         }
+
+    }
+
+    setParamCamara(random) { //tambien lo puedo hacer para los paneles solares, la capsula y la nave
+        const lunaInitParam = dimensiones.lunaCamaraInitValues[random];
+        this.Camara.Luna = Object.assign({}, lunaInitParam);
+
+        const tierraInitParam = dimensiones.tierraCamaraInitValues[random];
+        this.Camara.Tierra = Object.assign({}, tierraInitParam);
+
+        const panelesSolaresInitParam = dimensiones.panelesSolaresCamaraInitValues[random];
+        this.Camara.PanelesSolares = Object.assign({}, panelesSolaresInitParam);
+
+        const capsulaInitParam = dimensiones.capsulaCamaraInitValues[random];
+        this.Camara.Capsula = Object.assign({}, capsulaInitParam);
 
     }
 
@@ -88,7 +117,14 @@ export class Controls {
     setFocus(focusNave, focusPanelesSolares) {
         this.Camara.Nave.focus = focusNave  //el focus de la nave por ahora es el origen
         this.Camara.PanelesSolares.focus = focusPanelesSolares  //dimensionesTuboPrincipal.altura, el focus de los paneles solares
+    }
 
+    setFocusLuna(focusLuna) {
+        this.Camara.Luna.focus = focusLuna
+    }
+
+    setFocusTierra(focusTierra) {
+        this.Camara.Tierra.focus = focusTierra
     }
 
     // Sets picker for picking objects
@@ -156,7 +192,14 @@ export class Controls {
 
     onMouseWheel(event) {
         const delta = Math.max(-1, Math.min(1, (event.wheelDelta || -event.detail)));
-        this.dollyHelper(delta)
+        this.shift = event.shiftKey;
+
+        (this.shift && this.controlesCapsula)?
+            this.cambiarAnguloDeAperturaSpotLight(delta):
+            this.dollyHelper(delta);
+    }
+    cambiarAnguloDeAperturaSpotLight(delta) {
+        this.spotLightDir.cambiarAnguloDeApertura(delta);
     }
 
     onMouseMove(event) {
@@ -184,22 +227,24 @@ export class Controls {
                 ? this.rotarCapsula(dx, dy)//this.dolly(dy)
                 : this.rotate(dx, dy);
         }
-        if(this.button === 1 && this.controlesCapsula){ //middle button
+        if (this.button === 1 && this.controlesCapsula) { //middle button
             this.spotLight(dx, dy);
         }
 
     }
-    rotarCapsula(dx, dy){
+
+    rotarCapsula(dx, dy) {
         const {width, height} = this.canvas;
 
         const deltaX = 2 / width;
         const deltaY = -2 / height;
 
-        const DX = dx * deltaX ;
+        const DX = dx * deltaX;
         const DY = dy * deltaY;
 
         this.droneCam.updateWithMouse(DY, DX);
     }
+
     spotLight(dx, dy) {
         const {width, height} = this.canvas;
 
@@ -230,15 +275,33 @@ export class Controls {
         if (objetivo === "Nave") {
             this.focusCamera.PanelesSolares = false;
             this.focusCamera.Capsula = false;
+            this.focusCamera.Luna = false;
+            this.focusCamera.Tierra = false;
             this.focusCamera.Nave = true;
         } else if (objetivo === "PanelesSolares") {
             this.focusCamera.Nave = false;
             this.focusCamera.Capsula = false;
+            this.focusCamera.Luna = false;
+            this.focusCamera.Tierra = false;
             this.focusCamera.PanelesSolares = true;
         } else if (objetivo === "Capsula") {
             this.focusCamera.Nave = false;
             this.focusCamera.PanelesSolares = false;
+            this.focusCamera.Luna = false;
+            this.focusCamera.Tierra = false;
             this.focusCamera.Capsula = true;
+        } else if (objetivo === "Luna") {
+            this.focusCamera.Nave = false;
+            this.focusCamera.PanelesSolares = false;
+            this.focusCamera.Luna = true;
+            this.focusCamera.Tierra = false;
+            this.focusCamera.Capsula = false;
+        } else if (objetivo === "Tierra") {
+            this.focusCamera.Nave = false;
+            this.focusCamera.PanelesSolares = false;
+            this.focusCamera.Luna = false;
+            this.focusCamera.Tierra = true;
+            this.focusCamera.Capsula = false;
         }
     }
 
@@ -279,6 +342,20 @@ export class Controls {
                 this.camera.seguirALaCapsula() //activa la matrix de rotacion que se calcula con los controles de la capsula
                 this.msg["info"]("Capsula");
                 return this.configurarCamaraDe("Capsula");
+            case 52:
+                this.controlesCapsula = false;
+                this.droneCam.activarControlesTeclado(false);
+                this.camera.borrarTimeOutIdPool();
+                this.camera.dejarDeSeguirALaCapsula();
+                this.msg["info"]("Luna");
+                return this.configurarCamaraDe("Luna");
+            case 53:
+                this.controlesCapsula = false;
+                this.droneCam.activarControlesTeclado(false);
+                this.camera.borrarTimeOutIdPool();
+                this.camera.dejarDeSeguirALaCapsula();
+                this.msg["info"]("Tierra");
+                return this.configurarCamaraDe("Tierra");
             case 88: //z zoom out
                 return this.dollyHelper(-1);
             case 90: //x zoom in
@@ -286,7 +363,7 @@ export class Controls {
 
 
             case 70: //f
-                if(!this.controlesCapsula)
+                if (!this.controlesCapsula)
                     return;
                 this.spotLightTypeOptions++;
                 switch (this.spotLightTypeOptions) {
@@ -307,14 +384,14 @@ export class Controls {
                         break;
                 }
                 return;
-                case 66: //b
-                    this.bloqueTypeOptions--;
-                    if(this.bloqueTypeOptions < 0)
-                        this.bloqueTypeOptions = Bloque.TYPES.length - 1;
-                    const type = Bloque.TYPES[this.bloqueTypeOptions]
-                    this.msg["warning"](type);
-                    this.bloque.setType(type);
-                    return ;
+            case 66: //b
+                this.bloqueTypeOptions--;
+                if (this.bloqueTypeOptions < 0)
+                    this.bloqueTypeOptions = Bloque.TYPES.length - 1;
+                const type = Bloque.TYPES[this.bloqueTypeOptions]
+                this.msg["warning"](type);
+                this.bloque.setType(type);
+                return;
         }
     }
 

@@ -1,2 +1,0 @@
-(self.webpackChunk=self.webpackChunk||[]).push([[724],{724:(e,s,a)=>{"use strict";a.r(s),a.d(s,{default:()=>c});const c=a.p+"assets/images/e7fe87b13660fcada7a500ec1134d350.png"}}]);
-//# sourceMappingURL=bundle.495efae8e854425a6bb8.js.map

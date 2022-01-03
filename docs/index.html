@@ -14,7 +14,7 @@
 
         uniform bool uWireframe;
         uniform bool uLightSource;
-
+        uniform bool uIsTheCubeMapShader;
 
         in vec3 aVertexPosition;
         in vec3 aVertexNormal;
@@ -84,10 +84,24 @@
 
                 vTextureCoords = aVertexTextureCoords;
                 //para el cubemaps
-                // vVertexNormal = normalize((uNormalMatrix * vec4(-aVertexPosition, 1.0)).xyz);
-                vVertexNormal = normalize(aVertexPosition);
+                //mat4 normalViewMatrix = transpose(inverse(uViewMatrix)); //usar este para el mapa de reflectividad, realizar esta operacion en cpu para performance
+                //mat4 normalViewMatrix2 = mat4(mat3(normalViewMatrix)); //este esta en test, es parecido al anterior, remueve la traslacion de normalViewMatrix
+                //vVertexNormal = normalize((normalViewMatrix * vec4(aVertexPosition, 1.0)).xyz);
+
+                vVertexNormal = aVertexPosition; //se podria normalizar aVertexPosition
             }
-            gl_Position = uProjectionMatrix * uModelViewMatrix * vec4(aVertexPosition, 1.0);
+            if(uIsTheCubeMapShader){
+                //remove translation from modelViewMatrix, we only need rotation-> no importa cuanto me traslade, el cubemap siempre esta en el origen y lejano
+                //a todos los demas objetos
+                mat4 modelViewMatrix = mat4(mat3(uModelViewMatrix));
+                vec4 pos = uProjectionMatrix * modelViewMatrix * vec4(aVertexPosition, 1.0);
+                // el vertex depth value es la compente z_ = z/w, que se usa en el depth testing, se desea que el cubemap se renderize al final
+                // y solo los fragmentos que pasen el depth test luego que toda la escena este construida
+                gl_Position = pos.xyww;  // z_ =1.0 ->the maximum depth value.
+            }else{
+                gl_Position = uProjectionMatrix * uModelViewMatrix * vec4(aVertexPosition, 1.0);
+            }
+//            gl_Position = uProjectionMatrix * uModelViewMatrix * vec4(aVertexPosition, 1.0);
         }</script><script id="fragment-shader" type="x-shader/x-fragment">#version 300 es
         precision mediump float;
 
@@ -119,6 +133,7 @@
         uniform bool uActivateEarthTextures;
         uniform bool uActivateSpecularTexture;
         uniform bool uLuzSolarEncendida;
+        uniform bool uLuzSpotLightEncendida;
 
         in vec3 vNormal[numLights];
         in vec4 vLightRay[numLights];
@@ -155,7 +170,7 @@
 
             if (uIsTheCubeMapShader){
                 //fragColor = texture(uSampler, vTextureCoords) * texture(uCubeSampler, vVertexNormal);
-                fragColor = texture(uCubeSampler, normalize(vVertexNormal));
+                fragColor = texture(uCubeSampler, vVertexNormal); //se podria normalizar vVertexNormal
             }
             else if (uWireframe || uLightSource) {
                 fragColor = vFinalColor;
@@ -167,6 +182,12 @@
                 if (uLuzSolarEncendida != true){
                     iterador = 1;
                 }
+                int maxLights = numLights;
+                if(uLuzSpotLightEncendida != true){
+                    maxLights = 1;
+                }
+
+
                 if (uHasTexture){
                     //Si tengo un mapa especular se agregar el termino al calculo final
                     float specularTexture = 1.0;//vec4(1.0);
@@ -183,7 +204,7 @@
                     // Unpack tangent-space normal from texture
                     vec3 normal = normalize((texture(uNormalSampler, vTextureCoords).rgb - 0.5) * 2.0);
 
-                    for (int i = iterador; i < numLights; i++) {
+                    for (int i = iterador; i < maxLights; i++) {
                         // Normalize the light direction and determine how much light is hitting this point
                         vec3 lightDirection = normalize(vTangentLightDirection[i]);
 
@@ -219,7 +240,7 @@
                     // Ambient
                     vec4 Ia = uLightAmbient * uMaterialAmbient;
 
-                    for (int i = iterador; i < numLights; i++) {
+                    for (int i = iterador; i < maxLights; i++) {
 
                         vec3 L = normalize(vLightRay[i].xyz);
                         vec3 N = normalize(vNormal[i]);
@@ -250,4 +271,4 @@
                     fragColor = vec4(vec3(finalColor), 1.0);
                 }
             }
-        }</script><link rel="icon" href="favicon.png"><script defer="defer" src="bundle.4b389ef5fd54537bd091.js"></script><link href="main.css" rel="stylesheet"></head><body><canvas height="600" id="webgl-canvas" width="800">Your browser does not support the HTML5 canvas element.</canvas></body></html>
+        }</script><link rel="icon" href="favicon.png"><script defer="defer" src="bundle.275b90c9b87281aa21c5.js"></script><link href="main.css" rel="stylesheet"></head><body><canvas height="600" id="webgl-canvas" width="800">Your browser does not support the HTML5 canvas element.</canvas></body></html>

@@ -111,7 +111,8 @@ function configure() {
         'uLightDecay',
         'uMinLambertTerm',
         'uLuzSolarEncendida',
-        'uLuzSpotLightEncendida'
+        'uLuzSpotLightEncendida',
+        'uTime',
     ];
 
     // Load attributes and uniforms
@@ -1768,6 +1769,8 @@ function draw() {
             gl.uniform4fv(program.uLightDiffuse, lights.getArray('diffuse'));
             //angulo de apertura de la spotLight en la escena
             gl.uniform1f(program.uOuterCutOff, spotLightDir.anguloDeApertura);
+            gl.uniform1f(program.uTime, transformar.posicionAnillo);
+
 
 
 

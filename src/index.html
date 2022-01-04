@@ -138,6 +138,7 @@
         uniform float uLightRadius;
         uniform float uLightDecay;
         uniform float uMinLambertTerm;
+        uniform float uTime;
 
         uniform float uAjuste;
         uniform bool uHasTexture;
@@ -205,7 +206,11 @@
                     float specularTexture = 1.0;//vec4(1.0);
                     vec4 cloudEarthColor = vec4(0.0);
                     if (uActivateEarthTextures){
-                        cloudEarthColor = texture(uCloudSampler, vTextureCoords);
+                        vec2 auxUV = vTextureCoords;
+                        auxUV.s += 0.005*uTime;
+                        auxUV.t += 0.001*uTime;
+
+                        cloudEarthColor = texture(uCloudSampler, auxUV);
                     }
                     if (uActivateSpecularTexture){
                         specularTexture = texture(uSpecularSampler, vTextureCoords).r;

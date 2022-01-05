@@ -23,6 +23,9 @@
         uniform bool uWireframe;
         uniform bool uLightSource;
         uniform bool uIsTheCubeMapShader;
+        uniform bool uColaCapsula;
+        uniform float uTime;
+
 
         in vec3 aVertexPosition;
         in vec3 aVertexNormal;
@@ -40,6 +43,10 @@
         out vec3 vTangentLightDirection[numLights];
         out vec3 vTangentEyeDirection[numLights];
         out vec3 vVertexNormal;//para el cubemaps
+
+        const float PI=3.141592653;
+
+        uniform vec4 uColaVars;
 
         void main(void) {
             // If wireframe is enabled, set color to the diffuse property exclusing lights
@@ -96,20 +103,32 @@
                 //mat4 normalViewMatrix2 = mat4(mat3(normalViewMatrix)); //este esta en test, es parecido al anterior, remueve la traslacion de normalViewMatrix
                 //vVertexNormal = normalize((normalViewMatrix * vec4(aVertexPosition, 1.0)).xyz);
 
-                vVertexNormal = aVertexPosition; //se podria normalizar aVertexPosition
+                vVertexNormal = aVertexPosition;//se podria normalizar aVertexPosition
             }
-            if(uIsTheCubeMapShader){
+            if (uIsTheCubeMapShader){
                 //remove translation from modelViewMatrix, we only need rotation-> no importa cuanto me traslade, el cubemap siempre esta en el origen y lejano
                 //a todos los demas objetos
                 mat4 modelViewMatrix = mat4(mat3(uModelViewMatrix));
                 vec4 pos = uProjectionMatrix * modelViewMatrix * vec4(aVertexPosition, 1.0);
                 // el vertex depth value es la compente z_ = z/w, que se usa en el depth testing, se desea que el cubemap se renderize al final
                 // y solo los fragmentos que pasen el depth test luego que toda la escena este construida
-                gl_Position = pos.xyww;  // z_ =1.0 ->the maximum depth value.
-            }else{
+                gl_Position = pos.xyww;// z_ =1.0 ->the maximum depth value.
+            } else {
+
+                if (uColaCapsula){
+                    vec3 position = aVertexPosition*uColaVars[3]*19.0;
+                    position += aVertexNormal * (uColaVars[0] +
+                                                sin(vTextureCoords.x * uColaVars[1] + uColaVars[2])
+
+                    )*(uColaVars[3]-0.06);
+                    //                    position+=aVertexNormal*(0.0+sin(vTextureCoords.x*18.0*PI+uTime*20.0))*0.03;
+
+                    gl_Position = uProjectionMatrix * uModelViewMatrix * vec4(position, 1.0);
+
+                } else
                 gl_Position = uProjectionMatrix * uModelViewMatrix * vec4(aVertexPosition, 1.0);
             }
-//            gl_Position = uProjectionMatrix * uModelViewMatrix * vec4(aVertexPosition, 1.0);
+            //            gl_Position = uProjectionMatrix * uModelViewMatrix * vec4(aVertexPosition, 1.0);
         }
     </script>
 
@@ -138,7 +157,10 @@
         uniform float uLightRadius;
         uniform float uLightDecay;
         uniform float uMinLambertTerm;
+        uniform bool uColaCapsula;
         uniform float uTime;
+        uniform vec4 uColaVars;
+
 
         uniform float uAjuste;
         uniform bool uHasTexture;
@@ -183,7 +205,7 @@
 
             if (uIsTheCubeMapShader){
                 //fragColor = texture(uSampler, vTextureCoords) * texture(uCubeSampler, vVertexNormal);
-                fragColor = texture(uCubeSampler, vVertexNormal); //se podria normalizar vVertexNormal
+                fragColor = texture(uCubeSampler, vVertexNormal);//se podria normalizar vVertexNormal
             }
             else if (uWireframe || uLightSource) {
                 fragColor = vFinalColor;
@@ -196,7 +218,7 @@
                     iterador = 1;
                 }
                 int maxLights = numLights;
-                if(uLuzSpotLightEncendida != true){
+                if (uLuzSpotLightEncendida != true){
                     maxLights = 1;
                 }
 
@@ -276,7 +298,23 @@
                         float specular = pow(max(dot(R, E), 0.0), uShininess);
 
                         // Diffuse
-                        vec4 Id = uLightDiffuse[i] * uMaterialDiffuse * lambertTerm;
+                        vec4 materialDiffuse;
+                        if (uColaCapsula){
+                            vec3 color = uMaterialDiffuse.rgb;
+                            color +=  R*(-uColaVars[0] +
+                            sin(vTextureCoords.x * uColaVars[1] + uColaVars[2]*uTime)
+
+                            )*uColaVars[3]*20.0;
+                            //                    position+=aVertexNormal*(0.0+sin(vTextureCoords.x*18.0*PI+uTime*20.0))*0.03;
+
+                            materialDiffuse = vec4(color,1.0);
+
+                        }else
+                            materialDiffuse = uMaterialDiffuse;
+
+
+
+                        vec4 Id = uLightDiffuse[i] * materialDiffuse * lambertTerm;
 
                         // Specular
                         vec4 Is = uLightSpecular * uMaterialSpecular * specular;

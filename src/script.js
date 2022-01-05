@@ -113,6 +113,8 @@ function configure() {
         'uLuzSolarEncendida',
         'uLuzSpotLightEncendida',
         'uTime',
+        'uColaCapsula',
+        'uColaVars'
     ];
 
     // Load attributes and uniforms
@@ -568,7 +570,7 @@ function cargarCapsula() {
         [-0.66, 0.52],
         [-0.14, 0.18]
     );
-    const puntosBezierCola = curvaCola.extraerPuntos(divisionesForma)
+    const puntosBezierCola = curvaCola.extraerPuntos(divisionesForma + 25)
     const datosDeLaForma = {
         puntos: puntosBezierCola.puntos,
         normales: puntosBezierCola.puntosTangentes.map(p => {
@@ -1796,11 +1798,33 @@ function draw() {
         console.error(error);
     }
 }
-
+const Vars = [
+    0.9,
+    25.0,
+    23.6,
+    0.04
+];
 function dibujarMallaDeObjeto(object) {
     gl.uniform1i(program.uLuzSpotLightEncendida, spotLightDir.luzSpotLightEncendida);
+    // Reset
+    gl.uniform1i(program.uIsTheCubeMapShader, false);
+    gl.uniform1i(program.uHasTexture, false);
+    gl.uniform1i(program.uActivateEarthTextures, false);
+    gl.uniform1i(program.uActivateSpecularTexture, false);
+    gl.uniform1i(program.uColaCapsula, false);
 
 
+    if(object.alias === "capsulaCola1" || object.alias === "capsulaFuegoCola1"){
+        //modifico el vertex shader para que dibuje la capsula
+        const  zValue  = droneCam.getCamState().zVel;
+        Vars[2] =  zValue*400; //multiplico para desplazar a la onda, mayor nro, mayor ondas desplazadas
+        Vars[3] = zValue/5; //divido para amplitud de las ondas del fuego, mayor nro ->menor amplitud de onda
+
+        console.log(Vars[3].toFixed(4))
+
+        gl.uniform1i(program.uColaCapsula, true);
+        gl.uniform4fv(program.uColaVars, Vars);
+    }
     if (object.alias === "greenLight" || object.alias === "redLight") {
 
         (object.alias === "greenLight") ?
@@ -1826,11 +1850,7 @@ function dibujarMallaDeObjeto(object) {
     gl.bindVertexArray(object.vao);
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, object.ibo);
 
-    // Reset
-    gl.uniform1i(program.uIsTheCubeMapShader, false);
-    gl.uniform1i(program.uHasTexture, false);
-    gl.uniform1i(program.uActivateEarthTextures, false);
-    gl.uniform1i(program.uActivateSpecularTexture, false);
+
 
     //Textures
     if (object.alias === 'cubeMap') {
@@ -2049,6 +2069,39 @@ function initControls() {
                     spotLightDir.anguloDeApertura  = v;
                 }
             },
+        'Tests': {
+
+
+
+            'test0': {
+                value: Vars[0],
+                min: -10, max: 10, step: 0.1,
+                onChange: v => {
+                    Vars[0] = v;
+                }
+            },
+            'test1': {
+                value: Vars[1],
+                min: 0, max: 100, step: 0.001,
+                onChange: v => {
+                    Vars[1] = v;
+                }
+            },
+            'test2': {
+                value: Vars[2],
+                min: 0, max: 100, step: 0.1,
+                onChange: v => {
+                    Vars[2] = v;
+                }
+            },
+            'test3': {
+                value: Vars[3],
+                min: 0, max: 1, step: 0.01,
+                onChange: v => {
+                    Vars[3] = v;
+                }
+            },
+        },
             'LuzDistancia': {
                 value: lightRadius / 20.0,
                 min: 0.01, max: 10.0, step: 1.0,
@@ -2108,7 +2161,7 @@ function initControls() {
                 value: triangleStrip,
                 onChange: v => triangleStrip = v
             },
-        }, {closed: true}
+        }, {closed: false}
     );
 }
 

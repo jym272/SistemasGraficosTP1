@@ -197,6 +197,9 @@ export function DroneCameraControl(initialPos, initialRotationMatrix, camera, sp
 
 
     }
+    this.getCamState=function(){
+        return camState;
+    }
 
     this.update=function(){
 

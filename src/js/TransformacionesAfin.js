@@ -224,7 +224,7 @@ export class TransformacionesAfin {
             //por ahora todo bien, si se envia una copia se tendria que hacer una copia de la matriz en cada draw
             camera.setRotationMatrix(rotationMatrix)
 
-
+/*
 console.log('position:', position[0].toFixed(2), position[1].toFixed(2), position[2].toFixed(2))
 
             console.log(`rotMatrix:

@@ -14,6 +14,7 @@
         uniform mat4 uProjectionMatrix;
         uniform mat4 uNormalMatrix;
         uniform mat4 uViewMatrix;
+        uniform mat4 uNormalViewMatrix;
 
         uniform vec3 uLightPosition[numLights];
         uniform vec3 uLightDirection[numLights];
@@ -24,6 +25,10 @@
         uniform bool uLightSource;
         uniform bool uIsTheCubeMapShader;
         uniform bool uColaCapsula;
+        uniform bool uLuzSolarEncendida;
+        uniform bool uLuzSpotLightEncendida;
+        uniform bool uHasTexture;
+
         uniform float uTime;
 
 
@@ -33,7 +38,7 @@
         in vec4 aVertexColor;
         in vec2 aVertexTextureCoords;
 
-        out vec3 vNormal[numLights];
+        out vec3 vNormal;
         out vec4 vLightRay[numLights];//uso w para theta en la spot light
         out float vLightDistance[numLights];
 
@@ -49,86 +54,97 @@
         uniform vec4 uColaVars;
 
         void main(void) {
-            // If wireframe is enabled, set color to the diffuse property exclusing lights
-            if (uWireframe || uLightSource) {
-                vFinalColor = uMaterialDiffuse;
-            }
-            else {
-                vec4 vertex = uModelViewMatrix * vec4(aVertexPosition, 1.0);
-                //la normalMatrix es la transpuesta de la inversa de la matriz de modelo
-                vec3 normal = vec3(uNormalMatrix * vec4(aVertexNormal, 1.0));
-                vEyeVector = -vec3(vertex.xyz);
-
-                for (int i = 0; i < numLights; i++) {
-
-                    vNormal[i] = normal;
-                    vec4 positionLight = uViewMatrix * vec4(uLightPosition[i], 1.0);
-                    float theta = 1.0;
-
-                    if (i!=0){ //solo para spotlights
-                        vec3 directionLight = vec3(mat4(transpose(inverse(uViewMatrix))) * vec4(uLightDirection[i], 1.0));
-                        // theta to check if lighting is inside the spotlight cone
-                        theta = dot(normalize((vertex.xyz - positionLight.xyz)), directionLight);
-                    }
-                    // if theta is inside the cone, calculate the distance to the light
-                    vLightRay[i] = vec4(vertex.xyz - positionLight.xyz, theta);
-
-                    if (i!=0){ //solo para spotlights
-                        vLightDistance[i] = length(vLightRay[i].xyz);
-                    }
-                }
-
-                // NORMAL MAPPING
-                vec3 tangent = normalize(vec3(uNormalMatrix * vec4(aVertexTangent, 1.0)));
-
-                for (int i = 0; i < numLights; i++) {
-
-                    vec3 normal = normalize(vNormal[i]);
-                    tangent = normalize(tangent - dot(tangent, normal) * normal);
-                    vec3 bitangent = cross(normal, tangent);
-
-                    //tbn Matrix, already transposed
-                    mat3 tbnMatrix = mat3(
-                    tangent.x, bitangent.x, normal.x, //first column
-                    tangent.y, bitangent.y, normal.y, //second column
-                    tangent.z, bitangent.z, normal.z//third column
-                    );
-                    vTangentEyeDirection[i] = tbnMatrix * vEyeVector;// Eye direction, from camera position to vertex
-                    vTangentLightDirection[i] = tbnMatrix * (-vLightRay[i].xyz);// Light direction, from light position to vertex
-                }
-
-                vTextureCoords = aVertexTextureCoords;
-                //para el cubemaps
-                //mat4 normalViewMatrix = transpose(inverse(uViewMatrix)); //usar este para el mapa de reflectividad, realizar esta operacion en cpu para performance
-                //mat4 normalViewMatrix2 = mat4(mat3(normalViewMatrix)); //este esta en test, es parecido al anterior, remueve la traslacion de normalViewMatrix
-                //vVertexNormal = normalize((normalViewMatrix * vec4(aVertexPosition, 1.0)).xyz);
-
-                vVertexNormal = aVertexPosition;//se podria normalizar aVertexPosition
-            }
             if (uIsTheCubeMapShader){
+                vVertexNormal = aVertexPosition;//se podria normalizar aVertexPosition
                 //remove translation from modelViewMatrix, we only need rotation-> no importa cuanto me traslade, el cubemap siempre esta en el origen y lejano
                 //a todos los demas objetos
                 mat4 modelViewMatrix = mat4(mat3(uModelViewMatrix));
-                vec4 pos = uProjectionMatrix * modelViewMatrix * vec4(aVertexPosition, 1.0);
+                vec4 position = uProjectionMatrix * modelViewMatrix * vec4(aVertexPosition, 1.0);
                 // el vertex depth value es la compente z_ = z/w, que se usa en el depth testing, se desea que el cubemap se renderize al final
                 // y solo los fragmentos que pasen el depth test luego que toda la escena este construida
-                gl_Position = pos.xyww;// z_ =1.0 ->the maximum depth value.
+                gl_Position = position.xyww;// z_ =1.0 ->the maximum depth value.
             } else {
-
+                vTextureCoords = aVertexTextureCoords;
+                //la normalMatrix es la transpuesta de la inversa de la matriz de modelo
+                vec3 normal = normalize(vec3(uNormalMatrix * vec4(aVertexNormal, 1.0)));
+                vNormal = normal;
                 if (uColaCapsula){
-                    vec3 position = aVertexPosition*uColaVars[3]*19.0;
-                    position += aVertexNormal * (uColaVars[0] +
-                                                sin(vTextureCoords.x * uColaVars[1] + uColaVars[2])
 
-                    )*(uColaVars[3]-0.06);
+                    vec3 position = aVertexPosition * uColaVars[3] * 16.666666;// ->1/0.06 corregir aca para el retro, el fuego sale de la nave
+                    position += aVertexNormal * (uColaVars[0] +
+                    sin(vTextureCoords.x * uColaVars[1] + uColaVars[2])
+
+                    )*(uColaVars[3]-0.06)*1.0;//->0.06 es el valor maximo de zValue/5, el cual es uColaVars[3]
+                                          //por 2.0-> para que se vea mas grande, las olas mas grandes
                     //                    position+=aVertexNormal*(0.0+sin(vTextureCoords.x*18.0*PI+uTime*20.0))*0.03;
+
 
                     gl_Position = uProjectionMatrix * uModelViewMatrix * vec4(position, 1.0);
 
-                } else
-                gl_Position = uProjectionMatrix * uModelViewMatrix * vec4(aVertexPosition, 1.0);
+                } else {
+
+                    vec4 vertex = uModelViewMatrix * vec4(aVertexPosition, 1.0);
+                    // If wireframe is enabled, set color to the diffuse property exclusing lights
+                    if (uWireframe || uLightSource) {
+                        vFinalColor = uMaterialDiffuse;
+                    }
+                    else {
+                        int iterador = 0;
+                        if (uLuzSolarEncendida != true){
+                            iterador = 1;
+                        }
+                        int maxLights = numLights;
+                        if (uLuzSpotLightEncendida != true){
+                            maxLights = 1;
+                        }
+                        vEyeVector = -vec3(vertex.xyz);
+
+                        for (int i = iterador; i < maxLights; i++) {
+
+                            vec4 positionLight = uViewMatrix * vec4(uLightPosition[i], 1.0);
+                            float theta = 1.0;
+
+                            if (i!=0){ //solo para spotlights
+                                //mat4(transpose(inverse(uViewMatrix)))
+                                vec3 directionLight = vec3(uNormalViewMatrix * vec4(uLightDirection[i], 1.0));
+                                // theta to check if lighting is inside the spotlight cone
+                                theta = dot(normalize((vertex.xyz - positionLight.xyz)), directionLight);
+                            }
+                            // if theta is inside the cone, calculate the distance to the light
+                            vLightRay[i] = vec4(vertex.xyz - positionLight.xyz, theta);
+
+                            if (i!=0){ //solo para spotlights
+                                vLightDistance[i] = length(vLightRay[i].xyz);
+                            }
+                        }
+
+                        if (uHasTexture){
+                            // NORMAL MAPPING
+                            vec3 tangent = normalize(vec3(uNormalMatrix * vec4(aVertexTangent, 1.0)));
+                            tangent = normalize(tangent - dot(tangent, normal) * normal);
+                            vec3 bitangent = cross(normal, tangent);
+                            //tbn Matrix, already transposed
+                            mat3 tbnMatrix = mat3(
+                            tangent.x, bitangent.x, normal.x, //first column
+                            tangent.y, bitangent.y, normal.y, //second column
+                            tangent.z, bitangent.z, normal.z//third column
+                            );
+
+                            for (int i = iterador; i < maxLights; i++) {
+                                vTangentEyeDirection[i] = tbnMatrix * vEyeVector;// Eye direction, from camera position to vertex
+                                vTangentLightDirection[i] = tbnMatrix * (-vLightRay[i].xyz);// Light direction, from light position to vertex
+                            }
+                        }
+
+                        //para el cubemaps
+                        //mat4 normalViewMatrix = transpose(inverse(uViewMatrix)); //usar este para el mapa de reflectividad, realizar esta operacion en cpu para performance
+                        //mat4 normalViewMatrix2 = mat4(mat3(normalViewMatrix)); //este esta en test, es parecido al anterior, remueve la traslacion de normalViewMatrix
+                        //vVertexNormal = normalize((normalViewMatrix * vec4(aVertexPosition, 1.0)).xyz);
+
+                    }
+                    gl_Position = uProjectionMatrix * vertex;
+                }
             }
-            //            gl_Position = uProjectionMatrix * uModelViewMatrix * vec4(aVertexPosition, 1.0);
         }
     </script>
 
@@ -170,7 +186,7 @@
         uniform bool uLuzSolarEncendida;
         uniform bool uLuzSpotLightEncendida;
 
-        in vec3 vNormal[numLights];
+        in vec3 vNormal;
         in vec4 vLightRay[numLights];
         in float vLightDistance[numLights];
         in vec3 vEyeVector;
@@ -206,9 +222,20 @@
             if (uIsTheCubeMapShader){
                 //fragColor = texture(uSampler, vTextureCoords) * texture(uCubeSampler, vVertexNormal);
                 fragColor = texture(uCubeSampler, vVertexNormal);//se podria normalizar vVertexNormal
-            }
-            else if (uWireframe || uLightSource) {
-                fragColor = vFinalColor;
+            } else
+            if (uColaCapsula && !uWireframe){
+                vec3 color = uMaterialDiffuse.rgb;
+                color += vNormal*(-uColaVars[0] +
+                sin(-vTextureCoords.t * uColaVars[1] + uColaVars[2]*uTime)
+
+                )*uColaVars[3]*20.0;// 20.0 probar desde script-> modifica la intensidad del color en las crestas?
+                //                    position+=aVertexNormal*(0.0+sin(vTextureCoords.x*18.0*PI+uTime*20.0))*0.03;
+
+                fragColor = vec4(color, 1.0);
+            } else
+            if (uWireframe || uLightSource) {
+
+                fragColor = vFinalColor;//uMaterialDiffuse
             }
             else {
 
@@ -278,11 +305,11 @@
                     vec3 E = normalize(vEyeVector);
                     // Ambient
                     vec4 Ia = uLightAmbient * uMaterialAmbient;
+                    vec3 N = normalize(vNormal);
 
                     for (int i = iterador; i < maxLights; i++) {
 
                         vec3 L = normalize(vLightRay[i].xyz);
-                        vec3 N = normalize(vNormal[i]);
                         float lambertTerm = max(dot(N, -L), uMinLambertTerm);//0.0 en este caso las sombras pueden ser totalmente negras
 
                         float attenuation = 1.0f;
@@ -298,23 +325,7 @@
                         float specular = pow(max(dot(R, E), 0.0), uShininess);
 
                         // Diffuse
-                        vec4 materialDiffuse;
-                        if (uColaCapsula){
-                            vec3 color = uMaterialDiffuse.rgb;
-                            color +=  R*(-uColaVars[0] +
-                            sin(vTextureCoords.x * uColaVars[1] + uColaVars[2]*uTime)
-
-                            )*uColaVars[3]*20.0;
-                            //                    position+=aVertexNormal*(0.0+sin(vTextureCoords.x*18.0*PI+uTime*20.0))*0.03;
-
-                            materialDiffuse = vec4(color,1.0);
-
-                        }else
-                            materialDiffuse = uMaterialDiffuse;
-
-
-
-                        vec4 Id = uLightDiffuse[i] * materialDiffuse * lambertTerm;
+                        vec4 Id = uLightDiffuse[i] * uMaterialDiffuse * lambertTerm;
 
                         // Specular
                         vec4 Is = uLightSpecular * uMaterialSpecular * specular;

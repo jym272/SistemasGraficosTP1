@@ -202,18 +202,19 @@ export class TransformacionesAfin {
                 position,
             } = droneCam.update()
             //Se actualizar la posicion de las luces
-            const greenPosition = vec3.create();
-            const redPosition = vec3.create();
+            const greenLightPosition = vec3.create();
+            const redLightPosition = vec3.create();
 
-            vec3.set(greenPosition, ...Capsula.spotLights.green.position);
-            vec3.set(redPosition, ...Capsula.spotLights.red.position);
+            vec3.set(greenLightPosition, ...Capsula.spotLights.green.position);
+            vec3.set(redLightPosition, ...Capsula.spotLights.red.position);
+
             const worldDroneCamMatrix = droneCam.getMatrix()
-            vec3.transformMat4(redPosition, redPosition, worldDroneCamMatrix);
-            vec3.transformMat4(greenPosition, greenPosition, worldDroneCamMatrix);
+            vec3.transformMat4(redLightPosition, redLightPosition, worldDroneCamMatrix);
+            vec3.transformMat4(greenLightPosition, greenLightPosition, worldDroneCamMatrix);
 
             this.spotLight.cambiarDireccionCon(rotationMatrix)
-            this.lights.get('redLight').setPosition([redPosition[0], redPosition[1], redPosition[2]]);
-            this.lights.get('greenLight').setPosition([greenPosition[0], greenPosition[1], greenPosition[2]]);
+            this.lights.get('redLight').setPosition([redLightPosition[0], redLightPosition[1], redLightPosition[2]]);
+            this.lights.get('greenLight').setPosition([greenLightPosition[0], greenLightPosition[1], greenLightPosition[2]]);
 
             controles.setFocusCapsula(position) //evita un parpadeo en la camara
             if (controles.focusCamera.Capsula === true) {

@@ -114,7 +114,8 @@ function configure() {
         'uLuzSpotLightEncendida',
         'uTime',
         'uColaCapsula',
-        'uColaVars'
+        'uColaVars',
+        'uNormalViewMatrix'
     ];
 
     // Load attributes and uniforms
@@ -857,18 +858,72 @@ function cargarCapsula() {
     /*
      * Cola
      */
-    const capsulaCola = new SuperficieParametrica("capsulaCola", datosDeLaForma, datosDelRecorrido, dimensiones, true)
-    scene.add(capsulaCola, {
-        diffuse: arraycolores[1],
-    });
-    const capsulaFuegoCola = (new Cilindro('capsulaFuegoCola', {
+    const cola = new Superficie(null, "capsulaCola");
+    const capsulaCola = new SuperficieParametrica("capsulaCola_", datosDeLaForma, datosDelRecorrido, dimensiones, true)
+    const capsulaFuegoCola = (new Cilindro('capsulaFuegoCola_', {
         radioSuperior: 0.78,
         radioInferior: 0.05,
         altura: 0.5,
     }, dimensionesCapsulaCilindro, true))
-    scene.add(capsulaFuegoCola, {
-        diffuse: arraycolores[2],
+
+    //transformaciones
+    //capsulaFuegoCola
+    const capsulaFuegoColaNormales = mat4.identity(mat4.create());
+    mat4.rotate(capsulaFuegoColaNormales, capsulaFuegoColaNormales, -Math.PI / 2, [1, 0, 0]);
+
+    const capsulaFuegoColaTransf = mat4.identity(mat4.create());
+    mat4.translate(capsulaFuegoColaTransf, capsulaFuegoColaTransf, [0, 0, (Capsula.curvaColav0x + 0.5)]);
+    mat4.multiply(capsulaFuegoColaTransf, capsulaFuegoColaTransf, capsulaFuegoColaNormales);
+
+    const capsulaFuegoCola_NEW_AUX = utils.nuevasCoordenadas(capsulaFuegoColaNormales, capsulaFuegoCola, false)
+    const capsulaFuegoCola_NEW = utils.nuevasCoordenadas(capsulaFuegoColaTransf, capsulaFuegoCola, false)
+    capsulaFuegoCola_NEW.normales = capsulaFuegoCola_NEW_AUX.normales
+
+
+
+
+    const capsulaFuegoCola_NEW_indices = []
+    capsulaFuegoCola.indices.forEach(indice => {
+        capsulaFuegoCola_NEW_indices.push(indice + capsulaCola.indices[capsulaCola.indices.length - 1] + 1);
     });
+    cola.indices.push(
+        ...capsulaCola.indices, capsulaCola.indices[capsulaCola.indices.length - 1], capsulaFuegoCola_NEW_indices[0],
+        ...capsulaFuegoCola_NEW_indices,
+    )
+    //Vertices
+    cola.vertices.push(
+        ...capsulaCola.vertices,
+        ...capsulaFuegoCola_NEW.vertices,
+    );
+    //normales
+    cola.normales.push(
+        ...capsulaCola.normales,
+        ...capsulaFuegoCola_NEW.normales,
+
+    );
+    //UV
+    cola.textureCoords.push(
+        ...capsulaCola.textureCoords,
+        ...capsulaFuegoCola.textureCoords,
+    );
+
+    //Se carga a la escena
+    cola.diffuse = arraycolores[1]
+    scene.add(cola)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     Capsula.FuegoCuerpoAltura = 0.5;
     const capsulaFuegoCuerpo = (new Cilindro('capsulaFuegoCuerpo', {
         radioSuperior: 1.2,
@@ -1782,6 +1837,9 @@ function draw() {
             // ahora se popea para que vuelva a ser la matriz de vista.
             // const viewMatrix = camera.getViewTransform() //alternativamente-------->es la de vista
             gl.uniformMatrix4fv(program.uViewMatrix, false, transforms.modelViewMatrix);
+            transforms.calculateNormal();
+            gl.uniformMatrix4fv(program.uNormalViewMatrix, false, transforms.normalMatrix);
+
             // const posicionCamara = Array.from(camera.cameraPositionCoordDelMundo)
             // console.log(`posCamara: ${posicionCamara[0].toFixed(2)}, ${posicionCamara[1].toFixed(2)}, ${posicionCamara[2].toFixed(2)}`);
 
@@ -1814,13 +1872,15 @@ function dibujarMallaDeObjeto(object) {
     gl.uniform1i(program.uColaCapsula, false);
 
 
-    if(object.alias === "capsulaCola1" || object.alias === "capsulaFuegoCola1"){
+    if(object.alias === "capsulaCola"){
         //modifico el vertex shader para que dibuje la capsula
-        const  zValue  = droneCam.getCamState().zVel;
+        const camState = droneCam.getCamState()
+        console.log(camState)
+        const  zValue  = camState.zVel
         Vars[2] =  zValue*400; //multiplico para desplazar a la onda, mayor nro, mayor ondas desplazadas
         Vars[3] = zValue/5; //divido para amplitud de las ondas del fuego, mayor nro ->menor amplitud de onda
 
-        console.log(Vars[3].toFixed(4))
+        // console.log(Vars[3].toFixed(4))
 
         gl.uniform1i(program.uColaCapsula, true);
         gl.uniform4fv(program.uColaVars, Vars);

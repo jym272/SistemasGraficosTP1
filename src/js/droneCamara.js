@@ -244,7 +244,6 @@ export function DroneCameraControl(initialPos, initialRotationMatrix, camera, sp
 
     }
 
-
     this.getViewMatrix=function(){
 
         let m=mat4.clone(worldMatrix);
@@ -256,6 +255,9 @@ export function DroneCameraControl(initialPos, initialRotationMatrix, camera, sp
 
         return worldMatrix;
 
+    }
+    this.getDeltaTraslacion=function(){
+        return DELTA_TRASLACION;
     }
 
 }

@@ -52,6 +52,51 @@
         const float PI=3.141592653;
 
         uniform vec4 uColaVars;
+        uniform vec2 uAnguloColaCapsula;
+
+        vec3 girarY(float angulo, vec3 v){
+            float radianes = angulo*PI/180.0;
+            return vec3(v.x, v.y*cos(radianes)-v.z*sin(radianes), v.y*sin(radianes)+v.z*cos(radianes));
+        }
+
+        vec3 girarX(float angulo, vec3 v){
+            float radianes = angulo*PI/180.0;
+            return vec3(v.x*cos(radianes)+v.z*sin(radianes), v.y, v.x*-sin(radianes)+v.z*cos(radianes));
+        }
+        vec3 calculatePositionColaCapsula(){
+            vec3 position;
+            float amplitud;
+            float anguloX = uAnguloColaCapsula.x;//
+            float anguloY = uAnguloColaCapsula.y;
+            float fuegoAnimacion = uColaVars[3];
+            float frecuencia = uColaVars[2];
+            float picosValles = uColaVars[1];
+            float maxValue = 0.06;//->0.06 es el valor maximo de zValue/5, el cual es uColaVars[3] -> fuegoAnimacion
+
+            if (fuegoAnimacion > 0.0){
+                amplitud = 16.66666;// ->1/0.06 corregir aca para el retro, el fuego sale de la nave
+                position = aVertexPosition * fuegoAnimacion * amplitud;
+            }
+            else {
+                amplitud = 10.0;// amplitud de la cola en retro, fuego dentro de la nave, cambiar este valor si el fuego sale de la nave, menor valor.
+                position = aVertexPosition * fuegoAnimacion * amplitud;
+                position.z -= 0.19;// lo corro para afuera, sino esta muy metido en al nave
+            }
+            //cuando fuegoAnimacion llegue a max value -> 0.06 y la amp-> 1/0.06: el fuego llega su max posicion
+            //si fuegoAnimacion es 0.0 -> el fuego esta en su min posicion ->no hay fuego
+
+
+            //se ajusta el angulo de la cola
+            position = girarX(anguloX, position);
+            position = girarY(anguloY, position);
+            //0.9 -> modifica el proceso de construccion o destruccion de la cola, en inversa me da un agujero en el medio
+            position += aVertexNormal * (0.9 +
+                                        sin(aVertexTextureCoords.x * picosValles + frecuencia * fuegoAnimacion)
+                                        )*(fuegoAnimacion - maxValue);
+            return position;
+        }
+
+
 
         void main(void) {
             if (uIsTheCubeMapShader){
@@ -70,15 +115,7 @@
                 vNormal = normal;
                 if (uColaCapsula){
 
-                    vec3 position = aVertexPosition * uColaVars[3] * 16.666666;// ->1/0.06 corregir aca para el retro, el fuego sale de la nave
-                    position += aVertexNormal * (uColaVars[0] +
-                    sin(vTextureCoords.x * uColaVars[1] + uColaVars[2])
-
-                    )*(uColaVars[3]-0.06)*1.0;//->0.06 es el valor maximo de zValue/5, el cual es uColaVars[3]
-                                          //por 2.0-> para que se vea mas grande, las olas mas grandes
-                    //                    position+=aVertexNormal*(0.0+sin(vTextureCoords.x*18.0*PI+uTime*20.0))*0.03;
-
-
+                    vec3 position = calculatePositionColaCapsula();
                     gl_Position = uProjectionMatrix * uModelViewMatrix * vec4(position, 1.0);
 
                 } else {
@@ -177,8 +214,6 @@
         uniform float uTime;
         uniform vec4 uColaVars;
 
-
-        uniform float uAjuste;
         uniform bool uHasTexture;
         uniform bool uIsTheCubeMapShader;
         uniform bool uActivateEarthTextures;
@@ -217,6 +252,22 @@
             return vec2(attenuation, intensity);
         }
 
+        vec3 calcularColorFuegoCapsula(){
+            vec3 color = uMaterialDiffuse.rgb;
+
+            float fuegoAnimacion = uColaVars[3];
+            float frecuencia = uColaVars[2];
+            float picosValles = uColaVars[1];
+            float gradiente = uColaVars[0];
+
+            color += vNormal*(-gradiente +
+            sin(-vTextureCoords.t * picosValles + frecuencia *fuegoAnimacion * uTime)
+
+            )*fuegoAnimacion*22.0;// //22.0 ->definicion de color, mayor valor-> mas definido los colores entre si
+
+            return color;
+        }
+
         void main(void) {
 
             if (uIsTheCubeMapShader){
@@ -224,17 +275,10 @@
                 fragColor = texture(uCubeSampler, vVertexNormal);//se podria normalizar vVertexNormal
             } else
             if (uColaCapsula && !uWireframe){
-                vec3 color = uMaterialDiffuse.rgb;
-                color += vNormal*(-uColaVars[0] +
-                sin(-vTextureCoords.t * uColaVars[1] + uColaVars[2]*uTime)
-
-                )*uColaVars[3]*20.0;// 20.0 probar desde script-> modifica la intensidad del color en las crestas?
-                //                    position+=aVertexNormal*(0.0+sin(vTextureCoords.x*18.0*PI+uTime*20.0))*0.03;
-
+                vec3 color = calcularColorFuegoCapsula();
                 fragColor = vec4(color, 1.0);
             } else
             if (uWireframe || uLightSource) {
-
                 fragColor = vFinalColor;//uMaterialDiffuse
             }
             else {

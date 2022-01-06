@@ -23,8 +23,6 @@ import {TextureLoader} from "./js/TextureLoader.js";
 import CubeTexture from './geometries/cube-texture.json5'
 import Sphere from './geometries/sphere.json5'
 import {CubeMap} from "./js/CubeMap";
-import {Floor} from "./js/Floor";
-import {Axis} from "./js/Axis";
 import {Mensajes} from "./js/Mensajes";
 
 
@@ -56,6 +54,7 @@ let
     animationRate; //ms
 
 let random = Math.floor(Math.random() * 3);
+
 function configure() {
     // Configure `canvas`
     const canvas = utils.getCanvas('webgl-canvas');
@@ -94,7 +93,7 @@ function configure() {
         'uLightDirection',
         'uShininess',
         'uWireframe',
-        'uAjuste',
+        'uAnguloColaCapsula',
         'uHasTexture',
         'uIsTheCubeMapShader',
         'uSampler',
@@ -115,7 +114,7 @@ function configure() {
         'uTime',
         'uColaCapsula',
         'uColaVars',
-        'uNormalViewMatrix'
+        'uNormalViewMatrix',
     ];
 
     // Load attributes and uniforms
@@ -245,10 +244,9 @@ function cargarTexturasLuces() {
 
 // Se carga todos los objetos a la escena
 function load() {
-    // scene.add(new Floor(80, 1));
-    // scene.add(new Axis(82));
+    // scene.add(new Floor(800, 1));
+    // scene.add(new Axi3s(82));
     // cargarEscenario();
-
 
 
     //Estacion Espacial
@@ -564,6 +562,11 @@ function cargarCapsula() {
         filas: 1, //segmentosRadiales
         columnas: pasoDiscretoRecorrido, //segmentosDeAltura
     };
+    const dimensionesCapsulaFuegoCola = {
+        filas: 1, //segmentosRadiales
+        columnas: pasoDiscretoRecorrido, //segmentosDeAltura
+    };
+
     Capsula.curvaColav0x = -1.99
     const curvaCola = new CurvaCubicaDeBezier(
         [Capsula.curvaColav0x, 0.78],
@@ -572,20 +575,20 @@ function cargarCapsula() {
         [-0.14, 0.18]
     );
     const puntosBezierCola = curvaCola.extraerPuntos(divisionesForma + 25)
-    const datosDeLaForma = {
+    const datosDeLaFormaCola = {
         puntos: puntosBezierCola.puntos,
         normales: puntosBezierCola.puntosTangentes.map(p => {
             return [-p[1], p[0]]
         }),
     }
     //Creo una Superficie de Revolucion
-    const pasoDiscretoForma = datosDeLaForma.puntos.length - 1
-    const dimensiones = {
+    const pasoDiscretoFormaCola = datosDeLaFormaCola.puntos.length - 1
+    const dimensionesCola = {
         filas: pasoDiscretoRecorrido, //paso discreto del recorrido
-        columnas: pasoDiscretoForma, //divisiones de la forma
+        columnas: pasoDiscretoFormaCola, //divisiones de la forma
     }
     //Klave para la sup de Rev -> radio 0
-    const datosDelRecorrido = utils.crearRecorridoCircular(0, 1, dimensiones["filas"])
+    const datosDelRecorridoCuerpoCapsula = utils.crearRecorridoCircular(0, 1, pasoDiscretoRecorrido)
     /*
      * Cuerpo de la Capsula
      */
@@ -628,7 +631,7 @@ function cargarCapsula() {
         altura: 0.2,
     }, dimensionesCapsulaCilindro))
     //Cuerpo
-    const cuerpo = new SuperficieParametrica("capsulaCuerpoBezierA", datosDeLaFormaCuerpo, datosDelRecorrido, dimensionesCuerpo, true)
+    const cuerpo = new SuperficieParametrica("capsulaCuerpoBezierA", datosDeLaFormaCuerpo, datosDelRecorridoCuerpoCapsula, dimensionesCuerpo, true)
     //CilindroC
     const capsulaCuerpoCilindroC = (new Cilindro('capsulaCuerpoCilindroC', {
         radioSuperior: 0.7,
@@ -859,12 +862,12 @@ function cargarCapsula() {
      * Cola
      */
     const cola = new Superficie(null, "capsulaCola");
-    const capsulaCola = new SuperficieParametrica("capsulaCola_", datosDeLaForma, datosDelRecorrido, dimensiones, true)
+    const capsulaCola = new SuperficieParametrica("capsulaCola_", datosDeLaFormaCola, datosDelRecorridoCuerpoCapsula, dimensionesCola, true)
     const capsulaFuegoCola = (new Cilindro('capsulaFuegoCola_', {
         radioSuperior: 0.78,
         radioInferior: 0.05,
         altura: 0.5,
-    }, dimensionesCapsulaCilindro, true))
+    }, dimensionesCapsulaFuegoCola, true))
 
     //transformaciones
     //capsulaFuegoCola
@@ -878,8 +881,6 @@ function cargarCapsula() {
     const capsulaFuegoCola_NEW_AUX = utils.nuevasCoordenadas(capsulaFuegoColaNormales, capsulaFuegoCola, false)
     const capsulaFuegoCola_NEW = utils.nuevasCoordenadas(capsulaFuegoColaTransf, capsulaFuegoCola, false)
     capsulaFuegoCola_NEW.normales = capsulaFuegoCola_NEW_AUX.normales
-
-
 
 
     const capsulaFuegoCola_NEW_indices = []
@@ -899,29 +900,29 @@ function cargarCapsula() {
     cola.normales.push(
         ...capsulaCola.normales,
         ...capsulaFuegoCola_NEW.normales,
-
     );
     //UV
+
+    /*
+    const capsulaFuegoCola_NEW_UV = [];
+    const {columna1, columna2 } = utils.I2(capsulaFuegoCola.textureCoords, "noImprimir")
+
+    for (let i = 0; i < columna1.length; i++) {
+            capsulaFuegoCola_NEW_UV.push(1-columna2[i], columna1[i])
+    }
+    utils.I2(capsulaFuegoCola_NEW_UV, "imprimir")
+*/
+
+
     cola.textureCoords.push(
         ...capsulaCola.textureCoords,
+        // ...capsulaFuegoCola_NEW_UV,
         ...capsulaFuegoCola.textureCoords,
     );
 
     //Se carga a la escena
     cola.diffuse = arraycolores[1]
     scene.add(cola)
-
-
-
-
-
-
-
-
-
-
-
-
 
 
     Capsula.FuegoCuerpoAltura = 0.5;
@@ -1727,8 +1728,6 @@ function draw() {
             transformar.setAlias(object.alias)
 
 
-
-
             //cubmaps
             if (object.alias === "cubeMap") {
                 const cubeMapTransform = transforms.modelViewMatrix;
@@ -1761,7 +1760,7 @@ function draw() {
 
 
                  */
- //cambiar las variables de globales a locales
+                //cambiar las variables de globales a locales
                 targetNave = [0, 0, 0] //es el vector de posicion de la nave resultante de una futura matriz de transformacion
 
                 //los paneles solares son relativos a la nave, los configuro tambien ahora.
@@ -1829,8 +1828,6 @@ function draw() {
             gl.uniform1f(program.uTime, transformar.posicionAnillo);
 
 
-
-
             // Originalmente transforms.modelViewMatrix es la matriz de vista.
             // Se la pusheo para guardarla , ahora al multiplicar transforms.modelViewMatrix por las matrices de
             // transformacion de los objetos se convierte en la ModelViewMatrix y se la manda a la uniform correspondiente
@@ -1856,12 +1853,7 @@ function draw() {
         console.error(error);
     }
 }
-const Vars = [
-    0.9,
-    25.0,
-    23.6,
-    0.04
-];
+
 function dibujarMallaDeObjeto(object) {
     gl.uniform1i(program.uLuzSpotLightEncendida, spotLightDir.luzSpotLightEncendida);
     // Reset
@@ -1870,36 +1862,27 @@ function dibujarMallaDeObjeto(object) {
     gl.uniform1i(program.uActivateEarthTextures, false);
     gl.uniform1i(program.uActivateSpecularTexture, false);
     gl.uniform1i(program.uColaCapsula, false);
+    gl.uniform1i(program.uLightSource, false);
 
 
-    if(object.alias === "capsulaCola"){
-        //modifico el vertex shader para que dibuje la capsula
-        const camState = droneCam.getCamState()
-        console.log(camState)
-        const  zValue  = camState.zVel
-        Vars[2] =  zValue*400; //multiplico para desplazar a la onda, mayor nro, mayor ondas desplazadas
-        Vars[3] = zValue/5; //divido para amplitud de las ondas del fuego, mayor nro ->menor amplitud de onda
-
-        // console.log(Vars[3].toFixed(4))
+    if (object.alias === "capsulaCola") {
+        const anguloCola = transformar.fuegoColaCapsula()
 
         gl.uniform1i(program.uColaCapsula, true);
-        gl.uniform4fv(program.uColaVars, Vars);
+        gl.uniform4fv(program.uColaVars, transformar.fuegoColaVars);
+        gl.uniform2fv(program.uAnguloColaCapsula, [anguloCola.x, anguloCola.y]);
+
     }
     if (object.alias === "greenLight" || object.alias === "redLight") {
 
         (object.alias === "greenLight") ?
-        object.diffuse = lights.get('redLight').diffuse:null;
+            object.diffuse = lights.get('redLight').diffuse : null;
         (object.alias === "redLight") ?
-        object.diffuse = lights.get('greenLight').diffuse:null;
+            object.diffuse = lights.get('greenLight').diffuse : null;
 
-        (spotLightDir.luzSpotLightEncendida)?
-        gl.uniform1i(program.uLightSource, true):
-        gl.uniform1i(program.uLightSource, false);
-
+        (spotLightDir.luzSpotLightEncendida) ?
+            gl.uniform1i(program.uLightSource, true) : null;
     }
-    else
-        gl.uniform1i(program.uLightSource, false);
-
 
     gl.uniform4fv(program.uMaterialDiffuse, object.diffuse);
     gl.uniform4fv(program.uMaterialSpecular, object.specular);
@@ -1909,7 +1892,6 @@ function dibujarMallaDeObjeto(object) {
     // Bind
     gl.bindVertexArray(object.vao);
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, object.ibo);
-
 
 
     //Textures
@@ -1995,6 +1977,7 @@ function render() {
     initialTime = new Date().getTime();
     setInterval(onFrame, animationRate / 1000);
 }
+
 configure();
 cargarTexturasLuces();
 load();
@@ -2046,44 +2029,42 @@ function initControls() {
                         },
 
             */
-        'PanelesSolares': {
-            'Filas': {
-                value: panelSolar.cantidadDeFilas,
-                min: 1, max: 10, step: 1,
-                onChange: v => {
-                    panelSolar.removerPanelesSolares(); //remuevo todos los actuales
-                    panelSolar.cantidadDeFilas = v; //nuevo valor
-                    panelSolar.cambiarAlturaDelTuboPrincipal() //actualizo con el nuevo valor
-                    //evita el parpadeo de la camara
-                    // ahora uso un foco estatico
-                    //targetPanelesSolares =  [0,0,dimensiones.panelSolar.tuboPrincipal.altura]
-                    //if(controles.focusCamera.PanelesSolares === true){
-                    //    camera.setFocus(targetPanelesSolares)
-                    //}
+            'PanelesSolares': {
+                'Filas': {
+                    value: panelSolar.cantidadDeFilas,
+                    min: 1, max: 10, step: 1,
+                    onChange: v => {
+                        panelSolar.removerPanelesSolares(); //remuevo todos los actuales
+                        panelSolar.cantidadDeFilas = v; //nuevo valor
+                        panelSolar.cambiarAlturaDelTuboPrincipal() //actualizo con el nuevo valor
+                        //evita el parpadeo de la camara
+                        // ahora uso un foco estatico
+                        //targetPanelesSolares =  [0,0,dimensiones.panelSolar.tuboPrincipal.altura]
+                        //if(controles.focusCamera.PanelesSolares === true){
+                        //    camera.setFocus(targetPanelesSolares)
+                        //}
 
 
-                    panelSolar.cargarPanelesSolares();
-                }
+                        panelSolar.cargarPanelesSolares();
+                    }
+                },
+                'Angulo': {
+                    value: transformar.panelSolar.anguloRotacion,
+                    min: 0, max: 360, step: 1,
+                    onChange: v => transformar.panelSolar.anguloRotacion = v,
+                },
+                'AnimarPaneles': {
+                    value: transformar.panelSolar.animar,
+                    onChange: v => transformar.panelSolar.animar = v
+                },
+                'Ajuste': {
+                    value: transformar.ajuste,
+                    min: -1, max: 1, step: 0.001,
+                    onChange: v => transformar.ajuste = v
+                },
+
+
             },
-            'Angulo': {
-                value: transformar.panelSolar.anguloRotacion,
-                min: 0, max: 360, step: 1,
-                onChange: v => transformar.panelSolar.anguloRotacion = v,
-            },
-            'AnimarPaneles': {
-                value: transformar.panelSolar.animar,
-                onChange: v => transformar.panelSolar.animar = v
-            },
-            'Ajuste': {
-                value: transformar.ajuste,
-                min: -1, max: 1, step: 0.001,
-                onChange: v => transformar.ajuste = v
-            },
-
-
-
-
-        },
             ...lightsData.reduce((controls, light) => {
                 const positionKeys = [
                     `X - ${light.name}`,
@@ -2126,42 +2107,35 @@ function initControls() {
                 value: spotLightDir.anguloDeApertura,
                 min: 0, max: spotLightDir.umbralAnguloDeApertura, step: 0.1,
                 onChange: v => {
-                    spotLightDir.anguloDeApertura  = v;
+                    spotLightDir.anguloDeApertura = v;
                 }
             },
-        'Tests': {
+            'Fuego Cola': {
 
 
+                'Gradiente': {
+                    value: transformar.fuegoColaVars[0],
+                    min: -Math.PI, max: Math.PI, step: 0.01,
+                    onChange: v => {
+                        transformar.fuegoColaVars[0] = v;
+                    }
+                },
+                'Picos/Valles': {
+                    value: transformar.fuegoColaVars[1],
+                    min: 0, max: 100, step: 1.0,
+                    onChange: v => {
+                        transformar.fuegoColaVars[1] = v;
+                    }
+                },
+                'Frecuencia': {
+                    value: transformar.fuegoColaVars[2],
+                    min: 0, max: 5000, step: 0.1,
+                    onChange: v => {
+                        transformar.fuegoColaVars[2] = v;
+                    }
+                },
+            },
 
-            'test0': {
-                value: Vars[0],
-                min: -10, max: 10, step: 0.1,
-                onChange: v => {
-                    Vars[0] = v;
-                }
-            },
-            'test1': {
-                value: Vars[1],
-                min: 0, max: 100, step: 0.001,
-                onChange: v => {
-                    Vars[1] = v;
-                }
-            },
-            'test2': {
-                value: Vars[2],
-                min: 0, max: 100, step: 0.1,
-                onChange: v => {
-                    Vars[2] = v;
-                }
-            },
-            'test3': {
-                value: Vars[3],
-                min: 0, max: 1, step: 0.01,
-                onChange: v => {
-                    Vars[3] = v;
-                }
-            },
-        },
             'LuzDistancia': {
                 value: lightRadius / 20.0,
                 min: 0.01, max: 10.0, step: 1.0,
@@ -2211,7 +2185,6 @@ function initControls() {
                 // min: -2.0, max: 2.0, step: 0.1,
                 onChange: v => {
                     SpecularMap = v;
-                    // gl.uniform1f(program.uAjuste, v)
                 }
             },
             'Wireframe': () => {

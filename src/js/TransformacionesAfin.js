@@ -103,6 +103,12 @@ export class TransformacionesAfin {
         }
         this.posicionAnillo = 0;
         this.cargarParametrosBloques();
+        this.fuegoColaVars = [
+            0.9, //color gradiente
+            25.0, //cantidad de olas
+            2000.0,//frecuencia
+            0.04, //va a ser el valor entre 0 y delta de traslacion de la droneCam
+        ];
         this.cuboTransform = transforms.modelViewMatrix;
         this.cargarParametrosMundo();
         this.ajuste = 0.0;
@@ -536,6 +542,57 @@ console.log('position:', position[0].toFixed(2), position[1].toFixed(2), positio
 
     tierraLunaEnElMundo(random) {
         this.mundo = this.tierraLunaTransform[random]
+    }
+
+    fuegoColaCapsula(){
+        const {fuegoColaVars, droneCam} = this;
+
+        const camState = droneCam.getCamState()
+        const deltaTraslacion = droneCam.getDeltaTraslacion();
+        const anguloMaximo = 20;
+        const anguloCola ={
+            x: 0,
+            y: 0,
+        }
+
+        let Value; //de o a DELTA DE TRASLACION
+        const magnitudState = {
+            xVel: Math.abs(camState.xVel),
+            yVel: Math.abs(camState.yVel),
+            zVel: Math.abs(camState.zVel)
+        }
+        //si tambien se esta pulsando z, le resta angulo y lo centraliza, sino full angulo
+        anguloCola.x = -camState.xVel * (anguloMaximo - camState.zVel * anguloMaximo*0.5 / deltaTraslacion) / deltaTraslacion
+        anguloCola.y = camState.yVel * (anguloMaximo - camState.zVel * anguloMaximo*0.5 / deltaTraslacion) / deltaTraslacion
+
+        if (magnitudState.xVel > magnitudState.yVel && magnitudState.xVel > magnitudState.zVel) {
+            Value = Math.abs(camState.xVel);
+            if (camState.zVel.toFixed(2) < 0) {
+                Value += camState.zVel * 1.5 //factor de rapidez, si se mueve hacia la derecha y hacia atras, la velocidad es mayor para atras
+                if (Value < 0.01) //llega a un punto en el cual, los motores de retro arrancan
+                    Value = camState.zVel
+            }
+        } else if (magnitudState.yVel > magnitudState.xVel && magnitudState.yVel > magnitudState.zVel) {
+            Value = Math.abs(camState.yVel);
+            if (camState.zVel.toFixed(2) < 0) {
+                Value += camState.zVel * 1.5
+                if (Value < 0.01)
+                    Value = camState.zVel
+            }
+
+        } else if (magnitudState.zVel > magnitudState.xVel && magnitudState.zVel > magnitudState.yVel) {
+            Value = camState.zVel
+
+
+        }
+        if (Value < 0) { //voy de reversa
+            anguloCola.x = -anguloCola.x
+            anguloCola.y = -anguloCola.y
+        }
+        const amplitudFuego = 5; //cambia este valor, cambiar tambien la logica en el shader
+        fuegoColaVars[3] = Value / amplitudFuego; //divido para amplitud de las ondas del fuego, mayor nro ->menor amplitud de onda
+
+        return  anguloCola;
     }
 
 }

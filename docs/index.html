@@ -6,6 +6,7 @@
         uniform mat4 uProjectionMatrix;
         uniform mat4 uNormalMatrix;
         uniform mat4 uViewMatrix;
+        uniform mat4 uNormalViewMatrix;
 
         uniform vec3 uLightPosition[numLights];
         uniform vec3 uLightDirection[numLights];
@@ -15,6 +16,13 @@
         uniform bool uWireframe;
         uniform bool uLightSource;
         uniform bool uIsTheCubeMapShader;
+        uniform bool uColaCapsula;
+        uniform bool uLuzSolarEncendida;
+        uniform bool uLuzSpotLightEncendida;
+        uniform bool uHasTexture;
+
+        uniform float uTime;
+
 
         in vec3 aVertexPosition;
         in vec3 aVertexNormal;
@@ -22,7 +30,7 @@
         in vec4 aVertexColor;
         in vec2 aVertexTextureCoords;
 
-        out vec3 vNormal[numLights];
+        out vec3 vNormal;
         out vec4 vLightRay[numLights];//uso w para theta en la spot light
         out float vLightDistance[numLights];
 
@@ -33,75 +41,139 @@
         out vec3 vTangentEyeDirection[numLights];
         out vec3 vVertexNormal;//para el cubemaps
 
-        void main(void) {
-            // If wireframe is enabled, set color to the diffuse property exclusing lights
-            if (uWireframe || uLightSource) {
-                vFinalColor = uMaterialDiffuse;
+        const float PI=3.141592653;
+
+        uniform vec4 uColaVars;
+        uniform vec2 uAnguloColaCapsula;
+
+        vec3 girarY(float angulo, vec3 v){
+            float radianes = angulo*PI/180.0;
+            return vec3(v.x, v.y*cos(radianes)-v.z*sin(radianes), v.y*sin(radianes)+v.z*cos(radianes));
+        }
+
+        vec3 girarX(float angulo, vec3 v){
+            float radianes = angulo*PI/180.0;
+            return vec3(v.x*cos(radianes)+v.z*sin(radianes), v.y, v.x*-sin(radianes)+v.z*cos(radianes));
+        }
+        vec3 calculatePositionColaCapsula(){
+            vec3 position;
+            float amplitud;
+            float anguloX = uAnguloColaCapsula.x;//
+            float anguloY = uAnguloColaCapsula.y;
+            float fuegoAnimacion = uColaVars[3];
+            float frecuencia = uColaVars[2];
+            float picosValles = uColaVars[1];
+            float maxValue = 0.06;//->0.06 es el valor maximo de zValue/5, el cual es uColaVars[3] -> fuegoAnimacion
+
+            if (fuegoAnimacion > 0.0){
+                amplitud = 16.66666;// ->1/0.06 corregir aca para el retro, el fuego sale de la nave
+                position = aVertexPosition * fuegoAnimacion * amplitud;
             }
             else {
-                vec4 vertex = uModelViewMatrix * vec4(aVertexPosition, 1.0);
-                //la normalMatrix es la transpuesta de la inversa de la matriz de modelo
-                vec3 normal = vec3(uNormalMatrix * vec4(aVertexNormal, 1.0));
-                vEyeVector = -vec3(vertex.xyz);
-
-                for (int i = 0; i < numLights; i++) {
-
-                    vNormal[i] = normal;
-                    vec4 positionLight = uViewMatrix * vec4(uLightPosition[i], 1.0);
-                    float theta = 1.0;
-
-                    if (i!=0){ //solo para spotlights
-                        vec3 directionLight = vec3(mat4(transpose(inverse(uViewMatrix))) * vec4(uLightDirection[i], 1.0));
-                        // theta to check if lighting is inside the spotlight cone
-                        theta = dot(normalize((vertex.xyz - positionLight.xyz)), directionLight);
-                    }
-                    // if theta is inside the cone, calculate the distance to the light
-                    vLightRay[i] = vec4(vertex.xyz - positionLight.xyz, theta);
-
-                    if (i!=0){ //solo para spotlights
-                        vLightDistance[i] = length(vLightRay[i].xyz);
-                    }
-                }
-
-                // NORMAL MAPPING
-                vec3 tangent = normalize(vec3(uNormalMatrix * vec4(aVertexTangent, 1.0)));
-
-                for (int i = 0; i < numLights; i++) {
-
-                    vec3 normal = normalize(vNormal[i]);
-                    tangent = normalize(tangent - dot(tangent, normal) * normal);
-                    vec3 bitangent = cross(normal, tangent);
-
-                    //tbn Matrix, already transposed
-                    mat3 tbnMatrix = mat3(
-                    tangent.x, bitangent.x, normal.x, //first column
-                    tangent.y, bitangent.y, normal.y, //second column
-                    tangent.z, bitangent.z, normal.z//third column
-                    );
-                    vTangentEyeDirection[i] = tbnMatrix * vEyeVector;// Eye direction, from camera position to vertex
-                    vTangentLightDirection[i] = tbnMatrix * (-vLightRay[i].xyz);// Light direction, from light position to vertex
-                }
-
-                vTextureCoords = aVertexTextureCoords;
-                //para el cubemaps
-                //mat4 normalViewMatrix = transpose(inverse(uViewMatrix)); //usar este para el mapa de reflectividad, realizar esta operacion en cpu para performance
-                //mat4 normalViewMatrix2 = mat4(mat3(normalViewMatrix)); //este esta en test, es parecido al anterior, remueve la traslacion de normalViewMatrix
-                //vVertexNormal = normalize((normalViewMatrix * vec4(aVertexPosition, 1.0)).xyz);
-
-                vVertexNormal = aVertexPosition; //se podria normalizar aVertexPosition
+                amplitud = 10.0;// amplitud de la cola en retro, fuego dentro de la nave, cambiar este valor si el fuego sale de la nave, menor valor.
+                position = aVertexPosition * fuegoAnimacion * amplitud;
+                position.z -= 0.19;// lo corro para afuera, sino esta muy metido en al nave
             }
-            if(uIsTheCubeMapShader){
+            //cuando fuegoAnimacion llegue a max value -> 0.06 y la amp-> 1/0.06: el fuego llega su max posicion
+            //si fuegoAnimacion es 0.0 -> el fuego esta en su min posicion ->no hay fuego
+
+
+            //se ajusta el angulo de la cola
+            position = girarX(anguloX, position);
+            position = girarY(anguloY, position);
+            //0.9 -> modifica el proceso de construccion o destruccion de la cola, en inversa me da un agujero en el medio
+            position += aVertexNormal * (0.9 +
+                                        sin(aVertexTextureCoords.x * picosValles + frecuencia * fuegoAnimacion)
+                                        )*(fuegoAnimacion - maxValue);
+            return position;
+        }
+
+
+
+        void main(void) {
+            if (uIsTheCubeMapShader){
+                vVertexNormal = aVertexPosition;//se podria normalizar aVertexPosition
                 //remove translation from modelViewMatrix, we only need rotation-> no importa cuanto me traslade, el cubemap siempre esta en el origen y lejano
                 //a todos los demas objetos
                 mat4 modelViewMatrix = mat4(mat3(uModelViewMatrix));
-                vec4 pos = uProjectionMatrix * modelViewMatrix * vec4(aVertexPosition, 1.0);
+                vec4 position = uProjectionMatrix * modelViewMatrix * vec4(aVertexPosition, 1.0);
                 // el vertex depth value es la compente z_ = z/w, que se usa en el depth testing, se desea que el cubemap se renderize al final
                 // y solo los fragmentos que pasen el depth test luego que toda la escena este construida
-                gl_Position = pos.xyww;  // z_ =1.0 ->the maximum depth value.
-            }else{
-                gl_Position = uProjectionMatrix * uModelViewMatrix * vec4(aVertexPosition, 1.0);
+                gl_Position = position.xyww;// z_ =1.0 ->the maximum depth value.
+            } else {
+                vTextureCoords = aVertexTextureCoords;
+                //la normalMatrix es la transpuesta de la inversa de la matriz de modelo
+                vec3 normal = normalize(vec3(uNormalMatrix * vec4(aVertexNormal, 1.0)));
+                vNormal = normal;
+                if (uColaCapsula){
+
+                    vec3 position = calculatePositionColaCapsula();
+                    gl_Position = uProjectionMatrix * uModelViewMatrix * vec4(position, 1.0);
+
+                } else {
+
+                    vec4 vertex = uModelViewMatrix * vec4(aVertexPosition, 1.0);
+                    // If wireframe is enabled, set color to the diffuse property exclusing lights
+                    if (uWireframe || uLightSource) {
+                        vFinalColor = uMaterialDiffuse;
+                    }
+                    else {
+                        int iterador = 0;
+                        if (uLuzSolarEncendida != true){
+                            iterador = 1;
+                        }
+                        int maxLights = numLights;
+                        if (uLuzSpotLightEncendida != true){
+                            maxLights = 1;
+                        }
+                        vEyeVector = -vec3(vertex.xyz);
+
+                        for (int i = iterador; i < maxLights; i++) {
+
+                            vec4 positionLight = uViewMatrix * vec4(uLightPosition[i], 1.0);
+                            float theta = 1.0;
+
+                            if (i!=0){ //solo para spotlights
+                                //mat4(transpose(inverse(uViewMatrix)))
+                                vec3 directionLight = vec3(uNormalViewMatrix * vec4(uLightDirection[i], 1.0));
+                                // theta to check if lighting is inside the spotlight cone
+                                theta = dot(normalize((vertex.xyz - positionLight.xyz)), directionLight);
+                            }
+                            // if theta is inside the cone, calculate the distance to the light
+                            vLightRay[i] = vec4(vertex.xyz - positionLight.xyz, theta);
+
+                            if (i!=0){ //solo para spotlights
+                                vLightDistance[i] = length(vLightRay[i].xyz);
+                            }
+                        }
+
+                        if (uHasTexture){
+                            // NORMAL MAPPING
+                            vec3 tangent = normalize(vec3(uNormalMatrix * vec4(aVertexTangent, 1.0)));
+                            tangent = normalize(tangent - dot(tangent, normal) * normal);
+                            vec3 bitangent = cross(normal, tangent);
+                            //tbn Matrix, already transposed
+                            mat3 tbnMatrix = mat3(
+                            tangent.x, bitangent.x, normal.x, //first column
+                            tangent.y, bitangent.y, normal.y, //second column
+                            tangent.z, bitangent.z, normal.z//third column
+                            );
+
+                            for (int i = iterador; i < maxLights; i++) {
+                                vTangentEyeDirection[i] = tbnMatrix * vEyeVector;// Eye direction, from camera position to vertex
+                                vTangentLightDirection[i] = tbnMatrix * (-vLightRay[i].xyz);// Light direction, from light position to vertex
+                            }
+                        }
+
+                        //para el cubemaps
+                        //mat4 normalViewMatrix = transpose(inverse(uViewMatrix)); //usar este para el mapa de reflectividad, realizar esta operacion en cpu para performance
+                        //mat4 normalViewMatrix2 = mat4(mat3(normalViewMatrix)); //este esta en test, es parecido al anterior, remueve la traslacion de normalViewMatrix
+                        //vVertexNormal = normalize((normalViewMatrix * vec4(aVertexPosition, 1.0)).xyz);
+
+                    }
+                    gl_Position = uProjectionMatrix * vertex;
+                }
             }
-//            gl_Position = uProjectionMatrix * uModelViewMatrix * vec4(aVertexPosition, 1.0);
         }</script><script id="fragment-shader" type="x-shader/x-fragment">#version 300 es
         precision mediump float;
 
@@ -126,8 +198,10 @@
         uniform float uLightRadius;
         uniform float uLightDecay;
         uniform float uMinLambertTerm;
+        uniform bool uColaCapsula;
+        uniform float uTime;
+        uniform vec4 uColaVars;
 
-        uniform float uAjuste;
         uniform bool uHasTexture;
         uniform bool uIsTheCubeMapShader;
         uniform bool uActivateEarthTextures;
@@ -135,7 +209,7 @@
         uniform bool uLuzSolarEncendida;
         uniform bool uLuzSpotLightEncendida;
 
-        in vec3 vNormal[numLights];
+        in vec3 vNormal;
         in vec4 vLightRay[numLights];
         in float vLightDistance[numLights];
         in vec3 vEyeVector;
@@ -166,14 +240,34 @@
             return vec2(attenuation, intensity);
         }
 
+        vec3 calcularColorFuegoCapsula(){
+            vec3 color = uMaterialDiffuse.rgb;
+
+            float fuegoAnimacion = uColaVars[3];
+            float frecuencia = uColaVars[2];
+            float picosValles = uColaVars[1];
+            float gradiente = uColaVars[0];
+
+            color += vNormal*(-gradiente +
+            sin(-vTextureCoords.t * picosValles + frecuencia *fuegoAnimacion * uTime)
+
+            )*fuegoAnimacion*22.0;// //22.0 ->definicion de color, mayor valor-> mas definido los colores entre si
+
+            return color;
+        }
+
         void main(void) {
 
             if (uIsTheCubeMapShader){
                 //fragColor = texture(uSampler, vTextureCoords) * texture(uCubeSampler, vVertexNormal);
-                fragColor = texture(uCubeSampler, vVertexNormal); //se podria normalizar vVertexNormal
-            }
-            else if (uWireframe || uLightSource) {
-                fragColor = vFinalColor;
+                fragColor = texture(uCubeSampler, vVertexNormal);//se podria normalizar vVertexNormal
+            } else
+            if (uColaCapsula && !uWireframe){
+                vec3 color = calcularColorFuegoCapsula();
+                fragColor = vec4(color, 1.0);
+            } else
+            if (uWireframe || uLightSource) {
+                fragColor = vFinalColor;//uMaterialDiffuse
             }
             else {
 
@@ -183,7 +277,7 @@
                     iterador = 1;
                 }
                 int maxLights = numLights;
-                if(uLuzSpotLightEncendida != true){
+                if (uLuzSpotLightEncendida != true){
                     maxLights = 1;
                 }
 
@@ -193,7 +287,11 @@
                     float specularTexture = 1.0;//vec4(1.0);
                     vec4 cloudEarthColor = vec4(0.0);
                     if (uActivateEarthTextures){
-                        cloudEarthColor = texture(uCloudSampler, vTextureCoords);
+                        vec2 auxUV = vTextureCoords;
+                        auxUV.s += 0.005*uTime;
+                        auxUV.t += 0.001*uTime;
+
+                        cloudEarthColor = texture(uCloudSampler, auxUV);
                     }
                     if (uActivateSpecularTexture){
                         specularTexture = texture(uSpecularSampler, vTextureCoords).r;
@@ -239,11 +337,11 @@
                     vec3 E = normalize(vEyeVector);
                     // Ambient
                     vec4 Ia = uLightAmbient * uMaterialAmbient;
+                    vec3 N = normalize(vNormal);
 
                     for (int i = iterador; i < maxLights; i++) {
 
                         vec3 L = normalize(vLightRay[i].xyz);
-                        vec3 N = normalize(vNormal[i]);
                         float lambertTerm = max(dot(N, -L), uMinLambertTerm);//0.0 en este caso las sombras pueden ser totalmente negras
 
                         float attenuation = 1.0f;
@@ -271,4 +369,4 @@
                     fragColor = vec4(vec3(finalColor), 1.0);
                 }
             }
-        }</script><link rel="icon" href="favicon.png"><script defer="defer" src="bundle.275b90c9b87281aa21c5.js"></script><link href="main.css" rel="stylesheet"></head><body><canvas height="600" id="webgl-canvas" width="800">Your browser does not support the HTML5 canvas element.</canvas></body></html>
+        }</script><link rel="icon" href="favicon.png"><script defer="defer" src="bundle.d8a57d181b996cc1d9a6.js"></script><link href="main.css" rel="stylesheet"></head><body><canvas height="600" id="webgl-canvas" width="800">Your browser does not support the HTML5 canvas element.</canvas></body></html>

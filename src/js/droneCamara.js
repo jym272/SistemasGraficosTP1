@@ -46,67 +46,61 @@ export function DroneCameraControl(initialPos, initialRotationMatrix, camera, sp
 
     this.listener = function(e){
 
-        /*
-            ASDWQE para rotar en 3 ejes en el espacio del objeto
-
-            Flechas + PgUp/PgDw o HJKUOL para trasladar en el espacio del objeto
-
-        */
-        switch ( e.key ) {
-            case "ArrowUp":  case "w": // up
+        switch (e.keyCode){
+            case 38:  case 87: // up
                 // camera.colocarPaulatinamenteLaCamaraEn(-30,0)
                 camState.zVelTarget=DELTA_TRASLACION; break;
-            case "ArrowDown": case "s": // down
+            case 40: case 83: // down
                 // camera.colocarPaulatinamenteLaCamaraEn(-30,180)
                 camState.zVelTarget=-DELTA_TRASLACION; break;
 
-            case "ArrowLeft": case "a": // left
+            case 37: case 65: // left
                 // camera.colocarPaulatinamenteLaCamaraEn(-30,90)
                 camState.xVelTarget=DELTA_TRASLACION;break;
-            case "ArrowRight": case "d": // right
+            case 39: case 68: // right
                 // camera.colocarPaulatinamenteLaCamaraEn(-30,-90)
                 camState.xVelTarget=-DELTA_TRASLACION; break;
 
-            case "q": case "PageUp": case " ":// PgUp
+            case 81: case 32: case 33:// PgUp
                 // camera.colocarPaulatinamenteLaCamaraEn(90,0)
                 camState.yVelTarget=DELTA_TRASLACION;break;
-            case "e": case "PageDown":// PgDw
-                // camera.colocarPaulatinamenteLaCamaraEn(-90,0)
+            case 69: case 34:// PgDw
+                                      // camera.colocarPaulatinamenteLaCamaraEn(-90,0)
                 camState.yVelTarget=-DELTA_TRASLACION; break;
 
 
-            case "k":
+            case 75:
                 camState.xRotVelTarget=DELTA_ROTACION;break;
-            case "i":
+            case 73:
                 camState.xRotVelTarget=-DELTA_ROTACION;break;
 
 
-            case "j":
+            case 74:
                 camState.yRotVelTarget=DELTA_ROTACION; break;
-            case "l":
+            case 76:
                 camState.yRotVelTarget=-DELTA_ROTACION; break;
 
 
-            case "u":
+            case 85:
                 camState.zRotVelTarget=DELTA_ROTACION;break;
-            case "o":
+            case 79:
                 camState.zRotVelTarget=-DELTA_ROTACION;break;
 
 
-            case "r":
+            case 82: //r initial position
                 rotation=vec3.create();
                 position=vec3.fromValues(initialPos[0],initialPos[1],initialPos[2]);
                 camState=Object.assign({},camInitialState);
-                rotationMatrix=mat4.create();
+                rotationMatrix=mat4.fromValues(...initialRotationMatrix);
                 spotLightDir.setOriginalDirectionVector();
                 break;
 
-            case "t":
+            case 84: //t
                 rotation=vec3.create();
                 camState=Object.assign({},camInitialState);
                 break;
-        }
-        switch (e.keyCode){
+
+
             case 102:
                 return spotLightDir.cambiarAzimuth(keyIncrement);
             case 100:
@@ -145,35 +139,31 @@ export function DroneCameraControl(initialPos, initialRotationMatrix, camera, sp
 
             document.addEventListener("keyup",function(e){
 
-                switch ( e.key )
+                switch ( e.keyCode )
                 {
-                    case "ArrowUp":  case "w": case "ArrowDown": case "s":
+                    case 40:  case 87: case 38: case 83:
                     camState.zVelTarget=0; break;
 
-                    case "ArrowLeft": case "a": case "ArrowRight": case "d":
+                    case 37: case 65: case 39: case 68:
                     camState.xVelTarget=0; break;
 
-                    case "q": case "e":
-                    case "PageDown": case "PageUp": case " ":
+                    case 81: case 69:
+                    case 34: case 33: case 32:
                     camState.yVelTarget=0;break;
-
-
-                    case "j":
+                    case 74:
                         camState.yRotVelTarget=0; break;
-                    case "l":
+                    case 76:
                         camState.yRotVelTarget=0; break;
 
-                    case "i":
+                    case 73:
                         camState.xRotVelTarget=0;break;
-                    case "k":
+                    case 75:
                         camState.xRotVelTarget=0;break;
 
-                    case "u":
+                    case 85:
                         camState.zRotVelTarget=0;break;
-                    case "o":
+                    case 79:
                         camState.zRotVelTarget=0;break;
-
-
                 }
 
             })

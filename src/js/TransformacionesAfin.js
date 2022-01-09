@@ -111,7 +111,6 @@ export class TransformacionesAfin {
         ];
         this.cuboTransform = transforms.modelViewMatrix;
         this.cargarParametrosMundo();
-        this.ajuste = 0.0;
     }
 
     cargarParametrosMundo() {

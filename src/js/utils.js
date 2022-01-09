@@ -124,6 +124,7 @@ export const utils = {
 
             controller.onChange(v => onChange(v, state))
         });
+        return gui;
     },
     restarVectores(pt1, pt2) {
 

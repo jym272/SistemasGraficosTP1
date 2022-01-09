@@ -16,6 +16,8 @@ export class Controls {
         this.spotLightDir = spotLightDir;
         this.picker = null;
         this.msg = msg;
+        this.isGuiActive = false;
+        this.mostrarControlesCapsula = false;
 
         this.dragging = false;
         this.picking = false;
@@ -194,10 +196,11 @@ export class Controls {
         const delta = Math.max(-1, Math.min(1, (event.wheelDelta || -event.detail)));
         this.shift = event.shiftKey;
 
-        (this.shift && this.controlesCapsula)?
-            this.cambiarAnguloDeAperturaSpotLight(delta):
+        (this.shift && this.controlesCapsula) ?
+            this.cambiarAnguloDeAperturaSpotLight(delta) :
             this.dollyHelper(delta);
     }
+
     cambiarAnguloDeAperturaSpotLight(delta) {
         this.spotLightDir.cambiarAnguloDeApertura(delta);
     }
@@ -327,6 +330,7 @@ export class Controls {
                 this.droneCam.activarControlesTeclado(false);
                 this.camera.borrarTimeOutIdPool(); //cualquier llamdo vigente que quede cuando la camara de la capsula se mueva se borra
                 this.camera.dejarDeSeguirALaCapsula();
+                this.msg.clear();
                 this.msg["info"]("Estación Espacial");
                 return this.configurarCamaraDe("Nave");
             case 50:
@@ -334,12 +338,18 @@ export class Controls {
                 this.droneCam.activarControlesTeclado(false);
                 this.camera.borrarTimeOutIdPool();
                 this.camera.dejarDeSeguirALaCapsula();
+                this.msg.clear();
                 this.msg["info"]("Paneles Solares");
                 return this.configurarCamaraDe("PanelesSolares");
             case 51:
                 this.controlesCapsula = true;
                 this.droneCam.activarControlesTeclado();
                 this.camera.seguirALaCapsula() //activa la matrix de rotacion que se calcula con los controles de la capsula
+                this.msg.clear();
+                if (!this.mostrarControlesCapsula) {
+                    this.mostrarControlesCapsula = true; //solo se activa una sola vez
+                    this.msg.menuControlesCapsula();
+                }
                 this.msg["info"]("Capsula");
                 return this.configurarCamaraDe("Capsula");
             case 52:
@@ -347,6 +357,7 @@ export class Controls {
                 this.droneCam.activarControlesTeclado(false);
                 this.camera.borrarTimeOutIdPool();
                 this.camera.dejarDeSeguirALaCapsula();
+                this.msg.clear();
                 this.msg["info"]("Luna");
                 return this.configurarCamaraDe("Luna");
             case 53:
@@ -354,12 +365,30 @@ export class Controls {
                 this.droneCam.activarControlesTeclado(false);
                 this.camera.borrarTimeOutIdPool();
                 this.camera.dejarDeSeguirALaCapsula();
+                this.msg.clear();
                 this.msg["info"]("Tierra");
                 return this.configurarCamaraDe("Tierra");
             case 88: //z zoom out
                 return this.dollyHelper(-1);
             case 90: //x zoom in
                 return this.dollyHelper(1);
+
+            case 72: //h
+                if (!this.isGuiActive) {
+                    this.gui.show()
+                    this.isGuiActive = !this.isGuiActive;
+                    this.msg.clear();
+                    if (!this.controlesCapsula)
+                        return this.msg.menuControlesGral();
+                    //solo si estoy en el menu capsula
+                    return this.msg.menuControlesCapsula();
+                } else {
+                    this.gui.hide()
+                    this.msg.clear();
+                    this.isGuiActive = !this.isGuiActive;
+                    return;
+                }
+
 
 
             case 70: //f
@@ -392,6 +421,12 @@ export class Controls {
                 this.msg["warning"](type);
                 this.bloque.setType(type);
                 return;
+            case 101:
+            case 67: //Numpad 5 o c
+                if (!this.controlesCapsula)
+                    return;
+                this.msg["success"]("Luces Centradas");
+                return this.spotLightDir.setOriginalDirectionVector();
         }
     }
 

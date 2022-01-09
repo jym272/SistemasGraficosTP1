@@ -123,9 +123,6 @@ export function DroneCameraControl(initialPos, initialRotationMatrix, camera, sp
 
             case 98:
                 return spotLightDir.cambiarElevation(-keyIncrement);
-            case 101:
-                return spotLightDir.setOriginalDirectionVector();
-
         }
 
     }

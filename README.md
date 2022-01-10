@@ -3,8 +3,8 @@
 Escena 3D que consiste en una estación espacial más una capsula que vuela en
 forma independiente sobre la superficie de la tierra.
     
-    Se usa Javascript Vanilla, WebGl 2.0 y la librería de gl-matrix.
-    Se usa el framework de Webpack para la compilación de Javascript y manejo de archivos.
+    Se trabajo sobre WebGl 2.0 con los lenguajes de Javascript y GLSL.
+    Se usa el framework de Webpack para el desarrollo, manejo de archivos, estadísticas y paquete final.
 
 ## Setup
 Descargar [Node.js](https://nodejs.org/en/download/).
@@ -17,23 +17,26 @@ npm install
 # Local server at localhost:8080
 npm run dev
 
-# Build para producción en el directorio de docs/
+# Build para producción en el directorio de docs/, crea el bundle y el index.html
 npm run build
+
+# Bundle Analizer, permite observar el tamano de las librerías respecto al bundle final
+npm run stats
 ```
 
+Los distintos controles se muestran en detalle, cuando se inicie el programa, algunos de ellos son:
 ## Cámaras Orbitales
-'1' -> Cámara centrada en la estación espacial.
+'1' ⇨ Cámara centrada en la estación espacial.
 
-'2' -> Cámara centrada en los paneles solares.
+'2' ⇨ Cámara centrada en los paneles solares.
 
-'3' -> Cámara de la cápsula espacial.
+'3' ⇨ Cámara de la cápsula espacial.
 
-'z' 'x' -> Zoom por teclado
+'4' ⇨ Cámara del satélite Luna.
 
-### Mouse
-Click izquierdo con movimientos del mouse para mover la cámara órbital.
+'5' ⇨ Cámara del planeta Tierra.
 
-Combinar con la tecla "Alt" o en su defecto la rueda del mouse para zoom.
+'z'/'x' ⇨ Zoom por teclado
 
 ## Controles Cápsula Espacial
 
@@ -46,5 +49,8 @@ Combinar con la tecla "Alt" o en su defecto la rueda del mouse para zoom.
     T    La cápsula frena in situ.
 
 
-### Referencia
-Módulos del código que abstraen conceptos del pipeline gráfico fueron tomados de [Real-Time 3D Graphics with WebGL 2](https://github.com/PacktPublishing/Real-Time-3D-Graphics-with-WebGL-2).
+### Referencias
+
+[Sistemas Gráficos Teoría](https://youtube.com/playlist?list=PLZPWYlypA6MqOPCNlj1UvKawebDzU2-Dd) |
+[Real-Time 3D Graphics with WebGL 2](https://github.com/PacktPublishing/Real-Time-3D-Graphics-with-WebGL-2) |
+[Learn OpenGl](https://learnopengl.com/)

@@ -69,7 +69,7 @@ export class Mensajes {
     menuControlesGral(){
         toastr["error"](
             this.menuControlesTitulo.replace("mensaje", "Cámara:") +
-            this.menuControlesDescripcion.replace("mensaje", "--->clickDer + mouse") +
+            this.menuControlesDescripcion.replace("mensaje", "--->clickIzq + mouse") +
             this.menuControlesTitulo.replace("mensaje", "Zoom in/out:") +
             this.menuControlesDescripcion.replace("mensaje", "--->mouseWheel") +
             this.menuControlesDescripcion.replace("mensaje", "--->z/x") +
@@ -104,7 +104,7 @@ export class Mensajes {
             this.menuControlesDescripcion.replace("mensaje", "--->spaceBar") +
             this.menuControlesTitulo.replace("mensaje", "Giro:") +
             this.menuControlesDescripcion.replace("mensaje", "--->JKLOIU") +
-            this.menuControlesDescripcion.replace("mensaje", "--->shift + rightClick + &nbsp;&nbsp;&nbsp;&nbsp;mouse") +
+            this.menuControlesDescripcion.replace("mensaje", "--->shift + clickIzq + &nbsp;&nbsp;&nbsp;&nbsp;mouse") +
             this.menuControlesTitulo.replace("mensaje", "Faros dirección:") +
             this.menuControlesDescripcion.replace("mensaje", "--->middleClick + mouse") +
             this.menuControlesDescripcion.replace("mensaje", "--->NumPad Keys") +

@@ -1,5 +1,6 @@
 'use strict';
 import './style.css'
+import './loading_page.css'
 import './toastr.css'
 
 import {dimensiones} from "./js/dimensiones";
@@ -1807,6 +1808,7 @@ cargarTexturasLuces();
 load();
 
 function init() {
+    document.getElementById('loading_page').remove();
     render();
     initControls();
     controles.gui = gui;
